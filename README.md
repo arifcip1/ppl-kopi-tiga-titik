@@ -1,6 +1,6 @@
 # PPL Kopi Tiga Titik
 
-Aplikasi e-commerce untuk UMKM [nama UMKM] — Mata Kuliah Proyek Perangkat Lunak
+Aplikasi e-commerce untuk UMKM Kopi Tiga Titik — Mata Kuliah Proyek Perangkat Lunak
 
 ## Anggota Tim
 | Nama | NIM | Peran |
