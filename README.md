@@ -13,6 +13,21 @@ Aplikasi e-commerce untuk UMKM Kopi Tiga Titik — Mata Kuliah Proyek Perangkat 
 ## Cara Menjalankan Aplikasi
 (Akan diisi setelah aplikasi selesai)
 
-## Tech Stack
-(Akan diisi setelah disepakati tim)
- 
+## Tech Stack & Layanan yang Digunakan
+
+### 1. Pengembangan Aplikasi (Core Application)
+- **Backend Framework:** Laravel 11 (PHP 8.2+)
+- **Frontend / Template Engine:** Laravel Blade (Monolith Architecture)
+- **Styling UI:** Tailwind CSS (via Vite)
+- **Database:** MySQL (dikelola menggunakan Laravel Migration & Seeder)
+
+### 2. Integrasi Layanan Pihak Ketiga (Third-Party APIs)
+- **Payment Gateway:** Midtrans Sandbox (Snap API) — mode simulasi pembayaran online
+- **Shipping Logistics:** Biteship Sandbox / RajaOngkir Sandbox — mode simulasi perhitungan ongkos kirim otomatis
+- **Komponen Komputasional:** Rule-Based System (Peringatan Restock Otomatis saat stok < 5 & Diskon Otomatis)
+
+### 3. Manajemen Proyek & Kolaborasi (Agile Tools)
+- **Storage Sharing & Version Control:** GitHub (dengan Branch Protection pada branch `main`)
+- **Agile Board:** Jira Software Cloud (Scrum Board & Backlog)
+- **Workspace Komunikasi:** Discord (Channel `#diskusi`, `#github-notif`, `#board-notif`)
+- **UI/UX Design Tool:** Figma
