@@ -1,33 +1,59 @@
-# PPL Kopi Tiga Titik
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-Aplikasi e-commerce untuk UMKM Kopi Tiga Titik — Mata Kuliah Proyek Perangkat Lunak
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
 
-## Anggota Tim
-| Nama | NIM | Peran |
-|------|-----|-------|
-| Muhammad Farrel Fastha | 240411100114 | Product Owner / System Analyst / Frontend & Backend / Dokumentasi & Branding |
-| M. ARIF | 240411100084 | Scrum Master / QA Tester / Frontend & Backend / Dokumentasi & Branding |
-| Badruz Zaman Ash Sholih | 240411100140 | UI/UX Designer / Frontend & Backend / Dokumentasi & Branding |
-| Ahmad Dafi Zidni Alfarisi | 240411100027 | UI/UX Designer / Frontend & Backend / Dokumentasi & Branding |
+## About Laravel
 
-## Cara Menjalankan Aplikasi
-(Akan diisi setelah aplikasi selesai)
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-## Tech Stack & Layanan yang Digunakan
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-### 1. Pengembangan Aplikasi (Core Application)
-- **Backend Framework:** Laravel 11 (PHP 8.2+)
-- **Frontend / Template Engine:** Laravel Blade (Monolith Architecture)
-- **Styling UI:** Tailwind CSS (via Vite)
-- **Database:** MySQL (dikelola menggunakan Laravel Migration & Seeder)
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-### 2. Integrasi Layanan Pihak Ketiga (Third-Party APIs)
-- **Payment Gateway:** Midtrans Sandbox (Snap API) — mode simulasi pembayaran online
-- **Shipping Logistics:** Biteship Sandbox / RajaOngkir Sandbox — mode simulasi perhitungan ongkos kirim otomatis
-- **Komponen Komputasional:** Rule-Based System (Peringatan Restock Otomatis saat stok < 5 & Diskon Otomatis)
+## Learning Laravel
 
-### 3. Manajemen Proyek & Kolaborasi (Agile Tools)
-- **Storage Sharing & Version Control:** GitHub (dengan Branch Protection pada branch `main`)
-- **Agile Board:** Jira Software Cloud (Scrum Board & Backlog)
-- **Workspace Komunikasi:** Discord (Channel `#diskusi`, `#github-notif`, `#board-notif`)
-- **UI/UX Design Tool:** Figma
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+
+If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+
+## Laravel Sponsors
+
+We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+
+### Premium Partners
+
+- **[Vehikl](https://vehikl.com)**
+- **[Tighten Co.](https://tighten.co)**
+- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
+- **[64 Robots](https://64robots.com)**
+- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
+- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
+- **[Redberry](https://redberry.international/laravel-development)**
+- **[Active Logic](https://activelogic.com)**
+
+## Contributing
+
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+
+## Code of Conduct
+
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+
+## Security Vulnerabilities
+
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+
+## License
+
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
