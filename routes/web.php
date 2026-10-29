@@ -31,6 +31,7 @@ Route::get('/profil-kurir', fn() => view('Profil Kurir Page'));
 
 // Owner
 Route::get('/owner/dashboard', fn() => view('Owner Dashboard & Mini POS Page'));
+Route::get('/owner/produk', fn() => view('Kelola Produk Page'));
 Route::get('/owner/update-lokasi', fn() => view('Pop Up Update Lokasi Lapak Page'));
 Route::get('/owner/prediksi', fn() => view('Prediksi Moving Average Page'));
 Route::get('/owner/profil', fn() => view('Profil Owner Page'));

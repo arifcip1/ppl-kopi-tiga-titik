@@ -300,10 +300,14 @@
     </div>
 
     <!-- Owner Bottom Navigation Bar -->
-    <div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-96 bg-white border-t border-slate-200 py-1.5 px-12 flex justify-between items-center z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+    <div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-96 bg-white border-t border-slate-200 py-1.5 px-6 flex justify-between items-center z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
         <a href="{{ url('/owner/dashboard') }}" class="flex flex-col items-center text-blue-900">
             <span class="material-symbols-outlined text-2xl font-bold">point_of_sale</span>
             <span class="text-[10px] font-bold font-['Inter']">POS Kasir</span>
+        </a>
+        <a href="{{ url('/owner/produk') }}" class="flex flex-col items-center text-gray-400 hover:text-blue-900 transition-colors">
+            <span class="material-symbols-outlined text-2xl">inventory_2</span>
+            <span class="text-[10px] font-medium font-['Inter']">Produk</span>
         </a>
         <a href="{{ url('/owner/prediksi') }}" class="flex flex-col items-center text-gray-400 hover:text-blue-900 transition-colors">
             <span class="material-symbols-outlined text-2xl">query_stats</span>
