@@ -1,6 +1,22 @@
 <?php
 
+
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
+
+// Halaman login
+Route::get('/login', [AuthController::class, 'showLogin'])
+    ->name('login');
+
+// Proses login
+Route::post('/login', [AuthController::class, 'login'])
+    ->name('login.process');
+
+// Logout
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->name('logout');
+
+
 
 Route::get('/', function () {
     return view('welcome');
