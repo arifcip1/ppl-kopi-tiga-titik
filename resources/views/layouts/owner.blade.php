@@ -121,16 +121,16 @@
         <!-- Bagian Bawah: Profil & Logout (Selalu terkunci di dasar, tidak terpotong) -->
         <div class="p-2.5 pb-6 md:pb-3 border-t border-slate-100 flex flex-col gap-0.5 shrink-0 bg-white">
             <!-- Profil -->
-            <a href="{{ url('/owner/profil') }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-blue-900 hover:bg-slate-100 transition-colors">
-                <span class="material-symbols-outlined text-lg text-slate-500">person</span>
+            <a href="{{ url('/owner/profil') }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors {{ $activeMenu === 'profil' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
+                <span class="material-symbols-outlined text-lg {{ $activeMenu === 'profil' ? 'text-white' : 'text-slate-500' }}">person</span>
                 <span>Profil Pengelola</span>
             </a>
 
             <!-- Keluar Akun -->
-            <a href="{{ url('/login-owner') }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors">
+            <button type="button" onclick="openLogoutModal()" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors w-full text-left cursor-pointer">
                 <span class="material-symbols-outlined text-lg">logout</span>
                 <span>Keluar Akun</span>
-            </a>
+            </button>
         </div>
     </aside>
 
@@ -171,8 +171,48 @@
         </main>
     </div>
 
+    <!-- Form Logout Tersembunyi -->
+    <form id="globalLogoutForm" action="{{ url('/logout') }}" method="POST" class="hidden">
+        @csrf
+    </form>
+
+    <!-- Modal Konfirmasi Logout (Alert) -->
+    <div id="modal-logout-confirm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 text-center flex flex-col items-center">
+            <div class="w-14 h-14 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center mb-3">
+                <span class="material-symbols-outlined text-3xl">logout</span>
+            </div>
+            <h3 class="font-bold text-slate-900 text-base font-['Plus_Jakarta_Sans']">Keluar dari Akun Owner?</h3>
+            <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                Apakah kamu yakin ingin keluar dari sesi dashboard <strong class="text-slate-900">Kopi Tiga Titik</strong>? Pastikan semua perubahan data sudah disimpan.
+            </p>
+
+            <div class="mt-5 w-full grid grid-cols-2 gap-2.5">
+                <button type="button" onclick="closeLogoutModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer">
+                    Batal
+                </button>
+                <button type="button" onclick="document.getElementById('globalLogoutForm').submit()" class="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs cursor-pointer">
+                    Ya, Keluar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript Navigasi Bersama -->
     <script>
+        // Modal Logout Logic
+        function openLogoutModal() {
+            const modal = document.getElementById('modal-logout-confirm');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+
+        function closeLogoutModal() {
+            const modal = document.getElementById('modal-logout-confirm');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
         // SIDEBAR TOGGLE LOGIC (DESKTOP PUSH & MOBILE 75% OVERLAY)
         let isDesktopSidebarOpen = true;
 

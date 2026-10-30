@@ -1,162 +1,165 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Profil Pelanggan - Kopi Tiga Titik</title>
+@extends('layouts.pelanggan')
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+@section('title', 'My Account')
+@section('active_menu', 'profil')
+@section('page_title', 'My Account')
+@section('role_badge', 'PELANGGAN')
+@section('page_subtitle', 'Kelola informasi profil, alamat pengiriman, dan riwayat pesananmu')
 
-    <!-- Tailwind CSS via Vite -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="bg-slate-100 min-h-screen flex justify-center items-start py-6 antialiased font-sans">
-<div class="w-full max-w-96 min-h-screen bg-slate-50 shadow-2xl relative flex flex-col justify-start pb-24">
+@section('content')
 
-    <!-- Top Header -->
-    <div class="bg-white px-4 py-3 border-b border-slate-100 shadow-sm flex items-center justify-between sticky top-0 z-30">
-        <a href="{{ url('/landing') }}" class="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-800 transition-colors">
-            <span class="material-symbols-outlined text-xl">arrow_back</span>
-        </a>
-        <h1 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans']">My Account</h1>
-        <div class="w-9"></div>
-    </div>
-
-    <!-- Blue Brand Strip -->
-    <div class="bg-blue-900 text-white px-4 py-3 flex justify-between items-center text-xs">
-        <div class="flex items-center gap-1.5 font-bold uppercase tracking-wider text-[11px]">
-            <span class="w-2 h-2 rounded-full bg-blue-400"></span>
-            <span>PELANGGAN</span>
+    @if (session('success'))
+        <div class="p-3.5 bg-emerald-50 text-emerald-800 text-xs font-semibold rounded-2xl border border-emerald-200 flex items-center gap-2">
+            <span class="material-symbols-outlined text-base text-emerald-600">check_circle</span>
+            <span>{{ session('success') }}</span>
         </div>
-        <div class="text-[11px] text-blue-200">Kopi Tiga Titik Mojokerto</div>
-    </div>
+    @endif
 
-    <!-- Main Content -->
-    <div class="px-4 -mt-3 flex flex-col gap-3.5">
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6 items-start">
 
-        <!-- User Info Card -->
-        <div class="p-4 bg-white rounded-2xl shadow-sm border border-slate-200/80 flex flex-col gap-3">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="w-14 h-14 rounded-full bg-blue-900 text-white text-xl font-extrabold flex items-center justify-center font-['Plus_Jakarta_Sans'] shadow-md">
+        <!-- Kolom Kiri: Profil Singkat & Aktivitas -->
+        <div class="lg:col-span-2 flex flex-col gap-4">
+
+            <!-- Identitas User Card -->
+            <div class="p-5 bg-white rounded-2xl border border-slate-200/90 shadow-xs flex flex-col gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-full bg-blue-900 text-white text-2xl font-extrabold flex items-center justify-center font-['Plus_Jakarta_Sans'] shadow-md shrink-0">
                         N
                     </div>
-                    <div>
-                        <h2 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Nabil</h2>
-                        <span class="inline-block mt-0.5 px-2 py-0.5 bg-emerald-50 text-emerald-700 font-semibold text-[11px] rounded-full border border-emerald-200">+62 812-3849-9210</span>
-                    </div>
-                </div>
-                <button class="px-3 py-1 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors">
-                    <span class="material-symbols-outlined text-xs">edit</span>
-                    <span>Ubah</span>
-                </button>
-            </div>
-            <div class="pt-2 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-600">
-                <span class="material-symbols-outlined text-sm text-slate-400">mail</span>
-                <span>nabil@gmail.com</span>
-            </div>
-        </div>
-
-        <!-- Alamat Pengiriman Utama -->
-        <div class="flex flex-col gap-2">
-            <div class="flex justify-between items-center text-xs">
-                <h3 class="font-bold text-slate-900">Alamat Pengiriman Utama</h3>
-                <button class="font-bold text-blue-900 hover:underline text-[11px]">Ubah</button>
-            </div>
-
-            <div class="p-3.5 bg-white rounded-2xl shadow-sm border border-slate-200/80 flex flex-col gap-2.5">
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex items-center gap-1.5">
-                        <div class="w-6 h-6 rounded-full bg-blue-50 text-blue-900 flex items-center justify-center">
-                            <span class="material-symbols-outlined text-xs">location_on</span>
-                        </div>
-                        <span class="px-2 py-0.5 bg-blue-900 text-white font-bold text-[10px] rounded-md">Rumah (Utama)</span>
-                    </div>
-                    <span class="text-slate-400 text-[11px]">Mojokerto</span>
-                </div>
-                <p class="text-xs text-slate-700 font-medium leading-relaxed">
-                    Jl. Hayam Wuruk No. 42, RT 02/RW 01, Magersari, Mojokerto
-                </p>
-                <div class="p-2 bg-blue-50/70 rounded-xl border border-blue-100 flex items-center gap-1.5 text-xs text-blue-900">
-                    <span class="material-symbols-outlined text-xs text-blue-700">push_pin</span>
-                    <span><strong>Patokan:</strong> Pagar hitam depan toko kelontong Bu Sri</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Aktivitas & Bantuan -->
-        <div class="flex flex-col gap-2">
-            <h3 class="font-bold text-slate-900 text-xs">Aktivitas & Bantuan</h3>
-
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden divide-y divide-slate-100">
-                <a href="{{ url('/riwayat-pesanan') }}" class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center">
-                            <span class="material-symbols-outlined text-lg">receipt_long</span>
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold text-slate-900">Riwayat Pesanan Saya</div>
-                            <div class="text-[11px] text-slate-500">Lihat pesanan aktif & transaksi lalu</div>
+                    <div class="min-w-0 flex flex-col">
+                        <h2 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans'] leading-tight truncate">Nabil</h2>
+                        <span class="inline-block mt-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 font-semibold text-[11px] rounded-full border border-emerald-200 self-start">
+                            +62 812-3849-9210
+                        </span>
+                        <div class="flex items-center gap-1.5 text-slate-500 text-xs mt-1.5">
+                            <span class="material-symbols-outlined text-slate-400 text-sm">mail</span>
+                            <span class="truncate">nabil@gmail.com</span>
                         </div>
                     </div>
-                    <span class="material-symbols-outlined text-slate-400 text-sm">chevron_right</span>
-                </a>
+                </div>
 
-                <div class="p-3.5 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                            <span class="material-symbols-outlined text-lg">star</span>
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-1.5">
-                                <span class="text-xs font-bold text-slate-900">Varian Kopi Favorit</span>
-                                <span class="px-1.5 py-0.2 bg-amber-100 text-amber-800 text-[9px] font-bold rounded">2 Menu</span>
+                <div class="h-px bg-slate-100"></div>
+
+                <div class="flex items-center gap-2 text-xs text-slate-600">
+                    <span class="material-symbols-outlined text-blue-900 text-base">verified_user</span>
+                    <span>Pelanggan Terdaftar Kopi Tiga Titik</span>
+                </div>
+            </div>
+
+            <!-- Ringkasan Aktivitas Belanja -->
+            <div class="p-5 bg-white rounded-2xl border border-slate-200/90 shadow-xs flex flex-col gap-3">
+                <div class="flex items-center justify-between pb-1 border-b border-slate-100">
+                    <h3 class="text-xs md:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Aktivitas Pesanan</h3>
+                    <a href="{{ url('/riwayat-pesanan') }}" class="text-[11px] font-bold text-blue-900 hover:underline">Lihat Semua</a>
+                </div>
+
+                <div class="flex flex-col gap-2.5">
+                    <a href="{{ url('/riwayat-pesanan') }}" class="p-3 bg-slate-50 hover:bg-blue-50/60 rounded-xl border border-slate-200/80 flex items-center justify-between transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 bg-blue-100 text-blue-900 rounded-lg flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-lg">receipt_long</span>
                             </div>
-                            <div class="text-[11px] text-slate-500">Titik Temu & Titik Hitam</div>
+                            <div>
+                                <div class="text-xs font-bold text-slate-800 font-['Plus_Jakarta_Sans']">Riwayat Pesanan</div>
+                                <div class="text-[10px] text-slate-500">12 Botol Kopi telah dinikmati</div>
+                            </div>
+                        </div>
+                        <span class="material-symbols-outlined text-slate-400 text-base">chevron_right</span>
+                    </a>
+
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center gap-3">
+                        <div class="w-9 h-9 bg-amber-100 text-amber-800 rounded-lg flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-lg">favorite</span>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-800 font-['Plus_Jakarta_Sans']">Varian Favorit</div>
+                            <div class="text-[11px] text-amber-800 font-semibold">Titik Temu (Gula Aren)</div>
                         </div>
                     </div>
-                    <span class="material-symbols-outlined text-slate-400 text-sm">chevron_right</span>
                 </div>
             </div>
+
         </div>
 
-        <!-- Logout Button -->
-        <a href="{{ url('/login-pembeli') }}" class="w-full py-3 bg-white hover:bg-red-50 border border-red-200 text-red-600 rounded-2xl font-bold text-xs flex justify-center items-center gap-2 shadow-xs transition-colors mt-1">
-            <span class="material-symbols-outlined text-base">logout</span>
-            <span>Keluar dari Akun (Logout)</span>
-        </a>
+        <!-- Kolom Kanan: Alamat Pengiriman & Pengaturan Akun -->
+        <div class="lg:col-span-3 flex flex-col gap-4">
 
-        <!-- Footer Notice -->
-        <div class="text-center text-[10px] text-slate-400 py-1">
-            Kopi Tiga Titik • Seduhan Khas Mojokerto
+            <!-- Alamat Pengiriman Utama Card -->
+            <div class="p-5 md:p-6 bg-white rounded-2xl border border-slate-200/90 shadow-xs flex flex-col gap-3.5">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 bg-blue-50 text-blue-900 rounded-lg flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-base">location_on</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xs md:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Alamat Pengiriman Utama</h3>
+                            <p class="text-[10px] text-slate-500">Alamat tujuan untuk kurir Kopi Tiga Titik</p>
+                        </div>
+                    </div>
+                    <span class="px-2 py-0.5 bg-blue-100 text-blue-900 text-[10px] font-bold rounded-md">UTAMA</span>
+                </div>
+
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col gap-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Rumah / Kost</span>
+                        <span class="text-[11px] text-slate-500 font-medium">Nabil (+62 812-3849-9210)</span>
+                    </div>
+                    <p class="text-xs text-slate-700 leading-relaxed">
+                        Jl. Hayam Wuruk No. 42, Magersari, Kota Mojokerto, Jawa Timur 61318
+                    </p>
+                    <div class="pt-1 flex items-center gap-1.5 text-[11px] text-slate-500">
+                        <span class="material-symbols-outlined text-xs text-slate-400">near_me</span>
+                        <span>Patokan: Pagar hitam depan apotek, seberang minimarket</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end">
+                    <button type="button" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">edit_location</span>
+                        <span>Ubah Alamat Pengiriman</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bantuan & Aksi Akun Card -->
+            <div class="p-5 md:p-6 bg-white rounded-2xl border border-slate-200/90 shadow-xs flex flex-col gap-3.5">
+                <div class="pb-2 border-b border-slate-100 flex items-center gap-2">
+                    <div class="w-8 h-8 bg-blue-50 text-blue-900 rounded-lg flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-base">security</span>
+                    </div>
+                    <div>
+                        <h3 class="text-xs md:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Keamanan &amp; Aksi Akun</h3>
+                        <p class="text-[10px] text-slate-500">Akses bantuan dan keluar dari sesi aplikasi</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <a href="https://wa.me/6281234567890" target="_blank" rel="noopener"
+                       class="p-3.5 bg-slate-50 hover:bg-blue-50/70 rounded-xl border border-slate-200/80 flex items-center gap-3 transition-colors">
+                        <div class="w-9 h-9 bg-emerald-100 text-emerald-800 rounded-lg flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-lg">support_agent</span>
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <span class="text-xs font-bold text-slate-800 font-['Plus_Jakarta_Sans']">Bantuan CS Lapak</span>
+                            <span class="text-[10px] text-slate-500">Hubungi via WhatsApp</span>
+                        </div>
+                    </a>
+
+                    <button type="button" onclick="openLogoutModal()"
+                            class="p-3.5 bg-rose-50/60 hover:bg-rose-100/70 rounded-xl border border-rose-200 text-rose-700 flex items-center gap-3 transition-colors text-left cursor-pointer">
+                        <div class="w-9 h-9 bg-rose-100 text-rose-700 rounded-lg flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-lg">logout</span>
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <span class="text-xs font-bold font-['Plus_Jakarta_Sans']">Keluar dari Akun</span>
+                            <span class="text-[10px] text-rose-600">Akhiri sesi login</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
         </div>
 
     </div>
 
-    <!-- Global Bottom Navigation Bar -->
-    <div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-96 bg-white border-t border-slate-200 py-1.5 px-6 flex justify-between items-center z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-        <a href="{{ url('/landing') }}" class="flex flex-col items-center text-gray-400 hover:text-blue-800 transition-colors">
-            <span class="material-symbols-outlined text-2xl">home</span>
-            <span class="text-[10px] font-medium font-['Inter']">Beranda</span>
-        </a>
-        <a href="{{ url('/katalog') }}" class="flex flex-col items-center text-gray-400 hover:text-blue-800 transition-colors">
-            <span class="material-symbols-outlined text-2xl">coffee</span>
-            <span class="text-[10px] font-medium font-['Inter']">Menu</span>
-        </a>
-        <a href="{{ url('/riwayat-pesanan') }}" class="flex flex-col items-center text-gray-400 hover:text-blue-800 transition-colors">
-            <span class="material-symbols-outlined text-2xl">receipt_long</span>
-            <span class="text-[10px] font-medium font-['Inter']">Pesanan</span>
-        </a>
-        <a href="{{ url('/profil-pelanggan') }}" class="flex flex-col items-center text-blue-800">
-            <span class="material-symbols-outlined text-2xl font-bold">person</span>
-            <span class="text-[10px] font-bold font-['Inter']">Akun</span>
-        </a>
-    </div>
-
-</div>
-</body>
-</html>
+@endsection
