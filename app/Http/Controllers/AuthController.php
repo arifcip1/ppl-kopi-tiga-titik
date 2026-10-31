@@ -2,49 +2,114 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
     /**
-     * Tampilkan form login.
+     * Tampilkan formulir login.
      */
     public function showLogin()
     {
-        return view('Desktop Login Page');
+        if (Auth::check()) {
+            return $this->redirectBasedOnRole(Auth::user());
+        }
+
+        return view('Login Page');
     }
 
     /**
-     * Proses autentikasi login.
+     * Proses autentikasi login (FR-1.4 & Rate Limiting).
      */
     public function login(Request $request)
     {
+        $throttleKey = Str::transliterate(Str::lower($request->input('email')) . '|' . $request->ip());
+
+        // Batasi percobaan login gagal (Rate Limiting / Throttling)
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            return back()->withErrors([
+                'email' => "Terlalu banyak percobaan masuk gagal. Silakan coba lagi dalam {$seconds} detik.",
+            ])->onlyInput('email');
+        }
+
         $credentials = $request->validate([
-            'email'    => ['required', 'string'],
+            'email'    => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
+        ], [
+            'email.required'    => 'Alamat email wajib diisi.',
+            'email.email'       => 'Format alamat email tidak valid.',
+            'password.required' => 'Kata sandi wajib diisi.',
         ]);
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
 
-            $user = Auth::user();
-            if ($user->role === 'admin' || $user->role === 'owner') {
-                return redirect()->intended('/owner/dashboard');
-            } elseif ($user->role === 'kurir') {
-                return redirect()->intended('/kurir/tugas-baru');
-            }
-
-            return redirect()->intended('/katalog');
+            return $this->redirectBasedOnRole(Auth::user());
         }
 
+        RateLimiter::hit($throttleKey, 60);
+
+        // Pesan aman yang tidak membocorkan apakah email terdaftar (FR-1.4)
         return back()->withErrors([
             'email' => 'Email atau kata sandi yang Anda masukkan salah.',
         ])->onlyInput('email');
     }
 
     /**
-     * Proses logout pengguna.
+     * Tampilkan formulir registrasi pelanggan baru (FR-1.3).
+     */
+    public function showRegister()
+    {
+        if (Auth::check()) {
+            return $this->redirectBasedOnRole(Auth::user());
+        }
+
+        return view('Register Page');
+    }
+
+    /**
+     * Proses registrasi akun pelanggan baru (FR-1.3).
+     */
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'name.required'      => 'Nama lengkap wajib diisi.',
+            'name.max'           => 'Nama lengkap maksimal 255 karakter.',
+            'email.required'     => 'Alamat email wajib diisi.',
+            'email.email'        => 'Format email tidak valid.',
+            'email.unique'       => 'Alamat email ini sudah terdaftar.',
+            'password.required'  => 'Kata sandi wajib diisi.',
+            'password.min'       => 'Kata sandi minimal 8 karakter.',
+            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
+        ]);
+
+        $user = User::create([
+            'name'     => $validated['name'],
+            'email'    => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role'     => 'pelanggan',
+        ]);
+
+        // Login otomatis setelah registrasi berhasil
+        Auth::login($user);
+        $request->session()->regenerate();
+
+        return redirect('/katalog')->with('success', 'Akun berhasil didaftarkan! Selamat datang di Kopi Tiga Titik.');
+    }
+
+    /**
+     * Proses logout pengguna (FR-1.4).
      */
     public function logout(Request $request)
     {
@@ -53,7 +118,20 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/login')->with('success', 'Anda telah berhasil keluar.');
+        return redirect('/login')->with('success', 'Anda telah berhasil keluar dari akun.');
+    }
+
+    /**
+     * Pengalihan halaman berdasarkan role pengguna (FR-1.4).
+     */
+    private function redirectBasedOnRole(User $user)
+    {
+        if ($user->role === 'admin') {
+            return redirect()->intended('/owner/dashboard');
+        } elseif ($user->role === 'kurir') {
+            return redirect()->intended('/kurir/tugas-baru');
+        }
+
+        return redirect()->intended('/katalog');
     }
 }
-
