@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SalesHistory extends Model
 {
+    protected $table = 'sales_history';
+
     protected $fillable = [
         'product_id',
         'tanggal',

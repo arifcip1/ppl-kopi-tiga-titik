@@ -158,6 +158,30 @@ Tim: Orang 1 (PO + System Analyst), Orang 2 (Scrum Master + QA/Tester), Orang 3 
 
 **6.6 Standar UI.** Mobile-first (1 kolom di HP, grid di desktop). Komponen konsisten dari UI Kit (PPL 05). Setiap form menampilkan pesan error per field. Format uang Rp12.000. 
 
+**6.7 Konvensi Pemetaan Model Laravel ke Tabel Database**
+
+Nama tabel pada database mengikuti struktur yang ditetapkan dalam migration dan ERD PPL 02. Nama tabel tidak boleh diubah hanya untuk mengikuti konvensi penamaan otomatis Laravel.
+
+Apabila nama tabel tidak sesuai dengan konvensi pluralisasi Laravel, model terkait wajib menetapkan properti `$table` secara eksplisit.
+
+Pemetaan khusus yang digunakan:
+
+| Model Laravel | Nama tabel database |
+|---|---|
+| `OrderStatusHistory` | `order_status_history` |
+| `SalesHistory` | `sales_history` |
+
+Contoh implementasi:
+
+```php
+protected $table = 'sales_history';
+```
+
+Aturan ini hanya mengatur pemetaan model ke tabel database. Perubahan tersebut tidak mengubah struktur tabel, nama kolom, relasi bisnis, kontrak API, maupun antarmuka pengguna.
+
+Setiap perubahan pemetaan model harus diuji menggunakan fitur atau seeder yang memanfaatkan model terkait. Pengembang juga wajib memeriksa migration sebelum menetapkan nama tabel pada model.
+
+
 # **7. Model Data**
 
 Model data PRD harus mengikuti ERD PPL 02 yang terdiri dari **10 tabel**. Sepuluh tabelnya adalah `users`, `products`, `cart_items`, `orders`, `order_items`, `payments`, `order_status_history`, `sales_history`, `settings`, dan `shipping_locations`. Jangan menambahkan tabel `stock_movements`, `payment_events`, `simulated_sales`, atau `carts` tambahan. Data simulasi tetap berada di `sales_history` dengan `sumber='simulasi'`; jangan menyimpan `payments.status` terpisah pada `orders`.
