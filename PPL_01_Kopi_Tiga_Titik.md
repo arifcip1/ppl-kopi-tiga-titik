@@ -2,7 +2,7 @@
 
 ## 1. Ringkasan dan ruang lingkup
 
-Dokumen ini menjadi acuan kebutuhan fungsional, aturan bisnis, dan kontrak data antarmodul Sistem Penjualan Kopi Tiga Titik. Dokumen ini menjadi dasar teknis PPL 02 (ERD, migrasi database, dan relasi data) serta pelaksanaan Work Package berikutnya.
+Dokumen ini menjadi acuan kebutuhan fungsional, aturan bisnis, dan kontrak data antarmodul Sistem Penjualan Kopi Tiga Titik. Dokumen ini menjadi dasar teknis (ERD, migrasi database, dan relasi data) serta pelaksanaan Work Package berikutnya.
 
 Isi dokumen bersumber dari wawancara pemilik usaha dan pembeli (Nabil, 23 Oktober 2026), serta keputusan ruang lingkup proyek yang telah disepakati tim. Rujukan wawancara menggunakan kode P-nn untuk pembeli dan O-n untuk pemilik.
 
@@ -42,7 +42,7 @@ Sistem menggunakan tiga peran aplikasi: Admin/Owner, Kurir, dan Pelanggan.
 
 Akun Admin/Owner dikelola oleh pemilik usaha. Akun Kurir dibuat atau disediakan oleh Admin/Owner dan digunakan oleh kurir yang ditugaskan. Pelanggan harus memiliki akun untuk melakukan checkout. Hak akses wajib diperiksa di backend, bukan hanya dengan menyembunyikan menu pada antarmuka. Penugasan kurir dilakukan oleh Admin/Owner melalui penyimpanan `orders.courier_id`.
 
-**Catatan keselarasan database:** PPL 02 telah menyediakan nilai `admin`, `kurir`, dan `pelanggan` pada `users.role`, serta kolom `orders.courier_id` nullable sebagai relasi pengguna kurir yang ditugaskan. Kolom dan role tersebut digunakan untuk mendukung proses penugasan dan pengantaran pesanan.
+**Catatan keselarasan database:** data base telah menyediakan nilai `admin`, `kurir`, dan `pelanggan` pada `users.role`, serta kolom `orders.courier_id` nullable sebagai relasi pengguna kurir yang ditugaskan. Kolom dan role tersebut digunakan untuk mendukung proses penugasan dan pengantaran pesanan.
 
 ## 3. Kebutuhan fungsional per modul
 
@@ -136,7 +136,7 @@ Contoh: 5,51 km = Rp2.000; 6,49 km = Rp2.000; 6,50 km = Rp4.000; 7,50 km = Rp6.0
 
 ## 5. Kontrak data antarmodul
 
-Bagian ini menjelaskan data yang digunakan bersama oleh modul aplikasi. Nama tabel dan kolom diselaraskan dengan implementasi database pada PPL 02. Tipe data dan detail constraint mengikuti ERD serta migration PPL 02.
+Bagian ini menjelaskan data yang digunakan bersama oleh modul aplikasi. Nama tabel dan kolom diselaraskan dengan implementasi database pada. Tipe data dan detail constraint mengikuti ERD serta migration.
 
 | Tabel | Fungsi dan kolom utama | Modul pengguna |
 |---|---|---|
@@ -176,6 +176,30 @@ Bagian ini menjelaskan data yang digunakan bersama oleh modul aplikasi. Nama tab
 - `order_status_history` menjadi sumber riwayat perubahan status, sedangkan `orders.status` menyimpan status terkini.
 - `sales_history` direkap per produk, tanggal, dan sumber. Data simulasi harus tetap dibedakan dari transaksi nyata.
 - `settings.value` bertipe teks; nilai yang berisi ID lokasi harus dikonversi dan divalidasi oleh backend sebelum digunakan.
+
+### 5.3 Konvensi Pemetaan Model Laravel ke Tabel Database
+
+Dalam implementasi Laravel, setiap model harus diarahkan ke nama tabel yang sesuai dengan migration database. Laravel secara default membentuk nama tabel dalam bentuk plural berdasarkan nama model. Apabila nama tabel aktual tidak mengikuti konvensi tersebut, model wajib mendefinisikan properti `$table` secara eksplisit.
+
+Ketentuan pemetaan model yang memerlukan penyesuaian:
+
+| Model Laravel | Nama tabel database |
+|---|---|
+| `SalesHistory` | `sales_history` |
+| `OrderStatusHistory` | `order_status_history` |
+
+Contoh penerapan pada model:
+
+```php
+protected $table = 'sales_history';
+```
+
+Ketentuan:
+1. Nama tabel database tetap mengikuti migration yang telah dibuat.
+2. Properti `$table` hanya digunakan untuk mengarahkan model Laravel ke tabel yang benar.
+3. Penyesuaian ini tidak mengubah nama tabel, kolom, primary key, foreign key, maupun relasi database.
+4. Setiap model wajib diperiksa kesesuaiannya dengan nama tabel aktual sebelum digunakan dalam proses query, relasi, dan seeder.
+5. Jika terdapat perbedaan antara konvensi Laravel dan nama tabel pada migration, nama tabel pada migration menjadi acuan implementasi.
 
 ## 6. Kontrak proses antarmodul
 
@@ -249,7 +273,7 @@ Pekerjaan dinyatakan selesai jika:
 
 1. Fitur berjalan sesuai kebutuhan fungsional dan aturan bisnis pada dokumen ini.
 2. Validasi dan otorisasi dilakukan di backend.
-3. Data tersimpan sesuai relasi dan constraint database PPL 02.
+3. Data tersimpan sesuai relasi dan constraint database.
 4. Proses checkout, pembayaran, perubahan status, dan pengembalian stok menjaga konsistensi data.
 5. Produk nonaktif atau stok tidak cukup tidak dapat di-checkout.
 6. Ongkir dihitung dari rute jalan dan tidak menggunakan nilai perkiraan ketika layanan routing gagal.
@@ -269,7 +293,7 @@ Pekerjaan dinyatakan selesai jika:
 | Layanan routing gagal | Blokir checkout dan tampilkan pesan yang jelas; jangan memakai ongkir tebakan. |
 | Lokasi asal belum dipilih atau nonaktif | Validasi lokasi aktif sebelum menghitung ongkir. |
 | Data penjualan historis tidak cukup | Gunakan data simulasi berlabel jelas untuk pengujian; jangan mencampurnya dengan transaksi nyata. |
-| Perbedaan pemahaman antaranggota tim | Jadikan PPL 01 sebagai acuan aturan bisnis dan PPL 02 sebagai acuan teknis skema serta relasi database. |
+| Perbedaan pemahaman antaranggota tim | Jadikan PPL 01 sebagai acuan aturan bisnis dan kontrak frontend, backend.md sebagai acuan teknis skema serta relasi database. |
 
 ## 10. Temuan wawancara di luar ruang lingkup
 
@@ -278,11 +302,11 @@ Temuan wawancara yang tidak menjadi fitur MVP tetap dapat disimpan sebagai catat
 ## 11. Keputusan dan pengendalian perubahan
 
 1. PPL 01 menjadi acuan kebutuhan dan aturan bisnis.
-2. PPL 02 menjadi acuan teknis ERD, nama tabel/kolom, migration, constraint, dan relasi model.
+2. kontrakforntend backend menjadi acuan teknis ERD, nama tabel/kolom, migration, constraint, dan relasi model.
 3. Jika implementasi membutuhkan perubahan aturan bisnis, perubahan harus disepakati Product Owner dan dicatat sebelum diterapkan.
-4. Jika perubahan hanya menyangkut detail teknis database tanpa mengubah perilaku bisnis, perubahan dicatat pada PPL 02.
+4. Jika perubahan hanya menyangkut detail teknis database tanpa mengubah perilaku bisnis, perubahan dicatat pada kontrak frontend back end.
 5. Semua anggota tim wajib menggunakan versi dokumen terbaru agar implementasi antarmodul konsisten.
 
 ---
 
-**Catatan keselarasan dengan PPL 02:** kolom `orders.courier_id` yang nullable dan nilai role `kurir` pada `users.role` digunakan dalam MVP untuk mendukung penugasan kurir oleh Admin/Owner dan pembatasan akses pesanan berdasarkan kurir yang ditugaskan.
+**Catatan keselarasan dengan kontrak forntend backend:** kolom `orders.courier_id` yang nullable dan nilai role `kurir` pada `users.role` digunakan dalam MVP untuk mendukung penugasan kurir oleh Admin/Owner dan pembatasan akses pesanan berdasarkan kurir yang ditugaskan.
