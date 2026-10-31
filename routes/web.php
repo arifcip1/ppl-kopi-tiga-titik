@@ -31,6 +31,7 @@ Route::get('/register', fn() => view('Register Page'));
 // Pembeli
 Route::get('/landing', fn() => view('Mobile Landing Page'));
 Route::get('/katalog', fn() => view('Menu & Catalog Page'));
+Route::get('/desktop-katalog', fn() => view('Desktop Catalog Product Page'));
 Route::get('/cart', fn() => view('Cart Page'));
 Route::get('/checkout', fn() => view('Cart & Checkout Page'));
 Route::get('/pembayaran-qris', fn() => view('Pembayaran QRIS Page'));
