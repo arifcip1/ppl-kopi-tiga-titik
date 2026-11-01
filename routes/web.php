@@ -2,6 +2,7 @@
 
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,9 +20,7 @@ Route::post('/logout', [AuthController::class, 'logout'])
 
 
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', fn() => view('Desktop Landing Page'))->name('home');
 
 // Autentikasi & Akun
 Route::get('/login-pembeli', fn() => view('Login Sebagai Pembeli Page'));
@@ -29,17 +28,20 @@ Route::get('/login-kurir', fn() => view('Login Sebagai Kurir Page'));
 Route::get('/login-owner', fn() => view('Login Sebagai Owner Page'));
 Route::get('/register', fn() => view('Register Page'));
 
-// Pembeli
-Route::get('/landing', fn() => view('Mobile Landing Page'));
-Route::get('/katalog', fn() => view('Menu & Catalog Page'));
-Route::get('/desktop-katalog', fn() => view('Desktop Catalog Product Page'));
-Route::get('/cart', fn() => view('Cart Page'));
-Route::get('/checkout', fn() => view('Cart & Checkout Page'));
-Route::get('/pembayaran-qris', fn() => view('Pembayaran QRIS Page'));
-Route::get('/tracking', fn() => view('Order Tracking & Live Status'));
-Route::get('/order-tracking', fn() => view('Order Tracking & Live Status'));
-Route::get('/riwayat-pesanan', fn() => view('Riwayat Pesanan Page'));
-Route::get('/profil-pelanggan', fn() => view('Profil Pelanggan Page'));
+// Pembeli - Publik (FR-3.1: Dapat diakses tanpa login)
+Route::get('/landing', fn() => view('Desktop Landing Page'))->name('landing');
+Route::get('/katalog', [CatalogController::class, 'index'])->name('katalog.index');
+
+// Pembeli - Fitur Terlindungi (Wajib Login Sesuai PRD)
+Route::middleware('auth')->group(function () {
+    Route::get('/cart', fn() => view('Cart Page'))->name('cart');
+    Route::get('/checkout', fn() => view('Cart & Checkout Page'))->name('checkout');
+    Route::get('/pembayaran-qris', fn() => view('Pembayaran QRIS Page'))->name('payment');
+    Route::get('/tracking', fn() => view('Order Tracking & Live Status'));
+    Route::get('/order-tracking', fn() => view('Order Tracking & Live Status'))->name('tracking');
+    Route::get('/riwayat-pesanan', fn() => view('Riwayat Pesanan Page'))->name('orders');
+    Route::get('/profil-pelanggan', fn() => view('Profil Pelanggan Page'))->name('profile');
+});
 
 // Kurir
 Route::get('/kurir/tugas-baru', fn() => view('Dashboard Kurir Tab Tugas Baru Page'));
@@ -65,6 +67,12 @@ Route::prefix('api/admin/products')->group(function () {
     Route::put('/{product}', [ProductController::class, 'update']);
     Route::patch('/{product}/status', [ProductController::class, 'toggleStatus']);
     Route::patch('/{product}/stock', [ProductController::class, 'updateStock']);
+});
+
+// API Routes untuk Katalog Produk Publik (Sesuai Kontrak Dokumen PPL 01 Bagian 7)
+Route::prefix('api/products')->group(function () {
+    Route::get('/', [CatalogController::class, 'apiIndex'])->name('api.products.index');
+    Route::get('/{product}', [CatalogController::class, 'apiShow'])->name('api.products.show');
 });
 Route::get('/owner/update-lokasi', fn() => view('Pop Up Update Lokasi Lapak Page'));
 Route::get('/owner/prediksi', fn() => view('Prediksi Moving Average Page'));

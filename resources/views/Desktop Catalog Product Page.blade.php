@@ -55,7 +55,7 @@
 
         <!-- Kategori Chips Filter -->
         <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="categoryChips">
-            <button onclick="filterCategory(this, 'all')" class="cat-chip active px-3.5 py-1.5 bg-blue-900 text-white rounded-xl text-xs font-semibold shadow-xs whitespace-nowrap cursor-pointer transition-all">Semua Menu (4)</button>
+            <button onclick="filterCategory(this, 'all')" class="cat-chip active px-3.5 py-1.5 bg-blue-900 text-white rounded-xl text-xs font-semibold shadow-xs whitespace-nowrap cursor-pointer transition-all">Semua Menu ({{ $products->count() }})</button>
             <button onclick="filterCategory(this, 'kopi-susu')" class="cat-chip px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium whitespace-nowrap cursor-pointer transition-all">Kopi Susu</button>
             <button onclick="filterCategory(this, 'kopi-murni')" class="cat-chip px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium whitespace-nowrap cursor-pointer transition-all">Kopi Murni</button>
             <button onclick="filterCategory(this, 'non-kopi')" class="cat-chip px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-medium whitespace-nowrap cursor-pointer transition-all">Non-Kopi</button>
@@ -65,211 +65,114 @@
     <!-- 3. DAFTAR PRODUK (Full Width: Mobile 1 Kolom | Tablet 2 Kolom | Desktop 4 Kolom Sesuai Kelola Produk) -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="productGrid">
 
-                <!-- PRODUK 1: Titik Temu -->
-                <div class="product-card p-4 bg-white rounded-2xl shadow-xs border border-slate-200/90 hover:border-blue-900/40 hover:shadow-md transition-all flex flex-col justify-between group" data-category="kopi-susu" data-name="titik temu gula aren kopi susu">
-                    <div>
-                        <!-- Header Card: Badge Kategori & Sisa Stok -->
-                        <div class="flex justify-between items-center mb-2.5">
-                            <span class="px-2.5 py-0.5 bg-blue-900 text-white font-bold text-[10px] rounded-full shadow-xs">
-                                Favorit
-                            </span>
-                            <span class="px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-[10px] font-bold flex items-center gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>Stok: 8 botol</span>
-                            </span>
-                        </div>
+        @forelse ($products as $product)
+            @php
+                // Klasifikasi kategori untuk filter chips
+                $category = 'kopi-susu';
+                $rasaLower = strtolower($product->rasa . ' ' . $product->nama . ' ' . $product->deskripsi);
+                if (str_contains($rasaLower, 'americano') || str_contains($rasaLower, 'hitam') || str_contains($rasaLower, 'murni')) {
+                    $category = 'kopi-murni';
+                    $categoryLabel = 'Kopi Murni';
+                    $badgeClass = 'bg-neutral-900 text-white';
+                } elseif (str_contains($rasaLower, 'coklat') || str_contains($rasaLower, 'cokelat') || str_contains($rasaLower, 'non-kopi') || str_contains($rasaLower, 'tea') || str_contains($rasaLower, 'teh')) {
+                    $category = 'non-kopi';
+                    $categoryLabel = 'Non-Kopi';
+                    $badgeClass = 'bg-stone-700 text-white';
+                } elseif (str_contains($rasaLower, 'caramel') || str_contains($rasaLower, 'karamel')) {
+                    $category = 'kopi-susu';
+                    $categoryLabel = 'Kopi Karamel';
+                    $badgeClass = 'bg-amber-800 text-white';
+                } else {
+                    $category = 'kopi-susu';
+                    $categoryLabel = 'Kopi Susu';
+                    $badgeClass = 'bg-blue-900 text-white';
+                }
 
-                        <!-- Gambar Produk & Click Detail Trigger -->
-                        <div class="h-44 sm:h-48 bg-slate-50 rounded-xl flex items-center justify-center p-2.5 border border-slate-100 relative overflow-hidden group-hover:bg-blue-50/20 transition-colors cursor-pointer" onclick="openProductDetail('Titik Temu', 'Kopi Susu Gula Aren', 'Rp 10.000', '10000', '{{ asset('products/Titik Temu.png') }}', '8', 'Perpaduan seimbang espresso house blend dengan gula aren murni organik dan susu segar gurih.', 'Espresso Blend, Susu Segar Pasteurisasi, Gula Aren Organik Cair.')">
-                            <img src="{{ asset('products/Titik Temu.png') }}" alt="Titik Temu" class="h-full object-contain group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/150x200/1e3a8a/ffffff?text=Titik+Temu'" />
-                            <span class="absolute bottom-2 right-2 px-1.5 py-0.5 bg-white/90 text-slate-700 text-[9px] font-bold rounded shadow-xs border border-slate-200">250 ml</span>
-                        </div>
+                // Resolusi foto produk (FR-2.3 & QE Fallback Placeholder)
+                $fotoUrl = $product->foto_path 
+                    ? asset('storage/' . $product->foto_path) 
+                    : (file_exists(public_path('products/' . $product->nama . '.png')) 
+                        ? asset('products/' . $product->nama . '.png') 
+                        : 'https://placehold.co/150x200/1e3a8a/ffffff?text=' . urlencode($product->nama));
 
-                        <!-- Detail Singkat -->
-                        <div class="mt-3">
-                            <h3 class="font-bold text-slate-900 text-sm md:text-base font-['Plus_Jakarta_Sans'] group-hover:text-blue-900 transition-colors cursor-pointer" onclick="openProductDetail('Titik Temu', 'Kopi Susu Gula Aren', 'Rp 10.000', '10000', '{{ asset('products/Titik Temu.png') }}', '8', 'Perpaduan seimbang espresso house blend dengan gula aren murni organik dan susu segar gurih.', 'Espresso Blend, Susu Segar Pasteurisasi, Gula Aren Organik Cair.')">
-                                Titik Temu
-                            </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Kopi Susu Gula Aren (250 ml)</p>
-                            <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-1">Espresso blend, susu segar, gula aren murni</p>
+                $hargaFormatted = 'Rp ' . number_format($product->harga, 0, ',', '.');
+                $isOutOfStock = $product->stok <= 0;
+                $isLowStock = !$isOutOfStock && $product->stok <= 5;
+            @endphp
 
-                            <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
-                                <div>
-                                    <div class="text-[9px] text-slate-400 uppercase font-bold">Harga Jual</div>
-                                    <div class="text-base font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">Rp 10.000</div>
-                                </div>
-                                <div class="flex items-center gap-1 text-[10px] text-slate-500">
-                                    <span class="material-symbols-outlined text-xs text-blue-900">ac_unit</span>
-                                    <span>5-7 hr kulkas</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Action Button -->
-                    <div class="mt-3.5 pt-2.5 border-t border-slate-100 flex flex-col items-center">
-                        <button onclick="addToCart(this, 'Titik Temu', 10000)" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl shadow-xs text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-98 cursor-pointer">
-                            <span class="material-symbols-outlined text-base">shopping_cart</span>
-                            <span>+ Keranjang</span>
-                        </button>
-                        <span class="cart-msg hidden text-[11px] font-semibold text-emerald-600 mt-1.5 flex items-center gap-1 transition-all">
-                            <span class="material-symbols-outlined text-xs">check_circle</span>
-                            <span>Ditambahkan ke keranjang</span>
+            <div class="product-card p-4 bg-white rounded-2xl shadow-xs border {{ $isLowStock ? 'border-2 border-amber-300' : 'border-slate-200/90' }} hover:border-blue-900/40 hover:shadow-md transition-all flex flex-col justify-between group"
+                data-id="{{ $product->id }}"
+                data-nama="{{ $product->nama }}"
+                data-rasa="{{ $product->rasa ?: $product->nama }}"
+                data-harga-formatted="{{ $hargaFormatted }}"
+                data-harga="{{ $product->harga }}"
+                data-foto="{{ $fotoUrl }}"
+                data-stok="{{ $product->stok }}"
+                data-deskripsi="{{ $product->deskripsi }}"
+                data-komposisi="{{ $product->komposisi }}"
+                data-keawetan="{{ $product->keawetan ?: '5–7 hari bila disimpan di dalam lemari pendingin' }}"
+                data-category="{{ $category }}"
+                data-name="{{ strtolower($product->nama . ' ' . $product->rasa . ' ' . $product->komposisi) }}">
+                <div>
+                    <!-- Header Card: Badge Kategori & Status Stok (FR-3.2 & BR-19) -->
+                    <div class="flex justify-between items-center mb-2.5">
+                        <span class="px-2.5 py-0.5 {{ $badgeClass }} font-bold text-[10px] rounded-full shadow-xs">
+                            {{ $categoryLabel }}
                         </span>
-                    </div>
-                </div>
-
-                <!-- PRODUK 2: Titik Hitam -->
-                <div class="product-card p-4 bg-white rounded-2xl shadow-xs border border-slate-200/90 hover:border-blue-900/40 hover:shadow-md transition-all flex flex-col justify-between group" data-category="kopi-murni" data-name="titik hitam americano kopi murni">
-                    <div>
-                        <!-- Header Card -->
-                        <div class="flex justify-between items-center mb-2.5">
-                            <span class="px-2.5 py-0.5 bg-neutral-900 text-white font-bold text-[10px] rounded-full shadow-xs">
-                                Kopi Murni
+                        
+                        @if ($isOutOfStock)
+                            <span class="px-2 py-0.5 bg-rose-100 text-rose-700 border border-rose-300 rounded-full text-[10px] font-bold flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                <span>Stok Habis</span>
                             </span>
-                            <span class="px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-[10px] font-bold flex items-center gap-1">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>Stok: 10 botol</span>
-                            </span>
-                        </div>
-
-                        <!-- Gambar Produk & Click Detail Trigger -->
-                        <div class="h-44 sm:h-48 bg-slate-50 rounded-xl flex items-center justify-center p-2.5 border border-slate-100 relative overflow-hidden group-hover:bg-blue-50/20 transition-colors cursor-pointer" onclick="openProductDetail('Titik Hitam', 'Americano Dingin Pekat', 'Rp 8.000', '8000', '{{ asset('products/Titik Hitam.png') }}', '10', 'Double shot espresso murni dengan air mineral dingin berkualitas, menghadirkan rasa pahit aromatik yang bersih dan menyegarkan.', 'Double Shot Espresso Robusta-Arabika, Air Mineral pH 7+ Dingin.')">
-                            <img src="{{ asset('products/Titik Hitam.png') }}" alt="Titik Hitam" class="h-full object-contain group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/150x200/1e3a8a/ffffff?text=Titik+Hitam'" />
-                            <span class="absolute bottom-2 right-2 px-1.5 py-0.5 bg-white/90 text-slate-700 text-[9px] font-bold rounded shadow-xs border border-slate-200">250 ml</span>
-                        </div>
-
-                        <!-- Detail Singkat -->
-                        <div class="mt-3">
-                            <h3 class="font-bold text-slate-900 text-sm md:text-base font-['Plus_Jakarta_Sans'] group-hover:text-blue-900 transition-colors cursor-pointer" onclick="openProductDetail('Titik Hitam', 'Americano Dingin Pekat', 'Rp 8.000', '8000', '{{ asset('products/Titik Hitam.png') }}', '10', 'Double shot espresso murni dengan air mineral dingin berkualitas, menghadirkan rasa pahit aromatik yang bersih dan menyegarkan.', 'Double Shot Espresso Robusta-Arabika, Air Mineral pH 7+ Dingin.')">
-                                Titik Hitam
-                            </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Americano Dingin Pekat (250 ml)</p>
-                            <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-1">Espresso double shot, air mineral dingin</p>
-
-                            <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
-                                <div>
-                                    <div class="text-[9px] text-slate-400 uppercase font-bold">Harga Jual</div>
-                                    <div class="text-base font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">Rp 8.000</div>
-                                </div>
-                                <div class="flex items-center gap-1 text-[10px] text-slate-500">
-                                    <span class="material-symbols-outlined text-xs text-blue-900">ac_unit</span>
-                                    <span>5-7 hr kulkas</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Action Button -->
-                    <div class="mt-3.5 pt-2.5 border-t border-slate-100 flex flex-col items-center">
-                        <button onclick="addToCart(this, 'Titik Hitam', 8000)" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl shadow-xs text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-98 cursor-pointer">
-                            <span class="material-symbols-outlined text-base">shopping_cart</span>
-                            <span>+ Keranjang</span>
-                        </button>
-                        <span class="cart-msg hidden text-[11px] font-semibold text-emerald-600 mt-1.5 flex items-center gap-1 transition-all">
-                            <span class="material-symbols-outlined text-xs">check_circle</span>
-                            <span>Ditambahkan ke keranjang</span>
-                        </span>
-                    </div>
-                </div>
-
-                <!-- PRODUK 3: Titik Manja -->
-                <div class="product-card p-4 bg-white rounded-2xl shadow-xs border-2 border-amber-300 hover:shadow-md transition-all flex flex-col justify-between group" data-category="kopi-susu" data-name="titik manja karamel kopi susu">
-                    <div>
-                        <!-- Header Card: Peringatan Stok Menipis -->
-                        <div class="flex justify-between items-center mb-2.5">
-                            <span class="px-2.5 py-0.5 bg-amber-800 text-white font-bold text-[10px] rounded-full shadow-xs">
-                                Kopi Karamel
-                            </span>
+                        @elseif ($isLowStock)
                             <span class="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-full text-[10px] font-bold flex items-center gap-1 animate-pulse">
-                                <span>⏰ Sisa 2 botol!</span>
+                                <span>⏰ Sisa {{ $product->stok }} botol!</span>
                             </span>
-                        </div>
-
-                        <!-- Gambar Produk & Click Detail Trigger -->
-                        <div class="h-44 sm:h-48 bg-slate-50 rounded-xl flex items-center justify-center p-2.5 border border-slate-100 relative overflow-hidden group-hover:bg-blue-50/20 transition-colors cursor-pointer" onclick="openProductDetail('Titik Manja', 'Kopi Susu Karamel Lembut', 'Rp 10.000', '10000', '{{ asset('products/Titik Manja.png') }}', '2', 'Espresso creamy dengan saus karamel mentega gurih manis yang lumer di lidah, rasa manis pas dan menyenangkan.', 'Espresso Blend, Susu Segar, Sirup & Saus Karamel Karamelisasi Suhu Rendah.')">
-                            <img src="{{ asset('products/Titik Manja.png') }}" alt="Titik Manja" class="h-full object-contain group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/150x200/1e3a8a/ffffff?text=Titik+Manja'" />
-                            <span class="absolute bottom-2 right-2 px-1.5 py-0.5 bg-white/90 text-slate-700 text-[9px] font-bold rounded shadow-xs border border-slate-200">250 ml</span>
-                        </div>
-
-                        <!-- Detail Singkat -->
-                        <div class="mt-3">
-                            <h3 class="font-bold text-slate-900 text-sm md:text-base font-['Plus_Jakarta_Sans'] group-hover:text-blue-900 transition-colors cursor-pointer" onclick="openProductDetail('Titik Manja', 'Kopi Susu Karamel Lembut', 'Rp 10.000', '10000', '{{ asset('products/Titik Manja.png') }}', '2', 'Espresso creamy dengan saus karamel mentega gurih manis yang lumer di lidah, rasa manis pas dan menyenangkan.', 'Espresso Blend, Susu Segar, Sirup & Saus Karamel Karamelisasi Suhu Rendah.')">
-                                Titik Manja
-                            </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Kopi Susu Karamel Lembut (250 ml)</p>
-                            <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-1">Espresso, susu segar, sirup karamel gurih</p>
-
-                            <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
-                                <div>
-                                    <div class="text-[9px] text-slate-400 uppercase font-bold">Harga Jual</div>
-                                    <div class="text-base font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">Rp 10.000</div>
-                                </div>
-                                <div class="flex items-center gap-1 text-[10px] text-slate-500">
-                                    <span class="material-symbols-outlined text-xs text-blue-900">ac_unit</span>
-                                    <span>5-7 hr kulkas</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Action Button -->
-                    <div class="mt-3.5 pt-2.5 border-t border-slate-100 flex flex-col items-center">
-                        <button onclick="addToCart(this, 'Titik Manja', 10000)" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl shadow-xs text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-98 cursor-pointer">
-                            <span class="material-symbols-outlined text-base">shopping_cart</span>
-                            <span>+ Keranjang</span>
-                        </button>
-                        <span class="cart-msg hidden text-[11px] font-semibold text-emerald-600 mt-1.5 flex items-center gap-1 transition-all">
-                            <span class="material-symbols-outlined text-xs">check_circle</span>
-                            <span>Ditambahkan ke keranjang</span>
-                        </span>
-                    </div>
-                </div>
-
-                <!-- PRODUK 4: Titik Jenuh -->
-                <div class="product-card p-4 bg-white rounded-2xl shadow-xs border border-slate-200/90 hover:border-blue-900/40 hover:shadow-md transition-all flex flex-col justify-between group" data-category="non-kopi" data-name="titik jenuh cokelat velvety non-kopi">
-                    <div>
-                        <!-- Header Card -->
-                        <div class="flex justify-between items-center mb-2.5">
-                            <span class="px-2.5 py-0.5 bg-stone-700 text-white font-bold text-[10px] rounded-full shadow-xs">
-                                Non-Kopi
-                            </span>
+                        @else
                             <span class="px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-full text-[10px] font-bold flex items-center gap-1">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>Stok: 5 botol</span>
+                                <span>Stok: {{ $product->stok }} botol</span>
                             </span>
-                        </div>
+                        @endif
+                    </div>
 
-                        <!-- Gambar Produk & Click Detail Trigger -->
-                        <div class="h-44 sm:h-48 bg-slate-50 rounded-xl flex items-center justify-center p-2.5 border border-slate-100 relative overflow-hidden group-hover:bg-blue-50/20 transition-colors cursor-pointer" onclick="openProductDetail('Titik Jenuh', 'Cokelat Susu Velvety', 'Rp 12.000', '12000', '{{ asset('products/Titik Jenuh.png') }}', '5', 'Varian non-kopi spesial menggunakan cokelat murni pekat (dark cocoa) dengan susu sapi murni hangat dingin yang kental dan tidak kemanisan.', 'Pure Dark Cocoa Powder 70%, Susu Segar, Gula Tebu Alami.')">
-                            <img src="{{ asset('products/Titik Jenuh.png') }}" alt="Titik Jenuh" class="h-full object-contain group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/150x200/1e3a8a/ffffff?text=Titik+Jenuh'" />
-                            <span class="absolute bottom-2 right-2 px-1.5 py-0.5 bg-white/90 text-slate-700 text-[9px] font-bold rounded shadow-xs border border-slate-200">250 ml</span>
-                        </div>
+                    <!-- Gambar Produk & Click Detail Trigger (FR-3.2 & FR-3.3) -->
+                    <div class="h-44 sm:h-48 bg-slate-50 rounded-xl flex items-center justify-center p-2.5 border border-slate-100 relative overflow-hidden group-hover:bg-blue-50/20 transition-colors cursor-pointer" onclick="openProductDetailFromCard(this)">
+                        <img src="{{ $fotoUrl }}" alt="{{ $product->nama }}" class="h-full object-contain group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://placehold.co/150x200/1e3a8a/ffffff?text={{ urlencode($product->nama) }}'" />
+                        <span class="absolute bottom-2 right-2 px-1.5 py-0.5 bg-white/90 text-slate-700 text-[9px] font-bold rounded shadow-xs border border-slate-200">250 ml</span>
+                    </div>
 
-                        <!-- Detail Singkat -->
-                        <div class="mt-3">
-                            <h3 class="font-bold text-slate-900 text-sm md:text-base font-['Plus_Jakarta_Sans'] group-hover:text-blue-900 transition-colors cursor-pointer" onclick="openProductDetail('Titik Jenuh', 'Cokelat Susu Velvety', 'Rp 12.000', '12000', '{{ asset('products/Titik Jenuh.png') }}', '5', 'Varian non-kopi spesial menggunakan cokelat murni pekat (dark cocoa) dengan susu sapi murni hangat dingin yang kental dan tidak kemanisan.', 'Pure Dark Cocoa Powder 70%, Susu Segar, Gula Tebu Alami.')">
-                                Titik Jenuh
-                            </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Cokelat Susu Velvety (250 ml)</p>
-                            <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-1">Kakao murni, susu segar, pemanis alami</p>
+                    <!-- Detail Singkat -->
+                    <div class="mt-3">
+                        <h3 class="font-bold text-slate-900 text-sm md:text-base font-['Plus_Jakarta_Sans'] group-hover:text-blue-900 transition-colors cursor-pointer" onclick="openProductDetailFromCard(this)">
+                            {{ $product->nama }}
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">{{ $product->rasa ?: $product->nama }} (250 ml)</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5 line-clamp-1">{{ $product->komposisi ?: $product->deskripsi }}</p>
 
-                            <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
-                                <div>
-                                    <div class="text-[9px] text-slate-400 uppercase font-bold">Harga Jual</div>
-                                    <div class="text-base font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">Rp 12.000</div>
-                                </div>
-                                <div class="flex items-center gap-1 text-[10px] text-slate-500">
-                                    <span class="material-symbols-outlined text-xs text-blue-900">ac_unit</span>
-                                    <span>5-7 hr kulkas</span>
-                                </div>
+                        <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between">
+                            <div>
+                                <div class="text-[9px] text-slate-400 uppercase font-bold">Harga Jual</div>
+                                <div class="text-base font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">{{ $hargaFormatted }}</div>
+                            </div>
+                            <div class="flex items-center gap-1 text-[10px] text-slate-500">
+                                <span class="material-symbols-outlined text-xs text-blue-900">ac_unit</span>
+                                <span>{{ $product->keawetan ? Str::limit($product->keawetan, 15) : '5-7 hr kulkas' }}</span>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Action Button -->
-                    <div class="mt-3.5 pt-2.5 border-t border-slate-100 flex flex-col items-center">
-                        <button onclick="addToCart(this, 'Titik Jenuh', 12000)" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl shadow-xs text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-98 cursor-pointer">
+                <!-- Action Button (FR-3.4: Jika stok 0 tombol pesan nonaktif) -->
+                <div class="mt-3.5 pt-2.5 border-t border-slate-100 flex flex-col items-center">
+                    @if ($isOutOfStock)
+                        <button disabled class="w-full py-2.5 bg-slate-200 text-slate-400 rounded-xl shadow-xs text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed">
+                            <span class="material-symbols-outlined text-base">remove_shopping_cart</span>
+                            <span>Stok Habis</span>
+                        </button>
+                    @else
+                        <button onclick="addToCart(this, '{{ addslashes($product->nama) }}', {{ $product->harga }})" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl shadow-xs text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-98 cursor-pointer">
                             <span class="material-symbols-outlined text-base">shopping_cart</span>
                             <span>+ Keranjang</span>
                         </button>
@@ -277,8 +180,16 @@
                             <span class="material-symbols-outlined text-xs">check_circle</span>
                             <span>Ditambahkan ke keranjang</span>
                         </span>
-                    </div>
+                    @endif
                 </div>
+            </div>
+        @empty
+            <div class="col-span-full p-12 bg-white rounded-2xl border border-slate-200 text-center flex flex-col items-center justify-center">
+                <span class="material-symbols-outlined text-5xl text-slate-300 mb-3">coffee</span>
+                <h3 class="text-base font-bold text-slate-700">Belum Ada Menu Aktif</h3>
+                <p class="text-xs text-slate-400 mt-1">Saat ini produk belum tersedia di katalog. Silakan cek kembali nanti.</p>
+            </div>
+        @endforelse
 
     </div>
 
@@ -289,7 +200,7 @@
         <p class="text-xs text-slate-400 mt-1">Coba gunakan kata kunci pencarian yang lain.</p>
     </div>
 
-    <!-- Modal Detail Produk (PRD FR-3.3) -->
+    <!-- Modal Detail Produk (PRD FR-3.3 & FR-3.4) -->
     <div id="product-detail-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4">
         <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
             <!-- Modal Header -->
@@ -315,7 +226,10 @@
                             <h2 id="modal-title" class="text-lg md:text-xl font-bold text-slate-900 font-['Plus_Jakarta_Sans']"></h2>
                             <p id="modal-subtitle" class="text-xs text-slate-500 font-medium"></p>
                         </div>
-                        <span id="modal-price" class="text-lg md:text-xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']"></span>
+                        <div class="text-right">
+                            <span id="modal-price" class="text-lg md:text-xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] block"></span>
+                            <div id="modal-stock-indicator" class="mt-1 flex justify-end"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -341,14 +255,14 @@
                         <span class="material-symbols-outlined text-base">ac_unit</span>
                         <div>
                             <span class="font-bold">Masa Keawetan:</span>
-                            <span>5 - 7 hari bila disimpan di dalam lemari pendingin (kulkas).</span>
+                            <span id="modal-keawetan">5 - 7 hari bila disimpan di dalam lemari pendingin (kulkas).</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Stepper & Action Modal -->
+                <!-- Stepper & Action Modal (FR-3.4) -->
                 <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2 border border-slate-200 rounded-xl p-1 bg-slate-50">
+                    <div id="modal-stepper-container" class="flex items-center gap-2 border border-slate-200 rounded-xl p-1 bg-slate-50">
                         <button onclick="decrementModalQty()" class="w-8 h-8 rounded-lg bg-white shadow-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer">
                             −
                         </button>
@@ -358,9 +272,9 @@
                         </button>
                     </div>
 
-                    <button onclick="confirmAddToCart()" class="flex-1 py-3 bg-blue-900 hover:bg-blue-800 text-white rounded-xl shadow-md text-xs md:text-sm font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                    <button id="modal-submit-btn" onclick="confirmAddToCart()" class="flex-1 py-3 bg-blue-900 hover:bg-blue-800 text-white rounded-xl shadow-md text-xs md:text-sm font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
                         <span class="material-symbols-outlined text-base">shopping_cart</span>
-                        <span>Tambah ke Keranjang</span>
+                        <span id="modal-submit-text">Tambah ke Keranjang</span>
                     </button>
                 </div>
             </div>
@@ -374,11 +288,27 @@
     let currentVariantPrice = 10000;
     let currentModalQty = 1;
     let currentVariantName = '';
-    let totalCartQty = 1;
-    let unitPrice = 10000;
-    let currentItemName = 'Titik Temu';
+    let currentProductStock = 0;
+    let totalCartQty = 0;
 
-    function openProductDetail(title, subtitle, priceFormatted, priceNum, imgSrc, stock, desc, ingredients) {
+    function openProductDetailFromCard(triggerEl) {
+        const card = triggerEl.closest('.product-card');
+        if (!card) return;
+
+        const title = card.getAttribute('data-nama') || '';
+        const subtitle = card.getAttribute('data-rasa') || title;
+        const priceFormatted = card.getAttribute('data-harga-formatted') || '';
+        const priceNum = parseInt(card.getAttribute('data-harga') || '0');
+        const imgSrc = card.getAttribute('data-foto') || '';
+        const stock = parseInt(card.getAttribute('data-stok') || '0');
+        const desc = card.getAttribute('data-deskripsi') || '';
+        const ingredients = card.getAttribute('data-komposisi') || '';
+        const keawetan = card.getAttribute('data-keawetan') || '5–7 hari bila disimpan di dalam lemari pendingin (kulkas)';
+
+        openProductDetail(title, subtitle, priceFormatted, priceNum, imgSrc, stock, desc, ingredients, keawetan);
+    }
+
+    function openProductDetail(title, subtitle, priceFormatted, priceNum, imgSrc, stock, desc, ingredients, keawetan) {
         document.getElementById('modal-title').textContent = title;
         document.getElementById('modal-subtitle').textContent = subtitle + ' (250 ml)';
         document.getElementById('modal-price').textContent = priceFormatted;
@@ -386,10 +316,54 @@
         document.getElementById('modal-desc').textContent = desc;
         document.getElementById('modal-ingredients').textContent = ingredients;
         
+        const keawetanEl = document.getElementById('modal-keawetan');
+        if (keawetanEl && keawetan) {
+            keawetanEl.textContent = keawetan;
+        }
+
         currentVariantName = title;
-        currentVariantPrice = parseInt(priceNum);
-        currentModalQty = 1;
-        document.getElementById('modal-qty').textContent = '1';
+        currentVariantPrice = parseInt(priceNum) || 0;
+        currentProductStock = parseInt(stock) || 0;
+
+        // Update Stock Indicator & Button State in Modal (FR-3.4)
+        const stockIndicator = document.getElementById('modal-stock-indicator');
+        const submitBtn = document.getElementById('modal-submit-btn');
+        const submitText = document.getElementById('modal-submit-text');
+
+        if (currentProductStock <= 0) {
+            currentModalQty = 0;
+            document.getElementById('modal-qty').textContent = '0';
+            if (stockIndicator) {
+                stockIndicator.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 bg-rose-100 text-rose-700 border border-rose-300';
+                stockIndicator.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span><span>Stok Habis</span>';
+            }
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.className = 'flex-1 py-3 bg-slate-200 text-slate-400 rounded-xl shadow-xs text-xs md:text-sm font-bold flex items-center justify-center gap-1.5 cursor-not-allowed';
+            }
+            if (submitText) {
+                submitText.textContent = 'Stok Habis';
+            }
+        } else {
+            currentModalQty = 1;
+            document.getElementById('modal-qty').textContent = '1';
+            if (stockIndicator) {
+                if (currentProductStock <= 5) {
+                    stockIndicator.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 animate-pulse';
+                    stockIndicator.innerHTML = '<span>⏰ Sisa ' + currentProductStock + ' botol!</span>';
+                } else {
+                    stockIndicator.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 bg-emerald-50 text-emerald-800 border border-emerald-200';
+                    stockIndicator.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span>Stok: ' + currentProductStock + ' botol</span>';
+                }
+            }
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.className = 'flex-1 py-3 bg-blue-900 hover:bg-blue-800 text-white rounded-xl shadow-md text-xs md:text-sm font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer';
+            }
+            if (submitText) {
+                submitText.textContent = 'Tambah ke Keranjang';
+            }
+        }
 
         const modal = document.getElementById('product-detail-modal');
         modal.classList.remove('hidden');
@@ -403,8 +377,11 @@
     }
 
     function incrementModalQty() {
-        currentModalQty++;
-        document.getElementById('modal-qty').textContent = currentModalQty;
+        if (currentProductStock <= 0) return;
+        if (currentModalQty < currentProductStock) {
+            currentModalQty++;
+            document.getElementById('modal-qty').textContent = currentModalQty;
+        }
     }
 
     function decrementModalQty() {
@@ -423,8 +400,11 @@
     }
 
     function addToCart(btn, variantName, price) {
-        currentItemName = variantName;
-        unitPrice = price;
+        @guest
+            window.location.href = "{{ route('login') }}";
+            return;
+        @endguest
+
         totalCartQty++;
         updateCartUI();
 
@@ -448,9 +428,13 @@
     }
 
     function confirmAddToCart() {
+        if (currentProductStock <= 0) return;
+        @guest
+            window.location.href = "{{ route('login') }}";
+            return;
+        @endguest
+
         totalCartQty += currentModalQty;
-        currentItemName = currentVariantName;
-        unitPrice = currentVariantPrice;
         updateCartUI();
         closeProductDetail();
     }
