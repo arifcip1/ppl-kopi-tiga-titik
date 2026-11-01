@@ -167,6 +167,52 @@ class AuthTest extends TestCase
     }
 
     /**
+     * Test 8b: Login ditolak jika pilihan peran di form tidak cocok dengan role akun di database (Revisi QA).
+     */
+    public function test_login_fails_when_selected_role_does_not_match_user_role(): void
+    {
+        User::create([
+            'name'     => 'Owner Toko',
+            'email'    => 'owner@example.com',
+            'password' => Hash::make('password123'),
+            'role'     => 'admin',
+        ]);
+
+        // Mencoba login akun Owner tapi memilih role 'pembeli'
+        $response = $this->post('/login', [
+            'email'    => 'owner@example.com',
+            'password' => 'password123',
+            'role'     => 'pembeli',
+        ]);
+
+        $response->assertSessionHasErrors(['email']);
+        $this->assertGuest();
+    }
+
+    /**
+     * Test 8c: Login berhasil saat pilihan peran di form cocok dengan role akun di database (Revisi QA).
+     */
+    public function test_login_succeeds_when_selected_role_matches_user_role(): void
+    {
+        $owner = User::create([
+            'name'     => 'Owner Toko',
+            'email'    => 'owner@example.com',
+            'password' => Hash::make('password123'),
+            'role'     => 'admin',
+        ]);
+
+        // Login akun Owner dengan memilih role 'owner'
+        $response = $this->post('/login', [
+            'email'    => 'owner@example.com',
+            'password' => 'password123',
+            'role'     => 'owner',
+        ]);
+
+        $response->assertRedirect('/owner/dashboard');
+        $this->assertAuthenticatedAs($owner);
+    }
+
+    /**
      * Test 9: Logout berhasil dan mengakhiri sesi pengguna.
      */
     public function test_user_can_logout(): void

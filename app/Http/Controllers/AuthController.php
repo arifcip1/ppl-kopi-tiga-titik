@@ -48,6 +48,27 @@ class AuthController extends Controller
         ]);
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            $user = Auth::user();
+
+            // Validasi kecocokan role pilihan di form dengan role akun di database (Revisi QA Tester)
+            if ($request->filled('role')) {
+                $expectedRole = match ($request->input('role')) {
+                    'owner', 'admin' => 'admin',
+                    'kurir'          => 'kurir',
+                    default          => 'pelanggan',
+                };
+
+                if ($user->role !== $expectedRole) {
+                    Auth::logout();
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+
+                    return back()->withErrors([
+                        'email' => 'Peran akun yang dipilih tidak sesuai dengan akun Anda.',
+                    ])->onlyInput('email');
+                }
+            }
+
             RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
 
