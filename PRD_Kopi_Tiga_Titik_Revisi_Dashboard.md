@@ -62,7 +62,7 @@ Jumlah 11 merujuk pada kelompok fitur tingkat produk dan harus sama dengan penge
 
 - Scoring lima produk terlaris. 
 
-- Fitur di luar cakupan: pencatatan transaksi penjualan offline di lapak, pengaturan jam operasional lapak, opsi ambil sendiri, notifikasi web, nota dan tombol hubungi penjual, dashboard analitik penjualan terpisah, dan ekspor Excel. **Catatan:** rekomendasi jumlah produksi berdasarkan aturan `10 − stok` termasuk cakupan F10 dan hanya berupa saran; sistem tidak menjalankan produksi atau mengubah stok otomatis. Validasi, penanganan error, integrasi, QE, dan dokumentasi tetap wajib sebagai persyaratan lintas fitur. 
+- Fitur di luar cakupan: pencatatan transaksi penjualan offline di lapak, pengaturan jam operasional lapak, opsi ambil sendiri, notifikasi web, nota dan tombol hubungi penjual, dashboard analitik penjualan terpisah, dan ekspor Excel. Dashboard operasional per role (Owner, Kurir, dan Pembeli) tetap termasuk cakupan sebagai antarmuka untuk fitur yang sudah ditetapkan, bukan dashboard analitik baru. **Catatan:** rekomendasi jumlah produksi berdasarkan aturan `10 − stok` termasuk cakupan F10 dan hanya berupa saran; sistem tidak menjalankan produksi atau mengubah stok otomatis. Validasi, penanganan error, integrasi, QE, dan dokumentasi tetap wajib sebagai persyaratan lintas fitur. 
 
 - COD, notifikasi WhatsApp/email, lupa kata sandi, dan verifikasi email. 
 
@@ -76,6 +76,21 @@ Jumlah 11 merujuk pada kelompok fitur tingkat produk dan harus sama dengan penge
 
 Hak akses wajib ditegakkan di backend, bukan hanya dengan menyembunyikan menu. Guest bukan peran tersimpan di database; guest yang mengakses fitur terlindungi diarahkan ke login.
 
+### Cakupan dashboard per role
+
+Dashboard merupakan antarmuka ringkasan dan navigasi ke fitur yang telah masuk ruang lingkup, bukan penambahan modul bisnis baru.
+
+| Dashboard | Cakupan | Penempatan Work Package |
+|---|---|---|
+| Pembeli | Beranda/navigasi pembeli, akses katalog, keranjang, riwayat pesanan dan pemantauan status pesanan sendiri | PPL 14 (seluruh UI Dashboard Pembeli dipusatkan di sini) |
+| Owner | Ringkasan operasional, pesanan/pembayaran, akses daftar/detail dan filter pesanan | PPL 27 (UI); PPL 28 (backend/API) |
+| Kurir | Ringkasan tugas, daftar/detail pesanan yang ditugaskan, informasi penerima dan aksi status yang diizinkan | PPL 27 (UI); PPL 28 (backend/API) |
+| Integrasi | Integrasi alur dashboard dengan fitur transaksi dan pengujian lintas modul | PPL 34 |
+| Penyempurnaan | Responsivitas Dashboard Owner, Pembeli, dan Kurir, dokumentasi serta kesiapan demo | PPL 39 |
+
+Dashboard Pembeli tidak dikerjakan pada PPL 27. PPL 27 hanya mencakup UI Dashboard Owner dan Kurir. Dashboard analitik penjualan terpisah tetap di luar cakupan.
+
+
 Tim: Orang 1 (PO + System Analyst), Orang 2 (Scrum Master + QA/Tester), Orang 3 dan 4 (UI/UX Designer). Semua anggota dapat mengerjakan frontend, backend, integrasi, dokumentasi, dan pengujian fitur.
 
 # **4. Peta Fitur ke Work Package dan Jadwal** 
@@ -85,11 +100,11 @@ Tim: Orang 1 (PO + System Analyst), Orang 2 (Scrum Master + QA/Tester), Orang 3 
 |F1 Database dan<br>autentikasi<br> <br> <br>|PPL 01 (O1, 28/10), PPL 02 (O1, 29–30/10), PPL 03 (O1, 31/10),<br>PPL 04 (O1, 1–2/11), PPL 06 (O4, 28–30/10), PPL 07 (O4, 31/10–<br>2/11)|
 |F2 Kelola produk<br>|PPL 08 (O2, 28–30/10), PPL 09 (O2, 31/10–2/11)|
 |F3 Katalog<br>|PPL 10 (O3, 30–31/10), PPL 11 (O3, 1–2/11)|
-|F4 Keranjang<br>|PPL 13 (O3, 5–7/11), PPL 14 (O3, 8–10/11)|
+|F3/F4 dan antarmuka Pembeli<br>|PPL 14 (O3, 8–10/11): UI Dashboard/beranda Pembeli, navigasi katalog, keranjang, riwayat dan status pesanan. Backend keranjang tetap PPL 13.|
 |F5 Checkout dan<br>pesanan<br> <br>|PPL 15 (O4, 5–7/11), PPL 16 (O4, 8–10/11), PPL 17 (O1, 5–6/11),<br>PPL 18 (O1, 7–8/11)|
 |F6 Pembayaran<br>sandbox<br> <br>|PPL 19 (O1, 9–10/11), PPL 23 (O4, 13–16/11), PPL 24 (O4, 17–<br>18/11), PPL 40 (O4, 21–24/11), PPL 41 (O4, 25–27/11)|
 |F7 Ongkir OSM<br> <br>|PPL 19, PPL 25 (O3, 13–14/11), PPL 26 (O3, 15–18/11), PPL 38<br>(O3, 21–24/11)|
-|F8 Daftar pesanan dan<br>status<br>|PPL 27 (O2, 13/11), PPL 28 (O2, 14–16/11)|
+|F8 Daftar pesanan dan<br>status<br>|PPL 27 (O2, 13/11): UI Dashboard Owner dan Kurir. PPL 28 (O2, 14–16/11): backend/API daftar/detail pesanan, penugasan kurir dan status pengiriman. Dashboard Pembeli tetap PPL 14.|
 |F9 Moving Average<br>|PPL 03, PPL 29 (O1, 13/11), PPL 30 (O1, 14–16/11)|
 |F10 Rule-Based restok|PPL 31 (O1, 17/11), PPL 32 (O1, 18/11)|
 |F11 Lokasi asal<br>pengiriman tersimpan|PPL 19 (aturan/lokasi), PPL 25–26 (integrasi lokasi dengan ongkir)|
@@ -157,30 +172,6 @@ Tim: Orang 1 (PO + System Analyst), Orang 2 (Scrum Master + QA/Tester), Orang 3 
 - Perubahan masuk main hanya lewat pull request yang direview minimal satu anggota lain. 
 
 **6.6 Standar UI.** Mobile-first (1 kolom di HP, grid di desktop). Komponen konsisten dari UI Kit (PPL 05). Setiap form menampilkan pesan error per field. Format uang Rp12.000. 
-
-**6.7 Konvensi Pemetaan Model Laravel ke Tabel Database**
-
-Nama tabel pada database mengikuti struktur yang ditetapkan dalam migration dan ERD PPL 02. Nama tabel tidak boleh diubah hanya untuk mengikuti konvensi penamaan otomatis Laravel.
-
-Apabila nama tabel tidak sesuai dengan konvensi pluralisasi Laravel, model terkait wajib menetapkan properti `$table` secara eksplisit.
-
-Pemetaan khusus yang digunakan:
-
-| Model Laravel | Nama tabel database |
-|---|---|
-| `OrderStatusHistory` | `order_status_history` |
-| `SalesHistory` | `sales_history` |
-
-Contoh implementasi:
-
-```php
-protected $table = 'sales_history';
-```
-
-Aturan ini hanya mengatur pemetaan model ke tabel database. Perubahan tersebut tidak mengubah struktur tabel, nama kolom, relasi bisnis, kontrak API, maupun antarmuka pengguna.
-
-Setiap perubahan pemetaan model harus diuji menggunakan fitur atau seeder yang memanfaatkan model terkait. Pengembang juga wajib memeriksa migration sebelum menetapkan nama tabel pada model.
-
 
 # **7. Model Data**
 
@@ -416,9 +407,9 @@ nominal salah) tidak mengubah apa pun; notifikasi ganda tidak menimbulkan efek g
 
 **Uji QE:** jarak di bawah, tepat di, dan di atas ambang gratis; titik tidak valid; wilayah luar Mojokerto; layanan routing down. 
 
-# **F8. Daftar Pesanan dan Status (Admin)** 
+# **F8. Daftar Pesanan dan Status (Owner, Kurir, serta tampilan status Pembeli)** 
 
-**WP:** PPL 27 (UI; Dep PPL 17), PPL 28 (backend; Dep PPL 16, 17). 
+**WP:** PPL 27 (UI Dashboard Owner dan Kurir; Dep PPL 17), PPL 28 (backend/API Owner dan Kurir; Dep PPL 16, 17). UI Dashboard Pembeli, termasuk riwayat dan pemantauan status pesanannya, dipusatkan pada PPL 14. 
 
 # **Kebutuhan fungsional:** 
 
@@ -432,7 +423,13 @@ nominal salah) tidak mengubah apa pun; notifikasi ganda tidak menimbulkan efek g
 
 - FR-8.5 Setiap perubahan status dicatat pada `order_status_history` dengan status sebelumnya, status baru, waktu perubahan, aktor, dan catatan; tidak menggunakan tabel `status_logs`. 
 
-- FR-8.6 Halaman hanya untuk admin. Pelanggan melihat status pesanannya sendiri pada halaman pembayaran/hasil pesanan (PPL 24). Halaman riwayat pelanggan tidak dijadwalkan. 
+- FR-8.6 Halaman daftar pesanan dan pengelolaan pesanan Owner hanya dapat diakses Admin/Owner. Pembeli melihat riwayat dan status pesanan miliknya melalui Dashboard Pembeli (PPL 14), dengan data dibatasi berdasarkan akun yang login.
+
+- FR-8.7 Dashboard Kurir (UI pada PPL 27) menampilkan ringkasan tugas pengiriman dan daftar pesanan yang ditugaskan kepada kurir yang login. Kurir dapat membuka detail penerima/alamat dan melakukan aksi status yang diizinkan.
+
+- FR-8.8 Dashboard Owner (UI pada PPL 27) menampilkan ringkasan operasional pesanan dan pembayaran serta akses ke daftar/detail pesanan. Informasi Moving Average dan peringatan restok tetap mengikuti F9 dan F10; dashboard tidak menjadi modul analitik terpisah.
+
+- FR-8.9 Backend PPL 28 wajib membatasi data kurir hanya pada pesanan yang ditugaskan kepadanya dan membatasi data Pembeli hanya pada pesanan miliknya. Penugasan kurir dan perubahan status mengikuti Bab 8. 
 
 **Kriteria penerimaan:** pesanan baru dari checkout langsung muncul; filter benar; transisi tidak valid ditolak; pesanan sudah dibayar tidak bisa dibatalkan. **Uji QE:** semua filter, semua transisi valid dan tidak valid, akses non-admin. 
 

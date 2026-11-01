@@ -306,6 +306,22 @@ Contoh adaptasi:
 - Menyediakan katalog, detail produk, keranjang, checkout, pembayaran, dan riwayat pesanan sesuai ruang lingkup.
 - Navigasi dan aksi berfokus pada kebutuhan pelanggan, bukan menyalin sidebar Admin/Owner.
 
+### 5.2.5 Penempatan pekerjaan dashboard pada Sprint Planning
+
+| Role | UI/halaman | Work Package UI | Work Package backend |
+|---|---|---|---|
+| Pembeli | Dashboard/beranda, navigasi katalog, keranjang, riwayat dan status pesanan sendiri | PPL 14 | API katalog/keranjang/pesanan sesuai modul terkait |
+| Owner | Dashboard operasional, ringkasan pesanan/pembayaran, daftar/detail dan filter pesanan | PPL 27 | PPL 28 |
+| Kurir | Dashboard tugas pengiriman, daftar/detail pesanan yang ditugaskan, informasi penerima/alamat dan aksi status yang diizinkan | PPL 27 | PPL 28 |
+
+Ketentuan pelaksanaan:
+1. Seluruh UI Dashboard Pembeli dikumpulkan pada PPL 14; jangan memindahkan pekerjaan UI Pembeli ke PPL 27.
+2. PPL 27 mencakup UI Dashboard Owner dan Dashboard Kurir.
+3. PPL 28 mencakup API/backend untuk daftar/detail pesanan, penugasan kurir, dan status pengiriman bagi Owner/Kurir. Endpoint dan otorisasi mengikuti PPL 01/PRD.
+4. PPL 34 menangani integrasi lintas fitur dan alur end-to-end; PPL 39 menangani penyempurnaan responsif ketiga dashboard.
+5. Dashboard adalah halaman antarmuka, bukan izin akses baru. Otorisasi tetap dilakukan di backend.
+6. Dashboard Owner hanya menampilkan ringkasan operasional yang telah disetujui. Jangan membuat dashboard analitik terpisah atau menambahkan metrik yang belum ditetapkan.
+
 ### 5.3 Komponen yang disarankan
 
 Bangun komponen Blade yang dapat digunakan ulang jika pola tampilannya
@@ -458,6 +474,13 @@ Pencatatan penjualan yang menjadi sumber Moving Average.
 Detail urutan proses harus mengikuti PRD/PPL 01 dan implementasi yang
 disetujui. Hindari mengimplementasikan perubahan stok atau pembayaran
 hanya di frontend.
+
+### 5.2.6 Kontrak perilaku dashboard
+
+- **Pembeli:** hanya melihat katalog, keranjang, dan pesanan miliknya sendiri. Riwayat/status pesanan di Dashboard Pembeli memakai endpoint pesanan pelanggan yang sudah ditetapkan; jangan mengandalkan ID pengguna yang dikirim bebas dari browser.
+- **Owner:** dapat melihat seluruh pesanan sesuai kewenangan, status pembayaran secara read-only, dan menugaskan kurir. Status pembayaran hanya diubah oleh verifikasi backend.
+- **Kurir:** hanya melihat pesanan yang ditugaskan kepadanya. Kurir hanya dapat menandai pesanan `selesai` jika status sebelumnya `dikirim` dan pesanan memang ditugaskan kepadanya.
+- **Respons UI:** setiap halaman dashboard menangani loading, empty, success, dan error state. Data ringkasan harus berasal dari backend dan mengikuti filter otorisasi yang sama dengan halaman detail.
 
 ## 9. Integrasi Antar-Modul
 
