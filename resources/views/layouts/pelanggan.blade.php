@@ -41,19 +41,30 @@
                 </button>
             </div>
 
-            <!-- Identitas Akun Pelanggan -->
-            <div class="mx-3 my-2 p-2 bg-blue-50/70 rounded-xl border border-blue-100/80 flex items-center gap-2.5">
-                <div class="w-7 h-7 rounded-lg bg-blue-900 text-white font-extrabold text-xs flex items-center justify-center shadow-xs shrink-0">
-                    N
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-1">
-                        <span class="text-xs font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans']">Nabil</span>
-                        <span class="px-1 py-0.2 bg-blue-200/70 text-blue-900 text-[8px] font-extrabold rounded">PELANGGAN</span>
+            @auth
+                <!-- Identitas Akun Pelanggan -->
+                <div class="mx-3 my-2 p-2 bg-blue-50/70 rounded-xl border border-blue-100/80 flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-blue-900 text-white font-extrabold text-xs flex items-center justify-center shadow-xs shrink-0">
+                        {{ strtoupper(substr(Auth::user()->name ?? 'P', 0, 1)) }}
                     </div>
-                    <p class="text-[9px] text-slate-500 truncate leading-tight">+62 812-3849-9210</p>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans']">{{ Auth::user()->name ?? 'Pelanggan' }}</span>
+                            <span class="px-1 py-0.2 bg-blue-200/70 text-blue-900 text-[8px] font-extrabold rounded">PELANGGAN</span>
+                        </div>
+                        <p class="text-[9px] text-slate-500 truncate leading-tight">{{ Auth::user()->telepon ?? Auth::user()->email ?? '+62 812-3849-9210' }}</p>
+                    </div>
                 </div>
-            </div>
+            @else
+                <!-- Banner Mode Tamu (Guest) -->
+                <div class="mx-3 my-2 p-2.5 bg-blue-50/80 rounded-xl border border-blue-200/70 flex flex-col gap-1">
+                    <div class="flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-900"></span>
+                        <span class="text-[11px] font-bold text-blue-900">Mode Tamu (Guest)</span>
+                    </div>
+                    <p class="text-[9.5px] text-slate-500 leading-tight">Silakan masuk untuk menyimpan keranjang dan pesanan.</p>
+                </div>
+            @endauth
         </div>
 
         <!-- Bagian Tengah: Menu Navigasi Pelanggan -->
@@ -64,20 +75,20 @@
                 $activeMenu = trim($__env->yieldContent('active_menu', 'profil'));
             @endphp
 
-            <!-- 1. Katalog / Beranda -->
+            <!-- 1. Katalog / Beranda (Publik Tanpa Login FR-3.1) -->
             <a href="{{ url('/katalog') }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors {{ $activeMenu === 'katalog' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
                 <span class="material-symbols-outlined text-lg {{ $activeMenu === 'katalog' ? 'text-white' : 'text-slate-500' }}">storefront</span>
                 <span>Katalog Menu</span>
             </a>
 
             <!-- 2. Keranjang Belanja -->
-            <a href="{{ url('/cart') }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors {{ $activeMenu === 'keranjang' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
+            <a href="{{ auth()->check() ? url('/cart') : route('login') }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors {{ $activeMenu === 'keranjang' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
                 <span class="material-symbols-outlined text-lg {{ $activeMenu === 'keranjang' ? 'text-white' : 'text-slate-500' }}">shopping_cart</span>
                 <span>Keranjang Belanja</span>
             </a>
 
             <!-- 3. Pesanan Saya -->
-            <a href="{{ url('/riwayat-pesanan') }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors {{ $activeMenu === 'pesanan-saya' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
+            <a href="{{ auth()->check() ? url('/riwayat-pesanan') : route('login') }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors {{ $activeMenu === 'pesanan-saya' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
                 <span class="material-symbols-outlined text-lg {{ $activeMenu === 'pesanan-saya' ? 'text-white' : 'text-slate-500' }}">receipt_long</span>
                 <span>Pesanan Saya</span>
             </a>
@@ -85,17 +96,25 @@
 
         <!-- Bagian Bawah: Profil & Logout -->
         <div class="p-2.5 pb-6 md:pb-3 border-t border-slate-100 flex flex-col gap-0.5 shrink-0 bg-white">
-            <!-- Profil -->
-            <a href="{{ url('/profil-pelanggan') }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors {{ $activeMenu === 'profil' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
-                <span class="material-symbols-outlined text-lg {{ $activeMenu === 'profil' ? 'text-white' : 'text-slate-500' }}">person</span>
-                <span>Profil Saya</span>
-            </a>
+            @auth
+                <!-- Profil -->
+                <a href="{{ url('/profil-pelanggan') }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors {{ $activeMenu === 'profil' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
+                    <span class="material-symbols-outlined text-lg {{ $activeMenu === 'profil' ? 'text-white' : 'text-slate-500' }}">person</span>
+                    <span>Profil Saya</span>
+                </a>
 
-            <!-- Keluar Akun -->
-            <button type="button" onclick="openLogoutModal()" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors w-full text-left cursor-pointer">
-                <span class="material-symbols-outlined text-lg">logout</span>
-                <span>Keluar Akun</span>
-            </button>
+                <!-- Keluar Akun -->
+                <button type="button" onclick="openLogoutModal()" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors w-full text-left cursor-pointer">
+                    <span class="material-symbols-outlined text-lg">logout</span>
+                    <span>Keluar Akun</span>
+                </button>
+            @else
+                <!-- Tombol Masuk Akun untuk Guest -->
+                <a href="{{ route('login') }}" class="flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 transition-colors shadow-xs">
+                    <span class="material-symbols-outlined text-base">login</span>
+                    <span>Masuk Akun</span>
+                </a>
+            @endauth
         </div>
     </aside>
 
