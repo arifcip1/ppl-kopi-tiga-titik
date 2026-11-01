@@ -1,16 +1,24 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes - Sistem Penjualan Kopi Tiga Titik
-|--------------------------------------------------------------------------
-*/
+// Halaman login
+Route::get('/login', [AuthController::class, 'showLogin'])
+    ->name('login');
 
-// Halaman Awal / Welcome
+// Proses login
+Route::post('/login', [AuthController::class, 'login'])
+    ->name('login.process');
+
+// Logout
+Route::post('/logout', [AuthController::class, 'logout'])
+    ->name('logout');
+
+
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -29,9 +37,7 @@ Route::get('/login-pembeli', fn() => redirect('/login'));
 Route::get('/login-kurir', fn() => redirect('/login'));
 Route::get('/login-owner', fn() => redirect('/login'));
 
-// =========================================================================
-// 2. FITUR PUBLIK & PEMBELI (FR-3.1 Katalog & Guest)
-// =========================================================================
+// Pembeli
 Route::get('/landing', fn() => view('Mobile Landing Page'));
 Route::get('/katalog', fn() => view('Menu & Catalog Page'));
 Route::get('/desktop-katalog', fn() => view('Desktop Catalog Product Page'));
@@ -41,11 +47,7 @@ Route::get('/pembayaran-qris', fn() => view('Pembayaran QRIS Page'));
 Route::get('/tracking', fn() => view('Order Tracking & Live Status'));
 Route::get('/order-tracking', fn() => view('Order Tracking & Live Status'));
 Route::get('/riwayat-pesanan', fn() => view('Riwayat Pesanan Page'));
-
-// Halaman Khusus Pelanggan Terdaftar
-Route::middleware(['role:pelanggan'])->group(function () {
-    Route::get('/profil-pelanggan', fn() => view('Profil Pelanggan Page'));
-});
+Route::get('/profil-pelanggan', fn() => view('Profil Pelanggan Page'));
 
 // =========================================================================
 // 3. FITUR KHUSUS KURIR (FR-1.5 - Terproteksi Role Kurir)
@@ -85,3 +87,8 @@ Route::prefix('api/admin/products')->middleware(['role:admin'])->group(function 
     Route::patch('/{product}/status', [ProductController::class, 'toggleStatus']);
     Route::patch('/{product}/stock', [ProductController::class, 'updateStock']);
 });
+Route::get('/owner/update-lokasi', fn() => view('Pop Up Update Lokasi Lapak Page'));
+Route::get('/owner/prediksi', fn() => view('Prediksi Moving Average Page'));
+Route::get('/owner/profil', fn() => view('Profil Owner Page'));
+Route::get('/profil-owner', fn() => view('Profil Owner Page'));
+
