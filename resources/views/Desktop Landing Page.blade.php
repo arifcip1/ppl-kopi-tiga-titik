@@ -157,8 +157,7 @@
             <!-- Headline -->
             <div class="w-full">
               <h1 class="text-zinc-900 text-2xl sm:text-4xl md:text-5xl font-extrabold font-['Plus_Jakarta_Sans'] leading-tight sm:leading-snug md:leading-[56px]">
-                Kopi Botol Jalanan<br/>
-                Khas <span class="text-blue-700">Mojokerto</span>
+                Kopi BotolKhas <span class="text-blue-700">Mojokerto</span>
               </h1>
             </div>
 
