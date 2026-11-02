@@ -97,7 +97,7 @@
                         <span class="material-symbols-outlined text-lg">location_on</span>
                     </div>
                     <div>
-                        <h3 class="font-bold text-slate-900 text-xs">Titik Lapak Jalanan Hari Ini</h3>
+                        <h3 class="font-bold text-slate-900 text-xs">Titik Lapak Hari Ini</h3>
                         <p class="text-[11px] text-slate-500">Mojokerto • Sesi Sore</p>
                     </div>
                 </div>
