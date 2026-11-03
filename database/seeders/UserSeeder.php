@@ -33,11 +33,56 @@ class UserSeeder extends Seeder
             ]
         );
 
+        User::updateOrCreate(
+            ['email' => 'kurirawal@gmail.com'],
+            [
+                'name'     => 'awaludin',
+                'password' => Hash::make('password123'),
+                'role'     => 'kurir',
+            ]
+        );
+
         // 3. Akun Pelanggan (Sesuai UI Nabil Pratama)
         $nabil = User::updateOrCreate(
             ['email' => 'nabil@gmail.com'],
             [
                 'name'     => 'Nabil Pratama',
+                'password' => Hash::make('password123'),
+                'role'     => 'pelanggan',
+            ]
+        );
+
+        $arif = User::updateOrCreate(
+            ['email' => 'arif@gmail.com'],
+            [
+                'name'     => 'arif',
+                'password' => Hash::make('password123'),
+                'role'     => 'pelanggan',
+            ]
+        );
+
+        $nizam = User::updateOrCreate(
+            ['email' => 'nizam@gmail.com'],
+            [
+                'name'     => 'nizam',
+                'password' => Hash::make('password123'),
+                'role'     => 'pelanggan',
+            ]
+        );
+
+        $davi = User::updateOrCreate(
+            ['email' => 'davi@gmail.com'],
+            [
+                'name'     => 'davi',
+                'password' => Hash::make('password123'),
+                'role'     => 'pelanggan',
+            ]
+        );
+
+        $farrel = User::updateOrCreate(
+            ['email' => 'farrel@gmail.com'],
+            [
+                'name'     => 'farrel',
                 'password' => Hash::make('password123'),
                 'role'     => 'pelanggan',
             ]
