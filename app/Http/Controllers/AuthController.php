@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CartItem;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -121,6 +123,25 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
             'role'     => 'pelanggan',
         ]);
+
+        // Inisialisasi 2 produk bawaan di keranjang sesuai UI Cart Page (Titik Temu: 2 botol & Titik Hitam: 1 botol)
+        $titikTemu = Product::where('nama', 'Titik Temu')->first();
+        $titikHitam = Product::where('nama', 'Titik Hitam')->first();
+
+        if ($titikTemu) {
+            CartItem::create([
+                'user_id' => $user->id,
+                'product_id' => $titikTemu->id,
+                'jumlah' => 2,
+            ]);
+        }
+        if ($titikHitam) {
+            CartItem::create([
+                'user_id' => $user->id,
+                'product_id' => $titikHitam->id,
+                'jumlah' => 1,
+            ]);
+        }
 
         // Login otomatis setelah registrasi berhasil
         Auth::login($user);

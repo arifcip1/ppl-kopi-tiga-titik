@@ -302,4 +302,48 @@ class CatalogTest extends TestCase
         $response->assertSee('Titik Baru Tanpa Foto');
         $response->assertSee('placehold.co');
     }
+
+    /**
+     * Test 11: Header tidak memuat ikon keranjang dan sidebar menampilkan badge keranjang pelanggan (Revisi QA).
+     */
+    public function test_catalog_header_has_no_cart_icon_and_sidebar_has_cart_badge(): void
+    {
+        $pelanggan = \App\Models\User::create([
+            'name' => 'Nabil Pratama',
+            'email' => 'nabil.tester@gmail.com',
+            'password' => bcrypt('password123'),
+            'role' => 'pelanggan',
+        ]);
+
+        Product::create([
+            'nama' => 'Titik Temu',
+            'rasa' => 'Kopi Susu Aren',
+            'harga' => 10000,
+            'stok' => 10,
+            'komposisi' => 'Kopi',
+            'deskripsi' => 'Kopi',
+            'keawetan' => '5-7 hari',
+            'aktif' => true,
+        ]);
+
+        Product::create([
+            'nama' => 'Titik Hitam',
+            'rasa' => 'Americano',
+            'harga' => 8000,
+            'stok' => 10,
+            'komposisi' => 'Kopi',
+            'deskripsi' => 'Kopi',
+            'keawetan' => '5-7 hari',
+            'aktif' => true,
+        ]);
+
+        $response = $this->actingAs($pelanggan)->get('/katalog');
+
+        $response->assertStatus(200);
+        // Header tidak boleh memiliki ikon keranjang / header-cart-badge
+        $response->assertDontSee('id="header-cart-badge"', false);
+        // Sidebar harus memiliki sidebar-cart-badge dengan angka 2 (sesuai demo cart page)
+        $response->assertSee('id="sidebar-cart-badge"', false);
+        $response->assertSee('2');
+    }
 }

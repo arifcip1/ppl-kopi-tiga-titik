@@ -73,6 +73,7 @@
 
             @php
                 $activeMenu = trim($__env->yieldContent('active_menu', 'profil'));
+                $cartBadgeCount = $cartCount ?? 0;
             @endphp
 
             <!-- 1. Katalog / Beranda (Publik Tanpa Login FR-3.1) -->
@@ -82,9 +83,16 @@
             </a>
 
             <!-- 2. Keranjang Belanja -->
-            <a href="{{ auth()->check() ? url('/cart') : route('login') }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors {{ $activeMenu === 'keranjang' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
-                <span class="material-symbols-outlined text-lg {{ $activeMenu === 'keranjang' ? 'text-white' : 'text-slate-500' }}">shopping_cart</span>
-                <span>Keranjang Belanja</span>
+            <a href="{{ auth()->check() ? url('/cart') : route('login') }}" class="flex items-center justify-between px-3 py-1.5 rounded-xl text-xs font-medium transition-colors {{ $activeMenu === 'keranjang' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
+                <div class="flex items-center gap-2.5">
+                    <div class="relative flex items-center justify-center">
+                        <span class="material-symbols-outlined text-lg {{ $activeMenu === 'keranjang' ? 'text-white' : 'text-slate-500' }}">shopping_cart</span>
+                        <span id="sidebar-cart-badge" class="{{ $cartBadgeCount > 0 ? 'flex' : 'hidden' }} absolute -top-1.5 -right-2 px-1 min-w-[16px] h-4 bg-rose-600 text-white text-[9px] font-bold rounded-full items-center justify-center shadow-xs border-2 border-white">
+                            {{ $cartBadgeCount }}
+                        </span>
+                    </div>
+                    <span>Keranjang Belanja</span>
+                </div>
             </a>
 
             <!-- 3. Pesanan Saya -->
