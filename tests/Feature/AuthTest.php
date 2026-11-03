@@ -62,6 +62,12 @@ class AuthTest extends TestCase
 
         $user = User::where('email', 'budi@example.com')->first();
         $this->assertTrue(Hash::check('password123', $user->password));
+
+        // Bug 3 QA: email_verified_at harus null sampai diverifikasi
+        $this->assertNull($user->email_verified_at);
+
+        // Bug 1 QA: sesi keranjang kosong untuk pelanggan yang baru mendaftar
+        $this->assertEmpty(session('cart', []));
     }
 
     /**
@@ -234,6 +240,7 @@ class AuthTest extends TestCase
 
     /**
      * Test 10: Pelanggan tidak dapat mengakses halaman owner (FR-1.5: 403 Forbidden).
+     * Meliputi /owner/dashboard dan /owner/produk (Bug 4 QA).
      */
     public function test_customer_cannot_access_owner_pages_and_gets_403(): void
     {
@@ -246,16 +253,45 @@ class AuthTest extends TestCase
 
         $this->actingAs($customer);
 
-        $response = $this->get('/owner/dashboard');
-        $response->assertStatus(403);
+        // Akses dashboard owner ditolak 403
+        $this->get('/owner/dashboard')->assertStatus(403);
+
+        // Akses kelola produk owner juga wajib ditolak 403 (Bug 4 QA)
+        $this->get('/owner/produk')->assertStatus(403);
     }
 
     /**
      * Test 11: Tamu (Guest) yang mengakses halaman terproteksi diarahkan ke login (FR-1.5).
+     * Meliputi /owner/dashboard dan /owner/produk (Bug 5 QA).
      */
     public function test_guest_accessing_protected_page_is_redirected_to_login(): void
     {
-        $response = $this->get('/owner/dashboard');
-        $response->assertRedirect('/login');
+        // Guest akses dashboard owner dialihkan ke login
+        $this->get('/owner/dashboard')->assertRedirect('/login');
+
+        // Guest akses kelola produk owner juga wajib dialihkan ke login (Bug 5 QA)
+        $this->get('/owner/produk')->assertRedirect('/login');
+    }
+
+    /**
+     * Test 12: Halaman profil pelanggan menampilkan data pengguna yang sedang login (Bug 2 QA).
+     */
+    public function test_customer_profile_displays_authenticated_user_data(): void
+    {
+        $customer = User::create([
+            'name'     => 'Ahmad Zidni',
+            'email'    => 'zidni@example.com',
+            'password' => Hash::make('password123'),
+            'role'     => 'pelanggan',
+        ]);
+
+        $this->actingAs($customer);
+
+        $response = $this->get('/profil-pelanggan');
+
+        $response->assertStatus(200);
+        $response->assertSee('Ahmad Zidni');
+        $response->assertSee('zidni@example.com');
+        $response->assertDontSee('nabil@gmail.com');
     }
 }

@@ -24,16 +24,16 @@
             <div class="p-5 bg-white rounded-2xl border border-slate-200/90 shadow-xs flex flex-col gap-4">
                 <div class="flex items-center gap-4">
                     <div class="w-16 h-16 rounded-full bg-blue-900 text-white text-2xl font-extrabold flex items-center justify-center font-['Plus_Jakarta_Sans'] shadow-md shrink-0">
-                        N
+                        {{ strtoupper(substr(auth()->user()->name ?? 'P', 0, 1)) }}
                     </div>
                     <div class="min-w-0 flex flex-col">
-                        <h2 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans'] leading-tight truncate">Nabil</h2>
+                        <h2 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans'] leading-tight truncate">{{ auth()->user()->name ?? 'Pelanggan' }}</h2>
                         <span class="inline-block mt-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 font-semibold text-[11px] rounded-full border border-emerald-200 self-start">
-                            +62 812-3849-9210
+                            Pelanggan Aktif
                         </span>
                         <div class="flex items-center gap-1.5 text-slate-500 text-xs mt-1.5">
                             <span class="material-symbols-outlined text-slate-400 text-sm">mail</span>
-                            <span class="truncate">nabil@gmail.com</span>
+                            <span class="truncate">{{ auth()->user()->email ?? '-' }}</span>
                         </div>
                     </div>
                 </div>
@@ -102,7 +102,7 @@
                 <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col gap-1.5">
                     <div class="flex items-center justify-between">
                         <span class="text-xs font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Rumah / Kost</span>
-                        <span class="text-[11px] text-slate-500 font-medium">Nabil (+62 812-3849-9210)</span>
+                        <span class="text-[11px] text-slate-500 font-medium">{{ auth()->user()->name ?? 'Penerima' }}</span>
                     </div>
                     <p class="text-xs text-slate-700 leading-relaxed">
                         Jl. Hayam Wuruk No. 42, Magersari, Kota Mojokerto, Jawa Timur 61318
