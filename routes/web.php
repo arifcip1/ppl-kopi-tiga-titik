@@ -62,7 +62,11 @@ Route::middleware(['auth'])->group(function () {
             ]);
         }
 
-        $totalCount = (int) auth()->user()->cartItems()->count();
+        $cart = session()->get('cart', []);
+        $cart[$validated['product_id']] = ($cart[$validated['product_id']] ?? 0) + $jumlah;
+        session()->put('cart', $cart);
+
+        $totalCount = count($cart);
 
         return response()->json([
             'message' => 'Produk berhasil ditambahkan ke keranjang',

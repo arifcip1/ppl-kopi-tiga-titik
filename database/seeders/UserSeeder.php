@@ -42,23 +42,6 @@ class UserSeeder extends Seeder
                 'role'     => 'pelanggan',
             ]
         );
-
-        // Inisialisasi 2 produk bawaan di keranjang sesuai UI Cart Page (Titik Temu: 2 botol & Titik Hitam: 1 botol)
-        $titikTemu = \App\Models\Product::where('nama', 'Titik Temu')->first();
-        $titikHitam = \App\Models\Product::where('nama', 'Titik Hitam')->first();
-
-        if ($titikTemu) {
-            \App\Models\CartItem::updateOrCreate(
-                ['user_id' => $nabil->id, 'product_id' => $titikTemu->id],
-                ['jumlah' => 2]
-            );
-        }
-        if ($titikHitam) {
-            \App\Models\CartItem::updateOrCreate(
-                ['user_id' => $nabil->id, 'product_id' => $titikHitam->id],
-                ['jumlah' => 1]
-            );
-        }
     }
 }
 

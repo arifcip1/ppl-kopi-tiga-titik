@@ -125,25 +125,6 @@ class AuthController extends Controller
             'email_verified_at' => null, // Bug 3 QA: email_verified_at default null tanpa auto-timestamp
         ]);
 
-        // Inisialisasi 2 produk bawaan di keranjang sesuai UI Cart Page (Titik Temu: 2 botol & Titik Hitam: 1 botol)
-        $titikTemu = Product::where('nama', 'Titik Temu')->first();
-        $titikHitam = Product::where('nama', 'Titik Hitam')->first();
-
-        if ($titikTemu) {
-            CartItem::create([
-                'user_id' => $user->id,
-                'product_id' => $titikTemu->id,
-                'jumlah' => 2,
-            ]);
-        }
-        if ($titikHitam) {
-            CartItem::create([
-                'user_id' => $user->id,
-                'product_id' => $titikHitam->id,
-                'jumlah' => 1,
-            ]);
-        }
-
         // Login otomatis setelah registrasi berhasil
         Auth::login($user);
         $request->session()->regenerate();
