@@ -27,7 +27,27 @@
     </div>
 
     <!-- Main Content -->
-    <div class="px-4 pt-3 flex flex-col gap-3">
+    @php
+        $cartItems = session('cart', []);
+    @endphp
+
+    @if(empty($cartItems))
+        <!-- Empty Cart State (Bug 1 QA: Keranjang Kosong untuk Pengguna Baru) -->
+        <div class="px-4 py-20 flex flex-col items-center justify-center text-center gap-4">
+            <div class="w-20 h-20 rounded-full bg-blue-50 text-blue-900 flex items-center justify-center shadow-inner">
+                <span class="material-symbols-outlined text-4xl">shopping_cart</span>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-slate-800 font-['Plus_Jakarta_Sans']">Keranjang Belanja Kosong</h3>
+                <p class="text-xs text-slate-500 mt-1 max-w-xs">Anda belum menambahkan produk kopi ke dalam keranjang belanja.</p>
+            </div>
+            <a href="{{ url('/katalog') }}" class="mt-2 px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-base">storefront</span>
+                <span>Mulai Belanja Sekarang</span>
+            </a>
+        </div>
+    @else
+    <div class="px-4 pt-3 flex flex-col gap-3 pb-24">
 
         <!-- Cart Item 1: Titik Temu -->
         <div class="p-3.5 bg-white rounded-2xl shadow-sm border border-slate-200/80 flex flex-col gap-3">
@@ -187,6 +207,7 @@
             <span class="material-symbols-outlined text-sm font-bold">arrow_forward</span>
         </a>
     </div>
+    @endif
 
 </div>
 </body>
