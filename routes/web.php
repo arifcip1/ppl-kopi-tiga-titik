@@ -42,6 +42,37 @@ Route::get('/katalog', [CatalogController::class, 'index'])->name('katalog.index
 // Pembeli - Fitur Terlindungi (Wajib Login Sesuai PRD)
 Route::middleware(['auth'])->group(function () {
     Route::get('/cart', fn() => view('Cart Page'))->name('cart');
+    Route::post('/cart/items', function (\Illuminate\Http\Request $request) {
+        $validated = $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'jumlah' => 'nullable|integer|min:1',
+        ]);
+        $jumlah = $validated['jumlah'] ?? 1;
+        $cartItem = \App\Models\CartItem::where('user_id', auth()->id())
+            ->where('product_id', $validated['product_id'])
+            ->first();
+
+        if ($cartItem) {
+            $cartItem->increment('jumlah', $jumlah);
+        } else {
+            \App\Models\CartItem::create([
+                'user_id' => auth()->id(),
+                'product_id' => $validated['product_id'],
+                'jumlah' => $jumlah,
+            ]);
+        }
+
+        $cart = session()->get('cart', []);
+        $cart[$validated['product_id']] = ($cart[$validated['product_id']] ?? 0) + $jumlah;
+        session()->put('cart', $cart);
+
+        $totalCount = count($cart);
+
+        return response()->json([
+            'message' => 'Produk berhasil ditambahkan ke keranjang',
+            'cart_count' => $totalCount,
+        ]);
+    })->name('cart.items.store');
     Route::get('/checkout', fn() => view('Cart & Checkout Page'))->name('checkout');
     Route::get('/pembayaran-qris', fn() => view('Pembayaran QRIS Page'))->name('payment');
     Route::get('/tracking', fn() => view('Order Tracking & Live Status'));

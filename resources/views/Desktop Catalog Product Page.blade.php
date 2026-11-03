@@ -6,14 +6,6 @@
 @section('role_badge', 'PELANGGAN')
 @section('page_subtitle', 'Pilih varian kopi botol 250 ml favoritmu langsung dari lapak resmi Kopi Tiga Titik')
 
-@section('header_actions')
-    <!-- Tombol Keranjang Belanja di Top Bar Header -->
-    <a href="{{ url('/cart') }}" class="relative p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors flex items-center justify-center shadow-xs group" title="Lihat Keranjang Belanja">
-        <span class="material-symbols-outlined text-xl group-hover:text-blue-900 transition-colors">shopping_cart</span>
-        <span id="header-cart-badge" class="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs border-2 border-white">1</span>
-    </a>
-@endsection
-
 @section('content')
 
     <!-- 1. Lapak Status & Service Selector (Delivery vs Self Pickup) -->
@@ -172,7 +164,7 @@
                             <span>Stok Habis</span>
                         </button>
                     @else
-                        <button onclick="addToCart(this, '{{ addslashes($product->nama) }}', {{ $product->harga }})" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl shadow-xs text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-98 cursor-pointer">
+                        <button onclick="addToCart(this, '{{ addslashes($product->nama) }}', {{ $product->harga }}, {{ $product->id }})" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl shadow-xs text-xs font-bold flex items-center justify-center gap-1.5 transition-all active:scale-98 cursor-pointer">
                             <span class="material-symbols-outlined text-base">shopping_cart</span>
                             <span>+ Keranjang</span>
                         </button>
@@ -289,12 +281,14 @@
     let currentModalQty = 1;
     let currentVariantName = '';
     let currentProductStock = 0;
-    let totalCartQty = 0;
+    let currentProductId = 0;
+    let totalCartQty = {{ $cartCount ?? 0 }};
 
     function openProductDetailFromCard(triggerEl) {
         const card = triggerEl.closest('.product-card');
         if (!card) return;
 
+        const id = card.getAttribute('data-id') || '0';
         const title = card.getAttribute('data-nama') || '';
         const subtitle = card.getAttribute('data-rasa') || title;
         const priceFormatted = card.getAttribute('data-harga-formatted') || '';
@@ -305,10 +299,11 @@
         const ingredients = card.getAttribute('data-komposisi') || '';
         const keawetan = card.getAttribute('data-keawetan') || '5–7 hari bila disimpan di dalam lemari pendingin (kulkas)';
 
-        openProductDetail(title, subtitle, priceFormatted, priceNum, imgSrc, stock, desc, ingredients, keawetan);
+        openProductDetail(title, subtitle, priceFormatted, priceNum, imgSrc, stock, desc, ingredients, keawetan, id);
     }
 
-    function openProductDetail(title, subtitle, priceFormatted, priceNum, imgSrc, stock, desc, ingredients, keawetan) {
+    function openProductDetail(title, subtitle, priceFormatted, priceNum, imgSrc, stock, desc, ingredients, keawetan, id = 0) {
+        currentProductId = parseInt(id) || 0;
         document.getElementById('modal-title').textContent = title;
         document.getElementById('modal-subtitle').textContent = subtitle + ' (250 ml)';
         document.getElementById('modal-price').textContent = priceFormatted;
@@ -392,14 +387,24 @@
     }
 
     function updateCartUI() {
-        // Update Header Cart Badge
-        const headerBadge = document.getElementById('header-cart-badge');
-        if (headerBadge) {
-            headerBadge.textContent = totalCartQty;
+        // Update Sidebar Cart Badge
+        const sidebarBadge = document.getElementById('sidebar-cart-badge');
+        if (sidebarBadge) {
+            sidebarBadge.textContent = totalCartQty;
+            if (totalCartQty > 0) {
+                sidebarBadge.classList.remove('hidden');
+                sidebarBadge.classList.add('flex');
+            } else {
+                sidebarBadge.classList.add('hidden');
+                sidebarBadge.classList.remove('flex');
+            }
         }
     }
 
-    function addToCart(btn, variantName, price) {
+    // Sinkronisasi badge saat halaman dimuat
+    updateCartUI();
+
+    function addToCart(btn, variantName, price, productId = 0) {
         @guest
             window.location.href = "{{ route('login') }}";
             return;
@@ -407,6 +412,24 @@
 
         totalCartQty++;
         updateCartUI();
+
+        // Simpan ke database jika ada productId
+        if (productId) {
+            fetch("{{ route('cart.items.store') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ product_id: productId, jumlah: 1 })
+            }).then(res => res.json()).then(data => {
+                if (data && data.cart_count !== undefined) {
+                    totalCartQty = data.cart_count;
+                    updateCartUI();
+                }
+            }).catch(err => console.log('Cart sync error:', err));
+        }
 
         // Show feedback message under the button without browser alert
         const parent = btn.parentElement;
@@ -434,9 +457,29 @@
             return;
         @endguest
 
-        totalCartQty += currentModalQty;
+        const addedQty = currentModalQty;
+        const pid = currentProductId;
+
+        totalCartQty += addedQty;
         updateCartUI();
         closeProductDetail();
+
+        if (pid) {
+            fetch("{{ route('cart.items.store') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ product_id: pid, jumlah: addedQty })
+            }).then(res => res.json()).then(data => {
+                if (data && data.cart_count !== undefined) {
+                    totalCartQty = data.cart_count;
+                    updateCartUI();
+                }
+            }).catch(err => console.log('Cart sync error:', err));
+        }
     }
 
     // Toggle Service Type (Delivery / Pickup color switcher)

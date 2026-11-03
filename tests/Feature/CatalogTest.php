@@ -302,4 +302,53 @@ class CatalogTest extends TestCase
         $response->assertSee('Titik Baru Tanpa Foto');
         $response->assertSee('placehold.co');
     }
+
+    /**
+     * Test 11: Header tidak memuat ikon keranjang dan sidebar mengelola visibilitas badge keranjang (Revisi QA).
+     */
+    public function test_catalog_header_has_no_cart_icon_and_sidebar_has_cart_badge(): void
+    {
+        $pelanggan = \App\Models\User::create([
+            'name' => 'Nabil Pratama',
+            'email' => 'nabil.tester@gmail.com',
+            'password' => bcrypt('password123'),
+            'role' => 'pelanggan',
+        ]);
+
+        Product::create([
+            'nama' => 'Titik Temu',
+            'rasa' => 'Kopi Susu Aren',
+            'harga' => 10000,
+            'stok' => 10,
+            'komposisi' => 'Kopi',
+            'deskripsi' => 'Kopi',
+            'keawetan' => '5-7 hari',
+            'aktif' => true,
+        ]);
+
+        Product::create([
+            'nama' => 'Titik Hitam',
+            'rasa' => 'Americano',
+            'harga' => 8000,
+            'stok' => 10,
+            'komposisi' => 'Kopi',
+            'deskripsi' => 'Kopi',
+            'keawetan' => '5-7 hari',
+            'aktif' => true,
+        ]);
+
+        // Kondisi 1: Keranjang kosong -> badge sidebar tersembunyi (hidden), header tanpa cart-badge
+        $responseEmpty = $this->actingAs($pelanggan)->get('/katalog');
+        $responseEmpty->assertStatus(200);
+        $responseEmpty->assertDontSee('id="header-cart-badge"', false);
+        $responseEmpty->assertSee('id="sidebar-cart-badge" class="hidden', false);
+
+        // Kondisi 2: Keranjang memiliki 2 item produk -> badge sidebar tampil dengan angka 2
+        $responseWithCart = $this->actingAs($pelanggan)
+            ->withSession(['cart' => [1 => 1, 2 => 2]])
+            ->get('/katalog');
+        $responseWithCart->assertStatus(200);
+        $responseWithCart->assertSee('id="sidebar-cart-badge" class="flex', false);
+        $responseWithCart->assertSee('2');
+    }
 }

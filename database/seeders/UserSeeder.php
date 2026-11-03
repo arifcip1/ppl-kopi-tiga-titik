@@ -34,7 +34,7 @@ class UserSeeder extends Seeder
         );
 
         // 3. Akun Pelanggan (Sesuai UI Nabil Pratama)
-        User::updateOrCreate(
+        $nabil = User::updateOrCreate(
             ['email' => 'nabil@gmail.com'],
             [
                 'name'     => 'Nabil Pratama',
