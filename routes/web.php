@@ -63,8 +63,8 @@ Route::middleware(['role:kurir'])->group(function () {
 // =========================================================================
 // 4. FITUR OWNER & PRODUK (F2 & PPL-13)
 // =========================================================================
-// Owner - Kelola Produk (F2 & PPL-13)
-Route::prefix('owner/produk')->name('owner.produk.')->group(function () {
+// Owner - Kelola Produk (F2 & PPL-13) - Terproteksi Role Admin/Owner (Bug 4 & 5)
+Route::prefix('owner/produk')->middleware(['role:admin'])->name('owner.produk.')->group(function () {
     Route::get('/', [ProductController::class, 'index'])->name('index');
     Route::post('/', [ProductController::class, 'store'])->name('store');
     Route::put('/{product}', [ProductController::class, 'update'])->name('update');

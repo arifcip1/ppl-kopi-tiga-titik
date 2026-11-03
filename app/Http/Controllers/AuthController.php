@@ -116,15 +116,19 @@ class AuthController extends Controller
         ]);
 
         $user = User::create([
-            'name'     => $validated['name'],
-            'email'    => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role'     => 'pelanggan',
+            'name'              => $validated['name'],
+            'email'             => $validated['email'],
+            'password'          => Hash::make($validated['password']),
+            'role'              => 'pelanggan',
+            'email_verified_at' => null, // Bug 3 QA: email_verified_at default null tanpa auto-timestamp
         ]);
 
         // Login otomatis setelah registrasi berhasil
         Auth::login($user);
         $request->session()->regenerate();
+
+        // Bug 1 QA: Pastikan sesi keranjang diinisialisasi kosong untuk pelanggan baru
+        $request->session()->forget(['cart', 'cart_items']);
 
         return redirect('/katalog')->with('success', 'Akun berhasil didaftarkan! Selamat datang di Kopi Tiga Titik.');
     }

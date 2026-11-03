@@ -3,14 +3,32 @@
 namespace Tests\Feature;
 
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProductManagementTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected User $adminUser;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->adminUser = User::create([
+            'name'     => 'Farrel Owner',
+            'email'    => 'owner@example.com',
+            'password' => Hash::make('password123'),
+            'role'     => 'admin',
+        ]);
+
+        $this->actingAs($this->adminUser);
+    }
 
     /**
      * Test 1: Halaman kelola produk dapat diakses dan menampilkan data produk & statistik.
