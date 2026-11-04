@@ -423,12 +423,21 @@
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({ product_id: productId, jumlah: 1 })
-            }).then(res => res.json()).then(data => {
+            }).then(async res => {
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || 'Gagal menambahkan produk');
+                }
+                return data;
+            }).then(data => {
                 if (data && data.cart_count !== undefined) {
                     totalCartQty = data.cart_count;
                     updateCartUI();
                 }
-            }).catch(err => console.log('Cart sync error:', err));
+            }).catch(err => {
+                alert(err.message);
+                updateCartUI();
+            });
         }
 
         // Show feedback message under the button without browser alert
@@ -473,12 +482,21 @@
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({ product_id: pid, jumlah: addedQty })
-            }).then(res => res.json()).then(data => {
+            }).then(async res => {
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.message || 'Gagal menambahkan produk');
+                }
+                return data;
+            }).then(data => {
                 if (data && data.cart_count !== undefined) {
                     totalCartQty = data.cart_count;
                     updateCartUI();
                 }
-            }).catch(err => console.log('Cart sync error:', err));
+            }).catch(err => {
+                alert(err.message);
+                updateCartUI();
+            });
         }
     }
 
