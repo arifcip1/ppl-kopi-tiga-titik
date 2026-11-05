@@ -8,13 +8,6 @@
 
 @section('content')
 
-    <!-- Toast Notifikasi Interaktif -->
-    <div id="cart-toast"
-        class="fixed top-20 right-4 md:right-8 z-50 px-4 py-3 rounded-2xl shadow-xl text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-2 max-w-sm">
-        <span id="toast-icon" class="material-symbols-outlined text-lg">info</span>
-        <span id="toast-message">Notifikasi</span>
-    </div>
-
     <!-- Status Lapak & Banner Lokasi -->
     <div
         class="p-3.5 md:p-4 bg-white rounded-2xl shadow-xs border border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -274,25 +267,7 @@
         const csrfToken = '{{ csrf_token() }}';
 
         function showToast(message, isError = false) {
-            const toast = document.getElementById('cart-toast');
-            const msgEl = document.getElementById('toast-message');
-            const iconEl = document.getElementById('toast-icon');
-
-            if (!toast || !msgEl) return;
-
-            msgEl.textContent = message;
-            if (isError) {
-                toast.className = 'fixed top-20 right-4 md:right-8 z-50 px-4 py-3 rounded-2xl shadow-xl text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 opacity-100 pointer-events-auto bg-rose-600 text-white transform translate-y-0 max-w-sm';
-                iconEl.textContent = 'error';
-            } else {
-                toast.className = 'fixed top-20 right-4 md:right-8 z-50 px-4 py-3 rounded-2xl shadow-xl text-xs font-semibold flex items-center gap-2.5 transition-all duration-300 opacity-100 pointer-events-auto bg-slate-900 text-white transform translate-y-0 max-w-sm';
-                iconEl.textContent = 'check_circle';
-            }
-
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'pointer-events-none', '-translate-y-2');
-                toast.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
-            }, 3000);
+            showAppToast(message, isError ? 'error' : 'success', isError ? 'Perhatian' : 'Berhasil');
         }
 
         function updateSidebarBadge(count) {

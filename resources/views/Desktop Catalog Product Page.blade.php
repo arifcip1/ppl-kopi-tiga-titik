@@ -410,53 +410,53 @@
             return;
         @endguest
 
-        totalCartQty++;
-        updateCartUI();
+        if (!productId) return;
 
-        // Simpan ke database jika ada productId
-        if (productId) {
-            fetch("{{ route('cart.items.store') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ product_id: productId, jumlah: 1 })
-            }).then(async res => {
-                const data = await res.json();
-                if (!res.ok) {
-                    throw new Error(data.message || 'Gagal menambahkan produk');
-                }
-                return data;
-            }).then(data => {
-                if (data && data.cart_count !== undefined) {
-                    totalCartQty = data.cart_count;
-                    updateCartUI();
-                }
-            }).catch(err => {
-                alert(err.message);
+        const originalContent = btn.innerHTML;
+        btn.disabled = true;
+
+        fetch("{{ route('cart.items.store') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ product_id: productId, jumlah: 1 })
+        }).then(async res => {
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || 'Gagal menambahkan produk');
+            }
+            return data;
+        }).then(data => {
+            if (data && data.cart_count !== undefined) {
+                totalCartQty = data.cart_count;
                 updateCartUI();
-            });
-        }
+            }
 
-        // Show feedback message under the button without browser alert
-        const parent = btn.parentElement;
-        const msg = parent.querySelector('.cart-msg');
-        if (msg) {
-            msg.classList.remove('hidden');
-            const originalContent = btn.innerHTML;
+            // Tampilkan feedback sukses pada tombol
+            const parent = btn.parentElement;
+            const msg = parent?.querySelector('.cart-msg');
+            if (msg) msg.classList.remove('hidden');
+
             btn.classList.remove('bg-blue-900', 'hover:bg-blue-800');
             btn.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
             btn.innerHTML = '<span class="material-symbols-outlined text-base">check</span> <span>Tersimpan!</span>';
 
             setTimeout(() => {
-                msg.classList.add('hidden');
+                if (msg) msg.classList.add('hidden');
                 btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
                 btn.classList.add('bg-blue-900', 'hover:bg-blue-800');
                 btn.innerHTML = originalContent;
-            }, 2000);
-        }
+                btn.disabled = false;
+            }, 1800);
+        }).catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+            showAppToast(err.message, 'error', 'Perhatian');
+            updateCartUI();
+        });
     }
 
     function confirmAddToCart() {
@@ -468,36 +468,33 @@
 
         const addedQty = currentModalQty;
         const pid = currentProductId;
+        if (!pid) return;
 
-        totalCartQty += addedQty;
-        updateCartUI();
-        closeProductDetail();
-
-        if (pid) {
-            fetch("{{ route('cart.items.store') }}", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ product_id: pid, jumlah: addedQty })
-            }).then(async res => {
-                const data = await res.json();
-                if (!res.ok) {
-                    throw new Error(data.message || 'Gagal menambahkan produk');
-                }
-                return data;
-            }).then(data => {
-                if (data && data.cart_count !== undefined) {
-                    totalCartQty = data.cart_count;
-                    updateCartUI();
-                }
-            }).catch(err => {
-                alert(err.message);
+        fetch("{{ route('cart.items.store') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ product_id: pid, jumlah: addedQty })
+        }).then(async res => {
+            const data = await res.json();
+            if (!res.ok) {
+                throw new Error(data.message || 'Gagal menambahkan produk');
+            }
+            return data;
+        }).then(data => {
+            closeProductDetail();
+            if (data && data.cart_count !== undefined) {
+                totalCartQty = data.cart_count;
                 updateCartUI();
-            });
-        }
+            }
+            showAppToast('Produk berhasil ditambahkan ke keranjang!', 'success', 'Berhasil');
+        }).catch(err => {
+            showAppToast(err.message, 'error', 'Perhatian');
+            updateCartUI();
+        });
     }
 
     // Toggle Service Type (Delivery / Pickup color switcher)
