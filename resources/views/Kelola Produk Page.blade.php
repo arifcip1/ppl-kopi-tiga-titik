@@ -8,27 +8,8 @@
 
 @section('content')
 
-    <!-- Notifikasi Feedback Sukses / Error Validasi -->
-    @if(session('success'))
-        <div class="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl flex items-center gap-2.5 text-xs font-bold shadow-xs">
-            <span class="material-symbols-outlined text-emerald-600 text-lg">check_circle</span>
-            <span>{{ session('success') }}</span>
-        </div>
-    @endif
-
-    @if($errors->any())
-        <div class="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl flex items-start gap-2.5 text-xs font-semibold shadow-xs">
-            <span class="material-symbols-outlined text-rose-600 text-lg shrink-0">error</span>
-            <div class="flex-1">
-                <p class="font-bold mb-1">Gagal menyimpan data:</p>
-                <ul class="list-disc pl-4 space-y-0.5">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        </div>
-    @endif
+    <!-- Notifikasi Feedback Sukses / Error Validasi Standar (PPL-24) -->
+    <x-flash-message class="mb-2" />
 
     <!-- ============================================================== -->
     <!-- TOMBOL KHUSUS MOBILE: + TAMBAH PRODUK BARU (SANGAT JELAS DILIHAT) -->
@@ -264,8 +245,13 @@
             </div>
 
             <!-- Form Body (POST ke /owner/produk) -->
-            <form action="{{ route('owner.produk.store') }}" method="POST" enctype="multipart/form-data" class="p-6 flex flex-col gap-4">
+            <form action="{{ route('owner.produk.store') }}" method="POST" enctype="multipart/form-data" novalidate class="p-6 flex flex-col gap-4">
                 @csrf
+
+                <!-- Alert Error di Dalam Modal Jika Validasi Gagal (PPL-24) -->
+                @if($errors->any())
+                    <x-flash-message />
+                @endif
 
                 <!-- Upload Foto Produk (FR-2.3: max 2MB, jpg/png/webp) -->
                 <div>
@@ -279,24 +265,28 @@
                         </div>
                         <img id="preview-tambah" class="hidden max-h-32 object-contain rounded-lg" alt="Preview Foto" />
                     </div>
+                    <x-input-error for="foto" />
                 </div>
 
                 <!-- Nama & Rasa -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                         <label class="text-xs font-bold text-slate-700 block mb-1">Nama Varian Produk *</label>
-                        <input type="text" name="nama" placeholder="Contoh: Titik Rindu" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-blue-900" />
+                        <input type="text" name="nama" value="{{ old('nama') }}" placeholder="Contoh: Titik Rindu" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-blue-900" />
+                        <x-input-error for="nama" />
                     </div>
                     <div>
                         <label class="text-xs font-bold text-slate-700 block mb-1">Varian Rasa / Kategori *</label>
-                        <input type="text" name="rasa" placeholder="Contoh: Kopi Susu Vanila" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-blue-900" />
+                        <input type="text" name="rasa" value="{{ old('rasa') }}" placeholder="Contoh: Kopi Susu Vanila" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-blue-900" />
+                        <x-input-error for="rasa" />
                     </div>
                 </div>
 
                 <!-- Deskripsi Rasa -->
                 <div>
                     <label class="text-xs font-bold text-slate-700 block mb-1">Deskripsi Singkat / Profil Rasa *</label>
-                    <input type="text" name="deskripsi" placeholder="Contoh: Kopi susu rasa vanila lembut manis seimbang" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-blue-900" />
+                    <input type="text" name="deskripsi" value="{{ old('deskripsi') }}" placeholder="Contoh: Kopi susu rasa vanila lembut manis seimbang" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-blue-900" />
+                    <x-input-error for="deskripsi" />
                 </div>
 
                 <!-- Harga & Stok Awal -->
@@ -305,12 +295,14 @@
                         <label class="text-xs font-bold text-slate-700 block mb-1">Harga Jual (Rp) *</label>
                         <div class="relative">
                             <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">Rp</span>
-                            <input type="number" name="harga" min="1000" step="500" placeholder="10000" required class="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-bold focus:outline-none focus:border-blue-900" />
+                            <input type="number" name="harga" value="{{ old('harga') }}" min="1000" step="500" placeholder="10000" required class="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-bold focus:outline-none focus:border-blue-900" />
                         </div>
+                        <x-input-error for="harga" />
                     </div>
                     <div>
                         <label class="text-xs font-bold text-slate-700 block mb-1">Stok Harian (Botol) *</label>
-                        <input type="number" name="stok" min="0" placeholder="10" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-bold focus:outline-none focus:border-blue-900" />
+                        <input type="number" name="stok" value="{{ old('stok') }}" min="0" placeholder="10" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-bold focus:outline-none focus:border-blue-900" />
+                        <x-input-error for="stok" />
                     </div>
                 </div>
 
@@ -368,7 +360,7 @@
             </div>
 
             <!-- Form Body (PUT dinamis via JS action) -->
-            <form id="form-edit-produk" method="POST" enctype="multipart/form-data" class="p-6 flex flex-col gap-4">
+            <form id="form-edit-produk" method="POST" enctype="multipart/form-data" novalidate class="p-6 flex flex-col gap-4">
                 @csrf
                 @method('PUT')
 
@@ -586,5 +578,12 @@
                 }
             });
         }
+
+        // Buka otomatis modal tambah jika ada error validasi dari server (PPL-24)
+        @if($errors->any())
+            document.addEventListener('DOMContentLoaded', function() {
+                openModal('modal-tambah');
+            });
+        @endif
     </script>
 @endpush

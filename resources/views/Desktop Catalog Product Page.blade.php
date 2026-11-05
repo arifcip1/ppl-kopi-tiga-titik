@@ -3,7 +3,7 @@
 @section('title', 'Katalog Menu - Kopi Tiga Titik')
 @section('active_menu', 'katalog')
 @section('page_title', 'Katalog Menu')
-@section('role_badge', 'PELANGGAN')
+@section('role_badge', strtoupper(Auth::check() && in_array(Auth::user()->role, ['admin', 'owner']) ? 'OWNER' : (Auth::user()->role ?? 'PELANGGAN')))
 @section('page_subtitle', 'Pilih varian kopi botol 250 ml favoritmu langsung dari lapak resmi Kopi Tiga Titik')
 
 @section('content')
