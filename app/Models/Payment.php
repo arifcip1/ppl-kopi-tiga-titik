@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Payment extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'order_id',
         'referensi_provider',
@@ -26,6 +28,34 @@ class Payment extends Model
             'payload_mentah' => 'array',
         ];
     }
+
+    // =========================
+    // HELPER STATUS PEMBAYARAN
+    // =========================
+
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    public function isSuccess(): bool
+    {
+        return $this->status === 'berhasil';
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->status === 'kedaluwarsa';
+    }
+
+    public function isFailed(): bool
+    {
+        return $this->status === 'gagal';
+    }
+
+    // =========================
+    // RELASI ELOQUENT
+    // =========================
 
     public function order(): BelongsTo
     {
