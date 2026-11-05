@@ -69,11 +69,27 @@
             <span>Masuk</span>
           </a>
         @else
-          <a href="{{ url('/profil-pelanggan') }}" class="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200/80 text-blue-900 rounded-xl text-xs sm:text-sm font-semibold font-['Inter'] flex items-center gap-2 transition-all shadow-xs shrink-0">
+          @php
+            $userRole = Auth::user()->role ?? 'pembeli';
+            $profileUrl = match($userRole) {
+                'admin', 'owner' => url('/owner/dashboard'),
+                'kurir' => url('/kurir/profil'),
+                default => url('/profil-pelanggan'),
+            };
+            $roleLabel = match($userRole) {
+                'admin', 'owner' => 'Owner',
+                'kurir' => 'Kurir',
+                default => 'Pelanggan',
+            };
+          @endphp
+          <a href="{{ $profileUrl }}" class="px-3 py-1.5 sm:px-3.5 sm:py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200/80 text-blue-900 rounded-xl text-xs sm:text-sm font-semibold font-['Inter'] flex items-center gap-2 transition-all shadow-xs shrink-0" title="Buka Profil / Dashboard ({{ $roleLabel }})">
             <div class="w-6 h-6 rounded-full bg-blue-900 text-white text-[11px] font-bold flex items-center justify-center shrink-0">
               {{ strtoupper(substr(Auth::user()->name ?? 'P', 0, 1)) }}
             </div>
-            <span class="truncate max-w-[90px] sm:max-w-[120px]">{{ Auth::user()->name ?? 'Akun Saya' }}</span>
+            <div class="flex flex-col text-left">
+              <span class="truncate max-w-[90px] sm:max-w-[120px] leading-tight">{{ Auth::user()->name ?? 'Akun Saya' }}</span>
+              <span class="text-[9px] font-bold text-blue-700 leading-tight">{{ $roleLabel }}</span>
+            </div>
           </a>
         @endguest
 
@@ -105,9 +121,9 @@
             <span class="material-symbols-outlined text-lg">local_shipping</span>
             <span>Lacak Pesanan</span>
           </a>
-          <a href="{{ url('/profil-pelanggan') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-blue-900 transition-colors">
-            <span class="material-symbols-outlined text-lg">person</span>
-            <span>Profil Pelanggan</span>
+          <a href="{{ $profileUrl }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-blue-900 transition-colors">
+            <span class="material-symbols-outlined text-lg">account_circle</span>
+            <span>{{ in_array(Auth::user()->role ?? '', ['admin', 'owner']) ? 'Dashboard Owner' : (Auth::user()->role === 'kurir' ? 'Profil Kurir' : 'Profil Pelanggan') }}</span>
           </a>
           <form method="POST" action="{{ route('logout') }}" class="mt-2 pt-2 border-t border-slate-100">
             @csrf

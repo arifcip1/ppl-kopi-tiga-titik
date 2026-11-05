@@ -42,7 +42,18 @@
             </div>
 
             @auth
-                <!-- Identitas Akun Pelanggan -->
+                @php
+                    $userRole = Auth::user()->role ?? 'pembeli';
+                    $roleLabel = match($userRole) {
+                        'admin', 'owner' => 'OWNER',
+                        'kurir' => 'KURIR',
+                        default => 'PELANGGAN'
+                    };
+                    $badgeClass = in_array($userRole, ['admin', 'owner']) 
+                        ? 'bg-amber-100 text-amber-900 border border-amber-300' 
+                        : 'bg-blue-200/70 text-blue-900';
+                @endphp
+                <!-- Identitas Akun Pelanggan / Pengguna -->
                 <div class="mx-3 my-2 p-2 bg-blue-50/70 rounded-xl border border-blue-100/80 flex items-center gap-2.5">
                     <div class="w-7 h-7 rounded-lg bg-blue-900 text-white font-extrabold text-xs flex items-center justify-center shadow-xs shrink-0">
                         {{ strtoupper(substr(Auth::user()->name ?? 'P', 0, 1)) }}
@@ -50,11 +61,25 @@
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-1">
                             <span class="text-xs font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans']">{{ Auth::user()->name ?? 'Pelanggan' }}</span>
-                            <span class="px-1 py-0.2 bg-blue-200/70 text-blue-900 text-[8px] font-extrabold rounded">PELANGGAN</span>
+                            <span class="px-1 py-0.2 {{ $badgeClass }} text-[8px] font-extrabold rounded uppercase">{{ $roleLabel }}</span>
                         </div>
                         <p class="text-[9px] text-slate-500 truncate leading-tight">{{ Auth::user()->telepon ?? Auth::user()->email ?? '+62 812-3849-9210' }}</p>
                     </div>
                 </div>
+
+                @if(in_array($userRole, ['admin', 'owner']))
+                    <!-- Shortcut Khusus Owner saat berada di Halaman Pelanggan -->
+                    <div class="mx-3 mb-2 p-2 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between">
+                        <div class="flex items-center gap-1.5 text-amber-900">
+                            <span class="material-symbols-outlined text-sm">admin_panel_settings</span>
+                            <span class="text-[10px] font-bold">Akun Owner</span>
+                        </div>
+                        <a href="{{ url('/owner/dashboard') }}" class="px-2 py-0.5 bg-amber-600 hover:bg-amber-700 text-white text-[9px] font-extrabold rounded-md shadow-xs flex items-center gap-1 transition-colors">
+                            <span class="material-symbols-outlined text-[11px]">dashboard</span>
+                            <span>Dashboard</span>
+                        </a>
+                    </div>
+                @endif
             @else
                 <!-- Banner Mode Tamu (Guest) -->
                 <div class="mx-3 my-2 p-2.5 bg-blue-50/80 rounded-xl border border-blue-200/70 flex flex-col gap-1">
@@ -141,7 +166,9 @@
                     <div>
                         <div class="flex items-center gap-1.5">
                             <span class="font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] text-sm md:text-base tracking-tight">@yield('page_title', 'My Account')</span>
-                            <span class="px-1.5 py-0.2 bg-blue-100 text-blue-900 font-bold text-[9px] rounded uppercase tracking-wider">@yield('role_badge', 'PELANGGAN')</span>
+                            <span class="px-1.5 py-0.2 {{ Auth::check() && in_array(Auth::user()->role, ['admin', 'owner']) ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900' }} font-bold text-[9px] rounded uppercase tracking-wider">
+                                @yield('role_badge', strtoupper(Auth::check() && in_array(Auth::user()->role, ['admin', 'owner']) ? 'OWNER' : (Auth::user()->role ?? 'PELANGGAN')))
+                            </span>
                         </div>
                         <p class="text-[11px] text-slate-500 hidden md:block">@yield('page_subtitle', 'Kelola profil, alamat pengiriman, dan riwayat pesananmu')</p>
                     </div>

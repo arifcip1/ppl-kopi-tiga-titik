@@ -52,10 +52,18 @@ class ProductController extends Controller
         ], [
             'nama.required' => 'Nama varian produk wajib diisi.',
             'nama.unique' => 'Nama varian produk sudah terdaftar di sistem.',
+            'harga.required' => 'Harga jual wajib diisi.',
+            'harga.integer' => 'Harga jual harus berupa bilangan bulat.',
             'harga.min' => 'Harga jual harus berupa bilangan bulat lebih dari 0.',
+            'stok.required' => 'Stok harian wajib diisi.',
+            'stok.integer' => 'Stok harian harus berupa angka bulat.',
             'stok.min' => 'Stok produk tidak boleh bernilai negatif.',
+            'komposisi.required' => 'Daftar komposisi bahan wajib diisi.',
+            'deskripsi.required' => 'Deskripsi singkat profil rasa wajib diisi.',
+            'keawetan.required' => 'Masa keawetan dan penyimpanan wajib diisi.',
             'foto.max' => 'Ukuran foto botol maksimal 2 MB.',
             'foto.image' => 'File foto harus berupa gambar (JPG, PNG, atau WebP).',
+            'foto.mimes' => 'Format foto harus berupa JPG, PNG, atau WebP.',
         ]);
 
         // Tangani unggah foto ke storage publik (FR-2.3: storage:link)
@@ -99,9 +107,18 @@ class ProductController extends Controller
         ], [
             'nama.required' => 'Nama produk wajib diisi.',
             'nama.unique' => 'Nama produk sudah digunakan oleh produk lain.',
+            'harga.required' => 'Harga jual wajib diisi.',
+            'harga.integer' => 'Harga jual harus berupa bilangan bulat.',
             'harga.min' => 'Harga jual harus lebih dari Rp 0.',
+            'stok.required' => 'Stok produk wajib diisi.',
+            'stok.integer' => 'Stok produk harus berupa angka bulat.',
             'stok.min' => 'Stok tidak boleh kurang dari 0.',
+            'komposisi.required' => 'Daftar komposisi bahan wajib diisi.',
+            'deskripsi.required' => 'Deskripsi singkat profil rasa wajib diisi.',
+            'keawetan.required' => 'Masa keawetan dan penyimpanan wajib diisi.',
             'foto.max' => 'Ukuran file foto maksimal 2 MB.',
+            'foto.image' => 'File foto harus berupa gambar (JPG, PNG, atau WebP).',
+            'foto.mimes' => 'Format file foto harus JPG, PNG, atau WebP.',
         ]);
 
         // Jika ada foto baru diunggah, hapus foto lama dari storage publik (FR-2.3)
