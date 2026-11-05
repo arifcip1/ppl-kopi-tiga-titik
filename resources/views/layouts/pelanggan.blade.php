@@ -183,9 +183,15 @@
 
         <!-- Main Body Content Slot -->
         <main class="px-4 md:px-8 py-5 flex flex-col gap-4 max-w-7xl w-full mx-auto pb-12">
+            <!-- Flash Message & Validasi Session (PPL-24) -->
+            <x-flash-message />
+
             @yield('content')
         </main>
     </div>
+
+    <!-- Container Toast Dinamis AJAX (Mengikuti Desain components/alert.blade.php PPL-24) -->
+    <div id="global-toast-container" class="fixed top-20 right-4 md:right-8 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"></div>
 
     <!-- Form Logout Tersembunyi -->
     <form id="globalLogoutForm" action="{{ url('/logout') }}" method="POST" class="hidden">
@@ -261,6 +267,92 @@
                     isDesktopSidebarOpen = true;
                 }
             }
+        }
+
+        /**
+         * Global Toast Notification (Mengikuti styling komponen alert PPL-24)
+         */
+        function showAppToast(message, type = 'error', title = null) {
+            const container = document.getElementById('global-toast-container');
+            if (!container) return;
+
+            const typeStyles = {
+                success: {
+                    bg: 'bg-emerald-50',
+                    border: 'border-emerald-200',
+                    text: 'text-emerald-900',
+                    icon: 'check_circle',
+                    iconColor: 'text-emerald-600',
+                    closeColor: 'text-emerald-500 hover:text-emerald-800',
+                    defaultTitle: 'Berhasil'
+                },
+                error: {
+                    bg: 'bg-rose-50',
+                    border: 'border-rose-200',
+                    text: 'text-rose-900',
+                    icon: 'error',
+                    iconColor: 'text-rose-600',
+                    closeColor: 'text-rose-500 hover:text-rose-800',
+                    defaultTitle: 'Perhatian'
+                },
+                warning: {
+                    bg: 'bg-amber-50',
+                    border: 'border-amber-200',
+                    text: 'text-amber-900',
+                    icon: 'warning',
+                    iconColor: 'text-amber-600',
+                    closeColor: 'text-amber-500 hover:text-amber-800',
+                    defaultTitle: 'Peringatan'
+                },
+                info: {
+                    bg: 'bg-sky-50',
+                    border: 'border-sky-200',
+                    text: 'text-sky-900',
+                    icon: 'info',
+                    iconColor: 'text-sky-600',
+                    closeColor: 'text-sky-500 hover:text-sky-800',
+                    defaultTitle: 'Informasi'
+                }
+            };
+
+            const style = typeStyles[type] || typeStyles.info;
+            const alertTitle = title !== null ? title : style.defaultTitle;
+
+            const toast = document.createElement('div');
+            toast.className = `p-3.5 sm:p-4 rounded-2xl border ${style.bg} ${style.border} ${style.text} shadow-lg flex items-start gap-3 transition-all duration-300 pointer-events-auto transform -translate-y-2 opacity-0`;
+            toast.setAttribute('role', 'alert');
+
+            toast.innerHTML = `
+                <span class="material-symbols-outlined ${style.iconColor} text-xl shrink-0 mt-0.5 select-none">
+                    ${style.icon}
+                </span>
+                <div class="flex-1 text-xs leading-relaxed">
+                    ${alertTitle ? `<h4 class="font-bold font-['Plus_Jakarta_Sans'] text-xs sm:text-sm mb-0.5">${alertTitle}</h4>` : ''}
+                    <p class="font-medium">${message}</p>
+                </div>
+                <button type="button" class="p-1 -mr-1 -mt-1 rounded-lg ${style.closeColor} hover:bg-black/5 transition-colors cursor-pointer" title="Tutup Notifikasi">
+                    <span class="material-symbols-outlined text-base block">close</span>
+                </button>
+            `;
+
+            toast.querySelector('button').addEventListener('click', () => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 250);
+            });
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', '-translate-y-2');
+                toast.classList.add('opacity-100', 'translate-y-0');
+            });
+
+            setTimeout(() => {
+                if (toast.isConnected) {
+                    toast.classList.add('opacity-0', '-translate-y-2');
+                    setTimeout(() => toast.remove(), 250);
+                }
+            }, 4000);
         }
     </script>
 

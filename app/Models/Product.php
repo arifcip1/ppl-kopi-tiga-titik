@@ -42,4 +42,15 @@ class Product extends Model
     {
         return $this->hasMany(SalesHistory::class);
     }
+
+    public function getFotoUrlAttribute(): string
+    {
+        if ($this->foto_path) {
+            return asset('storage/' . $this->foto_path);
+        }
+        if (file_exists(public_path('products/' . $this->nama . '.png'))) {
+            return asset('products/' . $this->nama . '.png');
+        }
+        return 'https://placehold.co/150x200/1e3a8a/ffffff?text=' . urlencode($this->nama);
+    }
 }

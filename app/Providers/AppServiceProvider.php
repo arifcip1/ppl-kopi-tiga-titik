@@ -25,8 +25,18 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         View::composer('*', function ($view) {
-            $cart = session('cart', []);
-            $cartCount = is_countable($cart) ? count($cart) : 0;
+            $cartCount = 0;
+            if (Auth::check()) {
+                $user = Auth::user();
+                if ($user->role === 'pelanggan' && Schema::hasTable('cart_items')) {
+                    $cartCount = (int) $user->cartItems()->count();
+                }
+            }
+
+            if ($cartCount === 0 && session()->has('cart')) {
+                $cart = session('cart', []);
+                $cartCount = is_countable($cart) ? count($cart) : 0;
+            }
 
             $view->with('cartCount', $cartCount);
         });
