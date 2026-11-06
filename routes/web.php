@@ -54,7 +54,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/api/cart/items/{id}', [CartController::class, 'update'])->name('api.cart.update');
     Route::delete('/api/cart/items/{id}', [CartController::class, 'destroy'])->name('api.cart.destroy');
 
-    Route::get('/checkout', fn() => view('Cart & Checkout Page'))->name('checkout');
+    Route::get('/checkout', fn() => view('Deskop Cart & Checkout Page'))->name('checkout');
     Route::get('/pembayaran-qris', fn() => view('Pembayaran QRIS Page'))->name('payment');
     Route::get('/tracking', fn() => view('Order Tracking & Live Status'));
     Route::get('/order-tracking', fn() => view('Order Tracking & Live Status'))->name('tracking');
