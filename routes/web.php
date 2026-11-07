@@ -20,7 +20,19 @@ Route::post('/logout', [AuthController::class, 'logout'])
 
 
 
-Route::get('/', fn() => view('Desktop Landing Page'))->name('home');
+Route::get('/', function () {
+    if (\Illuminate\Support\Facades\Auth::check()) {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if (in_array($user->role, ['admin', 'owner'])) {
+            return redirect('/owner/dashboard');
+        } elseif ($user->role === 'kurir') {
+            return redirect('/kurir/tugas-baru');
+        } else {
+            return redirect('/katalog');
+        }
+    }
+    return view('Desktop Landing Page');
+})->name('home');
 
 // =========================================================================
 // 1. AUTENTIKASI PENGGUNA (FR-1.3, FR-1.4 - PPL 07)
