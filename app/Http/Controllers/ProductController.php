@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\UpdateProductRequest;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -37,34 +39,9 @@ class ProductController extends Controller
      * Simpan varian produk baru ke database dan tangani unggah foto.
      * Sesuai FR-2.2, FR-2.3 (unggah foto max 2MB), dan BR-01 (harga > 0, stok >= 0).
      */
-    public function store(Request $request)
+    public function store(StoreProductRequest $request)
     {
-        $validated = $request->validate([
-            'nama' => ['required', 'string', 'max:255', 'unique:products,nama'],
-            'rasa' => ['nullable', 'string', 'max:255'],
-            'harga' => ['required', 'integer', 'min:1'],
-            'stok' => ['required', 'integer', 'min:0'],
-            'komposisi' => ['required', 'string'],
-            'deskripsi' => ['required', 'string'],
-            'keawetan' => ['required', 'string', 'max:255'],
-            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
-            'aktif' => ['nullable'],
-        ], [
-            'nama.required' => 'Nama varian produk wajib diisi.',
-            'nama.unique' => 'Nama varian produk sudah terdaftar di sistem.',
-            'harga.required' => 'Harga jual wajib diisi.',
-            'harga.integer' => 'Harga jual harus berupa bilangan bulat.',
-            'harga.min' => 'Harga jual harus berupa bilangan bulat lebih dari 0.',
-            'stok.required' => 'Stok harian wajib diisi.',
-            'stok.integer' => 'Stok harian harus berupa angka bulat.',
-            'stok.min' => 'Stok produk tidak boleh bernilai negatif.',
-            'komposisi.required' => 'Daftar komposisi bahan wajib diisi.',
-            'deskripsi.required' => 'Deskripsi singkat profil rasa wajib diisi.',
-            'keawetan.required' => 'Masa keawetan dan penyimpanan wajib diisi.',
-            'foto.max' => 'Ukuran foto botol maksimal 2 MB.',
-            'foto.image' => 'File foto harus berupa gambar (JPG, PNG, atau WebP).',
-            'foto.mimes' => 'Format foto harus berupa JPG, PNG, atau WebP.',
-        ]);
+        $validated = $request->validated();
 
         // Tangani unggah foto ke storage publik (FR-2.3: storage:link)
         if ($request->hasFile('foto')) {
@@ -92,34 +69,9 @@ class ProductController extends Controller
      * Perbarui data produk, harga, stok, dan ganti foto.
      * Sesuai FR-2.3 (ganti foto hapus file lama) & FR-2.4 (ubah stok).
      */
-    public function update(Request $request, Product $product)
+    public function update(UpdateProductRequest $request, Product $product)
     {
-        $validated = $request->validate([
-            'nama' => ['required', 'string', 'max:255', Rule::unique('products', 'nama')->ignore($product->id)],
-            'rasa' => ['nullable', 'string', 'max:255'],
-            'harga' => ['required', 'integer', 'min:1'],
-            'stok' => ['required', 'integer', 'min:0'],
-            'komposisi' => ['required', 'string'],
-            'deskripsi' => ['required', 'string'],
-            'keawetan' => ['required', 'string', 'max:255'],
-            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
-            'aktif' => ['nullable'],
-        ], [
-            'nama.required' => 'Nama produk wajib diisi.',
-            'nama.unique' => 'Nama produk sudah digunakan oleh produk lain.',
-            'harga.required' => 'Harga jual wajib diisi.',
-            'harga.integer' => 'Harga jual harus berupa bilangan bulat.',
-            'harga.min' => 'Harga jual harus lebih dari Rp 0.',
-            'stok.required' => 'Stok produk wajib diisi.',
-            'stok.integer' => 'Stok produk harus berupa angka bulat.',
-            'stok.min' => 'Stok tidak boleh kurang dari 0.',
-            'komposisi.required' => 'Daftar komposisi bahan wajib diisi.',
-            'deskripsi.required' => 'Deskripsi singkat profil rasa wajib diisi.',
-            'keawetan.required' => 'Masa keawetan dan penyimpanan wajib diisi.',
-            'foto.max' => 'Ukuran file foto maksimal 2 MB.',
-            'foto.image' => 'File foto harus berupa gambar (JPG, PNG, atau WebP).',
-            'foto.mimes' => 'Format file foto harus JPG, PNG, atau WebP.',
-        ]);
+        $validated = $request->validated();
 
         // Jika ada foto baru diunggah, hapus foto lama dari storage publik (FR-2.3)
         if ($request->hasFile('foto')) {

@@ -255,16 +255,35 @@
 
                 <!-- Upload Foto Produk (FR-2.3: max 2MB, jpg/png/webp) -->
                 <div>
-                    <label class="text-xs font-bold text-slate-700 block mb-1.5">Foto Botol Produk (Maks. 2 MB)</label>
-                    <div class="border-2 border-dashed border-slate-200 hover:border-blue-900 rounded-2xl p-4 flex flex-col items-center justify-center bg-slate-50 hover:bg-blue-50/30 transition-colors cursor-pointer text-center relative group" onclick="document.getElementById('file-upload-tambah').click()">
-                        <input type="file" id="file-upload-tambah" name="foto" accept="image/png, image/jpeg, image/webp" class="hidden" onchange="previewImage(this, 'preview-tambah')" />
-                        <div id="preview-tambah-container" class="flex flex-col items-center">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-bold text-slate-700">Foto Botol Produk (Maks. 2 MB)</label>
+                        <button type="button" id="btn-batal-foto-tambah" onclick="cancelImageUpload('tambah')" class="hidden text-[11px] font-bold text-rose-600 hover:text-rose-800 flex items-center gap-1 cursor-pointer transition-colors">
+                            <span class="material-symbols-outlined text-xs">delete</span>
+                            <span>Hapus / Batal Foto</span>
+                        </button>
+                    </div>
+
+                    <div id="dropzone-tambah" class="border-2 border-dashed border-slate-200 hover:border-blue-900 rounded-2xl p-4 flex flex-col items-center justify-center bg-slate-50 hover:bg-blue-50/30 transition-all cursor-pointer text-center relative group" onclick="document.getElementById('file-upload-tambah').click()">
+                        <input type="file" id="file-upload-tambah" name="foto" accept="image/png, image/jpeg, image/webp" class="hidden" onchange="handleFileSelect(this, 'tambah')" />
+                        
+                        <div id="preview-tambah-container" class="flex flex-col items-center pointer-events-none">
                             <span class="material-symbols-outlined text-3xl text-slate-400 group-hover:text-blue-900 transition-colors">add_photo_alternate</span>
                             <p class="text-xs font-semibold text-slate-700 mt-1">Pilih Foto atau Seret ke Sini</p>
-                            <p class="text-[10px] text-slate-400 mt-0.5">Format: JPG, PNG, atau WebP (Standar botol 250 ml)</p>
+                            <p class="text-[10px] text-slate-400 mt-0.5">Format: JPG, PNG, atau WebP • Maksimal 2 MB</p>
                         </div>
-                        <img id="preview-tambah" class="hidden max-h-32 object-contain rounded-lg" alt="Preview Foto" />
+
+                        <div id="preview-tambah-wrapper" class="hidden flex flex-col items-center gap-1.5 pointer-events-none">
+                            <img id="preview-tambah" class="max-h-32 object-contain rounded-xl shadow-xs border border-slate-200" alt="Preview Foto" />
+                            <span id="preview-tambah-info" class="text-[10px] text-slate-500 font-medium"></span>
+                        </div>
                     </div>
+
+                    <!-- Alert Instan Client-side Saat Upload Foto -->
+                    <div id="alert-foto-tambah" class="hidden mt-2 p-2.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs font-medium text-rose-700 animate-fadeIn">
+                        <span class="material-symbols-outlined text-base text-rose-600 shrink-0">error</span>
+                        <span id="alert-foto-tambah-text"></span>
+                    </div>
+
                     <x-input-error for="foto" />
                 </div>
 
@@ -366,19 +385,32 @@
 
                 <!-- Ganti Foto -->
                 <div>
-                    <label class="text-xs font-bold text-slate-700 block mb-1.5">Ganti Foto Produk (Opsional)</label>
-                    <div class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-2xl">
-                        <div class="w-14 h-16 bg-white rounded-xl border border-slate-200 flex items-center justify-center p-1 shrink-0">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-bold text-slate-700">Ganti Foto Produk (Opsional, Maks. 2 MB)</label>
+                        <button type="button" id="btn-batal-foto-edit" onclick="cancelImageUpload('edit')" class="hidden text-[11px] font-bold text-rose-600 hover:text-rose-800 flex items-center gap-1 cursor-pointer transition-colors">
+                            <span class="material-symbols-outlined text-xs">restart_alt</span>
+                            <span>Batal Ganti Foto</span>
+                        </button>
+                    </div>
+
+                    <div id="dropzone-edit" class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 hover:border-blue-900 rounded-2xl transition-all cursor-pointer" onclick="document.getElementById('file-upload-edit').click()">
+                        <div class="w-16 h-18 bg-white rounded-xl border border-slate-200 flex items-center justify-center p-1 shrink-0 overflow-hidden shadow-2xs">
                             <img id="edit-preview-img" src="" alt="Preview" class="w-full h-full object-contain" />
                         </div>
-                        <div class="flex-1">
-                            <button type="button" onclick="document.getElementById('file-upload-edit').click()" class="px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-1.5 cursor-pointer">
+                        <div class="flex-1 pointer-events-none">
+                            <button type="button" class="px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-700 flex items-center gap-1.5 shadow-xs">
                                 <span class="material-symbols-outlined text-sm">upload</span>
                                 <span>Pilih Foto Baru</span>
                             </button>
-                            <p class="text-[10px] text-slate-400 mt-1">Maks. 2 MB • JPG, PNG, atau WebP</p>
-                            <input type="file" id="file-upload-edit" name="foto" accept="image/png, image/jpeg, image/webp" class="hidden" onchange="previewImage(this, 'edit-preview-img')" />
+                            <p id="edit-preview-info" class="text-[10px] text-slate-400 mt-1">Maks. 2 MB • JPG, PNG, atau WebP (Atau seret ke sini)</p>
+                            <input type="file" id="file-upload-edit" name="foto" accept="image/png, image/jpeg, image/webp" class="hidden" onchange="handleFileSelect(this, 'edit')" />
                         </div>
+                    </div>
+
+                    <!-- Alert Instan Client-side Saat Upload Foto Edit -->
+                    <div id="alert-foto-edit" class="hidden mt-2 p-2.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-xs font-medium text-rose-700 animate-fadeIn">
+                        <span class="material-symbols-outlined text-base text-rose-600 shrink-0">error</span>
+                        <span id="alert-foto-edit-text"></span>
                     </div>
                 </div>
 
@@ -499,10 +531,17 @@
             modal.classList.add('opacity-0');
             setTimeout(() => {
                 modal.classList.add('hidden');
+                if (id === 'modal-tambah') {
+                    cancelImageUpload('tambah');
+                } else if (id === 'modal-edit') {
+                    cancelImageUpload('edit');
+                }
             }, 200);
         }
 
         // Modal Edit Pre-population dari Data Objek Produk Nyata
+        let originalEditImgSrc = '';
+
         function openEditModal(product, imgSrc) {
             const form = document.getElementById('form-edit-produk');
             form.action = "{{ url('/owner/produk') }}/" + product.id;
@@ -516,7 +555,9 @@
             document.getElementById('edit-keawetan').value = product.keawetan || '5–7 hari bila disimpan di lemari pendingin';
             document.getElementById('edit-aktif').checked = Boolean(product.aktif);
 
+            originalEditImgSrc = imgSrc;
             document.getElementById('edit-preview-img').src = imgSrc;
+            cancelImageUpload('edit');
 
             openModal('modal-edit');
         }
@@ -530,20 +571,153 @@
             openModal('modal-delete');
         }
 
-        // Image Preview Helper (FR-2.3)
-        function previewImage(input, previewId) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.getElementById(previewId);
-                    img.src = e.target.result;
-                    img.classList.remove('hidden');
-                    const placeholder = document.getElementById('preview-tambah-container');
-                    if (placeholder && previewId === 'preview-tambah') {
-                        placeholder.classList.add('hidden');
-                    }
+        // ==============================================================
+        // PENANGANAN UPLOAD FOTO, DRAG & DROP, VALIDASI INSTAN & BATAL
+        // ==============================================================
+
+        // Cegah browser default membuka/mengunduh file saat file diseret ke jendela browser
+        window.addEventListener('dragover', function(e) {
+            e.preventDefault();
+        }, false);
+        window.addEventListener('drop', function(e) {
+            e.preventDefault();
+        }, false);
+
+        // Pasang event listener Drag & Drop pada zona drop foto
+        function setupDropzone(dropzoneId, inputId, type) {
+            const dropzone = document.getElementById(dropzoneId);
+            if (!dropzone) return;
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzone.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.add('border-blue-900', 'bg-blue-50/50');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.remove('border-blue-900', 'bg-blue-50/50');
+                }, false);
+            });
+
+            dropzone.addEventListener('drop', function(e) {
+                const dt = e.dataTransfer;
+                if (dt && dt.files && dt.files.length > 0) {
+                    const fileInput = document.getElementById(inputId);
+                    fileInput.files = dt.files;
+                    handleFileValidationAndPreview(dt.files[0], type);
                 }
-                reader.readAsDataURL(input.files[0]);
+            }, false);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            setupDropzone('dropzone-tambah', 'file-upload-tambah', 'tambah');
+            setupDropzone('dropzone-edit', 'file-upload-edit', 'edit');
+        });
+
+        // Handler saat memilih file via input explorer
+        function handleFileSelect(input, type) {
+            if (input.files && input.files[0]) {
+                handleFileValidationAndPreview(input.files[0], type);
+            }
+        }
+
+        // Validasi instan di browser (format & ukuran maks 2 MB) dan tampilkan preview
+        function handleFileValidationAndPreview(file, type) {
+            const alertBox = document.getElementById(`alert-foto-${type}`);
+            const alertText = document.getElementById(`alert-foto-${type}-text`);
+            const btnBatal = document.getElementById(`btn-batal-foto-${type}`);
+            const input = document.getElementById(`file-upload-${type}`);
+
+            // 1. Validasi Format Ekstensi Gambar (JPG, PNG, WebP)
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+
+            if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+                input.value = '';
+                if (type === 'tambah') {
+                    document.getElementById('preview-tambah-wrapper').classList.add('hidden');
+                    document.getElementById('preview-tambah-container').classList.remove('hidden');
+                }
+                btnBatal.classList.add('hidden');
+                alertText.innerHTML = `Format file <strong>"${file.name}"</strong> tidak didukung! Format yang diterima hanya JPG, PNG, atau WebP.`;
+                alertBox.classList.remove('hidden');
+                return;
+            }
+
+            // 2. Validasi Ukuran File (Maksimal 2 MB = 2.097.152 bytes)
+            const maxSizeBytes = 2 * 1024 * 1024;
+            if (file.size > maxSizeBytes) {
+                input.value = '';
+                if (type === 'tambah') {
+                    document.getElementById('preview-tambah-wrapper').classList.add('hidden');
+                    document.getElementById('preview-tambah-container').classList.remove('hidden');
+                }
+                btnBatal.classList.add('hidden');
+                const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+                alertText.innerHTML = `Ukuran foto terlalu besar (<strong>${sizeInMB} MB</strong>). Maksimal ukuran file foto adalah <strong>2 MB</strong>.`;
+                alertBox.classList.remove('hidden');
+                return;
+            }
+
+            // Jika file valid, bersihkan pesan error dan tampilkan preview & tombol batal
+            alertBox.classList.add('hidden');
+            alertText.innerText = '';
+            btnBatal.classList.remove('hidden');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (type === 'tambah') {
+                    const img = document.getElementById('preview-tambah');
+                    img.src = e.target.result;
+                    document.getElementById('preview-tambah-container').classList.add('hidden');
+                    document.getElementById('preview-tambah-wrapper').classList.remove('hidden');
+                    document.getElementById('preview-tambah-info').innerText = `${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
+                } else {
+                    const img = document.getElementById('edit-preview-img');
+                    img.src = e.target.result;
+                    document.getElementById('edit-preview-info').innerText = `Foto baru: ${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Fungsi Batal / Hapus Foto yang dipilih
+        function cancelImageUpload(type) {
+            const input = document.getElementById(`file-upload-${type}`);
+            if (input) input.value = '';
+
+            const alertBox = document.getElementById(`alert-foto-${type}`);
+            if (alertBox) {
+                alertBox.classList.add('hidden');
+                const alertText = document.getElementById(`alert-foto-${type}-text`);
+                if (alertText) alertText.innerText = '';
+            }
+
+            const btnBatal = document.getElementById(`btn-batal-foto-${type}`);
+            if (btnBatal) btnBatal.classList.add('hidden');
+
+            if (type === 'tambah') {
+                const wrapper = document.getElementById('preview-tambah-wrapper');
+                if (wrapper) wrapper.classList.add('hidden');
+                const container = document.getElementById('preview-tambah-container');
+                if (container) container.classList.remove('hidden');
+                const previewImg = document.getElementById('preview-tambah');
+                if (previewImg) previewImg.src = '';
+            } else {
+                const previewImg = document.getElementById('edit-preview-img');
+                if (previewImg && originalEditImgSrc) {
+                    previewImg.src = originalEditImgSrc;
+                }
+                const infoText = document.getElementById('edit-preview-info');
+                if (infoText) {
+                    infoText.innerText = 'Maks. 2 MB • JPG, PNG, atau WebP (Atau seret ke sini)';
+                }
             }
         }
 
