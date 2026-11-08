@@ -80,6 +80,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/orders/{kode}', [OrderController::class, 'show'])->name('api.orders.show');
 
     Route::get('/checkout', fn() => view('Deskop Cart & Checkout Page'))->name('checkout');
+
+    // Transaksi & Checkout Pelanggan (PPL-18)
+    Route::middleware(['role:pelanggan'])->group(function () {
+        Route::post('/checkout', [OrderController::class, 'checkout'])->name('checkout.process');
+        Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+    });
+
     Route::get('/pembayaran-qris', fn() => view('Pembayaran QRIS Page'))->name('payment');
     Route::get('/profil-pelanggan', fn() => view('Profil Pelanggan Page'))->name('profile');
 });
