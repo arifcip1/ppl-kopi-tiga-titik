@@ -35,14 +35,6 @@ class CartController extends Controller
         $totalJumlah = (int) $cartItems->sum('jumlah');
         $cartCount = $cartItems->count();
 
-        // Rekomendasi produk (upsell) yang belum ada di keranjang dan masih memiliki stok
-        $inCartIds = $cartItems->pluck('product_id')->toArray();
-        $upsellProducts = Product::where('aktif', true)
-            ->whereNotIn('id', $inCartIds)
-            ->where('stok', '>', 0)
-            ->take(2)
-            ->get();
-
         // Sinkronkan ke session untuk kompabilitas
         session()->put('cart', $cartItems->pluck('jumlah', 'product_id')->toArray());
 
@@ -58,7 +50,7 @@ class CartController extends Controller
             ], 200);
         }
 
-        return view('Cart Page', compact('cartItems', 'totalPesanan', 'totalJumlah', 'upsellProducts'));
+        return view('Cart Page', compact('cartItems', 'totalPesanan', 'totalJumlah'));
     }
 
     /**

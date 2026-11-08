@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             SettingSeeder::class,
             SalesHistorySeeder::class,
+            OrderSeeder::class,
         ]);
     }
 }

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
@@ -66,11 +67,20 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/api/cart/items/{id}', [CartController::class, 'update'])->name('api.cart.update');
     Route::delete('/api/cart/items/{id}', [CartController::class, 'destroy'])->name('api.cart.destroy');
 
+    // 3. RIWAYAT & STATUS PESANAN PEMBELI (F8 - PPL 14)
+    Route::get('/riwayat-pesanan', [OrderController::class, 'index'])->name('orders');
+    Route::get('/riwayat-pesanan/{kode}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('/order-tracking', [OrderController::class, 'tracking'])->name('tracking');
+    Route::get('/order-tracking/{kode}', [OrderController::class, 'show'])->name('tracking.detail');
+    Route::get('/tracking', [OrderController::class, 'tracking']);
+    Route::get('/tracking/{kode}', [OrderController::class, 'show']);
+
+    // Endpoint API Riwayat & Status Pesanan Sisi Pembeli (PPL 14)
+    Route::get('/api/orders', [OrderController::class, 'index'])->name('api.orders.index');
+    Route::get('/api/orders/{kode}', [OrderController::class, 'show'])->name('api.orders.show');
+
     Route::get('/checkout', fn() => view('Deskop Cart & Checkout Page'))->name('checkout');
     Route::get('/pembayaran-qris', fn() => view('Pembayaran QRIS Page'))->name('payment');
-    Route::get('/tracking', fn() => view('Order Tracking & Live Status'));
-    Route::get('/order-tracking', fn() => view('Order Tracking & Live Status'))->name('tracking');
-    Route::get('/riwayat-pesanan', fn() => view('Riwayat Pesanan Page'))->name('orders');
     Route::get('/profil-pelanggan', fn() => view('Profil Pelanggan Page'))->name('profile');
 });
 
