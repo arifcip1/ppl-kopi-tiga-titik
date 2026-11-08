@@ -21,7 +21,19 @@ Route::post('/logout', [AuthController::class, 'logout'])
 
 
 
-Route::get('/', fn() => view('Desktop Landing Page'))->name('home');
+Route::get('/', function () {
+    if (\Illuminate\Support\Facades\Auth::check()) {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if (in_array($user->role, ['admin', 'owner'])) {
+            return redirect('/owner/dashboard');
+        } elseif ($user->role === 'kurir') {
+            return redirect('/kurir/tugas-baru');
+        } else {
+            return redirect('/katalog');
+        }
+    }
+    return view('Desktop Landing Page');
+})->name('home');
 
 // =========================================================================
 // 1. AUTENTIKASI PENGGUNA (FR-1.3, FR-1.4 - PPL 07)
@@ -55,6 +67,18 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/api/cart/items/{id}', [CartController::class, 'update'])->name('api.cart.update');
     Route::delete('/api/cart/items/{id}', [CartController::class, 'destroy'])->name('api.cart.destroy');
 
+    // 3. RIWAYAT & STATUS PESANAN PEMBELI (F8 - PPL 14)
+    Route::get('/riwayat-pesanan', [OrderController::class, 'index'])->name('orders');
+    Route::get('/riwayat-pesanan/{kode}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('/order-tracking', [OrderController::class, 'tracking'])->name('tracking');
+    Route::get('/order-tracking/{kode}', [OrderController::class, 'show'])->name('tracking.detail');
+    Route::get('/tracking', [OrderController::class, 'tracking']);
+    Route::get('/tracking/{kode}', [OrderController::class, 'show']);
+
+    // Endpoint API Riwayat & Status Pesanan Sisi Pembeli (PPL 14)
+    Route::get('/api/orders', [OrderController::class, 'index'])->name('api.orders.index');
+    Route::get('/api/orders/{kode}', [OrderController::class, 'show'])->name('api.orders.show');
+
     Route::get('/checkout', fn() => view('Deskop Cart & Checkout Page'))->name('checkout');
 
     // Transaksi & Checkout Pelanggan (PPL-18)
@@ -64,9 +88,6 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::get('/pembayaran-qris', fn() => view('Pembayaran QRIS Page'))->name('payment');
-    Route::get('/tracking', fn() => view('Order Tracking & Live Status'));
-    Route::get('/order-tracking', fn() => view('Order Tracking & Live Status'))->name('tracking');
-    Route::get('/riwayat-pesanan', fn() => view('Riwayat Pesanan Page'))->name('orders');
     Route::get('/profil-pelanggan', fn() => view('Profil Pelanggan Page'))->name('profile');
 });
 

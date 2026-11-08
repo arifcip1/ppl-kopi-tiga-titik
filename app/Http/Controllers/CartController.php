@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AddToCartRequest;
+use App\Http\Requests\UpdateCartItemRequest;
 use App\Models\CartItem;
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
@@ -33,14 +35,6 @@ class CartController extends Controller
         $totalJumlah = (int) $cartItems->sum('jumlah');
         $cartCount = $cartItems->count();
 
-        // Rekomendasi produk (upsell) yang belum ada di keranjang dan masih memiliki stok
-        $inCartIds = $cartItems->pluck('product_id')->toArray();
-        $upsellProducts = Product::where('aktif', true)
-            ->whereNotIn('id', $inCartIds)
-            ->where('stok', '>', 0)
-            ->take(2)
-            ->get();
-
         // Sinkronkan ke session untuk kompabilitas
         session()->put('cart', $cartItems->pluck('jumlah', 'product_id')->toArray());
 
@@ -56,24 +50,16 @@ class CartController extends Controller
             ], 200);
         }
 
-        return view('Cart Page', compact('cartItems', 'totalPesanan', 'totalJumlah', 'upsellProducts'));
+        return view('Cart Page', compact('cartItems', 'totalPesanan', 'totalJumlah'));
     }
 
     /**
      * Tambah produk ke keranjang belanja (FR-4.4, FR-4.6, BR-04).
      * Endpoint: POST /cart/items atau POST /api/cart/items
      */
-    public function store(Request $request): JsonResponse
+    public function store(AddToCartRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'product_id' => ['required', 'integer', 'exists:products,id'],
-            'jumlah'     => ['nullable', 'integer', 'min:1'],
-        ], [
-            'product_id.required' => 'Produk wajib dipilih.',
-            'product_id.exists'   => 'Produk tidak ditemukan.',
-            'jumlah.integer'      => 'Jumlah harus berupa bilangan bulat.',
-            'jumlah.min'          => 'Jumlah minimal 1 botol.',
-        ]);
+        $validated = $request->validated();
 
         $product = Product::findOrFail($validated['product_id']);
 
@@ -143,15 +129,9 @@ class CartController extends Controller
      * Ubah jumlah item di keranjang (FR-4.2, FR-4.4, BR-04).
      * Endpoint: PATCH /cart/items/{id} atau PATCH /api/cart/items/{id}
      */
-    public function update(Request $request, int $id): JsonResponse
+    public function update(UpdateCartItemRequest $request, int $id): JsonResponse
     {
-        $validated = $request->validate([
-            'jumlah' => ['required', 'integer', 'min:1'],
-        ], [
-            'jumlah.required' => 'Jumlah pesanan wajib diisi.',
-            'jumlah.integer'  => 'Jumlah harus berupa bilangan bulat.',
-            'jumlah.min'      => 'Jumlah minimal 1 botol.',
-        ]);
+        $validated = $request->validated();
 
         $cartItem = CartItem::where('user_id', Auth::id())
             ->with('product')

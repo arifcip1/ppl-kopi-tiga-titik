@@ -1,263 +1,352 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Live Tracking Pesanan - Kopi Tiga Titik</title>
+@extends('layouts.pelanggan')
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+@section('title', 'Lacak Pesanan - Kopi Tiga Titik')
+@section('active_menu', 'pesanan-saya')
+@section('page_title', 'Status & Lacak Pesanan')
+@section('role_badge', 'PELANGGAN')
+@section('page_subtitle', 'Pantau progres peracikan, pengantaran kurir, dan riwayat pesanan secara transparan')
 
-    <!-- Tailwind CSS via Vite -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="bg-slate-100 min-h-screen flex justify-center items-start py-6 antialiased font-sans">
-<div class="w-full max-w-96 min-h-screen bg-slate-50 shadow-2xl relative flex flex-col justify-start pb-24">
+@section('header_actions')
+    <a href="{{ route('orders') }}" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs">
+        <span class="material-symbols-outlined text-base">arrow_back</span>
+        <span class="hidden sm:inline">Daftar Pesanan</span>
+    </a>
+@endsection
 
-    <!-- Top Header -->
-    <div class="bg-white px-4 py-3 border-b border-slate-100 shadow-sm flex items-center justify-between sticky top-0 z-30">
-        <a href="{{ url('/riwayat-pesanan') }}" class="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-800 transition-colors">
-            <span class="material-symbols-outlined text-xl">arrow_back</span>
-        </a>
-        <div class="text-center">
-            <h1 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans'] leading-tight">Pesanan</h1>
-            <p class="text-[11px] text-blue-900 font-medium leading-none flex items-center justify-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-blue-700"></span>
-                <span>Lapak Kuwung • Mojokerto</span>
+@section('content')
+
+@if(!$order)
+    <!-- Empty State: Belum Ada Pesanan yang Dilacak -->
+    <div class="p-8 md:p-16 bg-white rounded-3xl shadow-xs border border-slate-200/80 flex flex-col items-center justify-center text-center gap-4">
+        <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-900 flex items-center justify-center shadow-inner">
+            <span class="material-symbols-outlined text-3xl">track_changes</span>
+        </div>
+        <div class="max-w-sm">
+            <h3 class="text-base md:text-lg font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Belum Ada Pesanan yang Dilacak</h3>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                Kamu belum memilih pesanan atau belum memiliki pesanan aktif untuk dipantau.
             </p>
         </div>
-        <button class="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-800 transition-colors">
-            <span class="material-symbols-outlined text-xl">support_agent</span>
-        </button>
+        <div class="flex items-center gap-2.5 mt-2">
+            <a href="{{ route('orders') }}" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors">
+                Lihat Riwayat Pesanan
+            </a>
+            <a href="{{ url('/katalog') }}" class="px-4 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition-colors shadow-xs">
+                Katalog Menu
+            </a>
+        </div>
+    </div>
+@else
+
+    <!-- Header Status Bar -->
+    <div class="p-4 md:p-5 bg-white rounded-2xl shadow-xs border border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div class="flex items-center gap-3">
+            <a href="{{ route('orders') }}" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors" title="Kembali ke Riwayat">
+                <span class="material-symbols-outlined text-lg">arrow_back</span>
+            </a>
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] text-base tracking-tight">{{ $order->kode }}</span>
+                    <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-full">
+                        {{ $order->total_botol }} Botol
+                    </span>
+                </div>
+                <p class="text-[11px] text-slate-500 mt-0.5">Dipesan pada {{ $order->tanggal_formatted }}</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 self-stretch sm:self-auto justify-between">
+            <div class="px-3 py-1 rounded-full border text-xs font-extrabold flex items-center gap-1.5 {{ $order->status_badge }}">
+                <span class="w-2 h-2 rounded-full {{ $order->status_dot }} animate-pulse"></span>
+                <span>{{ $order->status_label }}</span>
+            </div>
+        </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="px-4 pt-3 flex flex-col gap-3.5">
+    <!-- Grid 2-Kolom Desktop Responsif -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
-        <!-- ETA Banner Card -->
-        <div class="p-4 bg-white rounded-2xl shadow-sm border-2 border-blue-900 flex flex-col gap-2.5">
-            <div class="flex justify-between items-center text-xs">
-                <span class="px-2.5 py-1 bg-blue-50 text-blue-900 font-bold rounded-full flex items-center gap-1">
-                    <span class="w-1.5 h-1.5 rounded-full bg-blue-700"></span>
-                    <span>Sedang Diproses</span>
-                </span>
-                <span class="text-slate-400 text-[11px]">Perkiraan 15.55 WIB</span>
-                <span class="px-2 py-0.5 border border-blue-200 text-blue-900 font-semibold text-[10px] rounded-full">Delivery</span>
-            </div>
-            <div class="flex justify-between items-end pt-1">
-                <div>
-                    <div class="text-[11px] text-slate-500 font-medium">Estimasi Waktu Tiba</div>
-                    <div class="text-xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">15 – 20 Menit</div>
-                </div>
-                <div class="text-right">
-                    <div class="text-[10px] text-slate-400">Status Terkini</div>
-                    <div class="text-xs font-bold text-slate-800 flex items-center gap-1 justify-end">
-                        <span class="material-symbols-outlined text-sm text-blue-900">local_cafe</span>
-                        <span>Peracikan Kopi</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Kolom Kiri: Live Tracking Stepper & Log Status (lg:col-span-7) -->
+        <div class="lg:col-span-7 flex flex-col gap-4">
 
-        <!-- Stepper Timeline -->
-        <div class="p-4 bg-white rounded-2xl shadow-sm border border-slate-200/80 flex flex-col gap-3">
-            <div class="flex justify-between items-center text-xs">
-                <div class="flex items-center gap-1.5 font-bold text-slate-900">
-                    <span class="material-symbols-outlined text-blue-900 text-base">timeline</span>
-                    <span>Status Pemesanan</span>
-                </div>
-                <span class="text-slate-500 text-[11px] flex items-center gap-1">
-                    <span class="material-symbols-outlined text-xs">sync</span>
-                    <span>Live</span>
-                </span>
-            </div>
-
-            <!-- Steps -->
-            <div class="relative pl-6 space-y-4 pt-1">
-                <!-- Vertical Line -->
-                <div class="absolute left-2.5 top-3 bottom-3 w-0.5 bg-slate-200"></div>
-
-                <!-- Step 1 (Completed) -->
-                <div class="relative flex items-start gap-3">
-                    <div class="absolute -left-6 w-5 h-5 rounded-full bg-blue-900 text-white flex items-center justify-center text-xs shadow-sm">
-                        <span class="material-symbols-outlined text-xs">check</span>
-                    </div>
-                    <div class="flex-1">
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="font-bold text-slate-900">Pembayaran Diterima</span>
-                            <span class="text-slate-400 text-[10px]">15:32 WIB</span>
-                        </div>
-                        <p class="text-[11px] text-slate-500">QRIS Terverifikasi otomatis oleh sistem toko.</p>
-                    </div>
+            <!-- Banner Estimasi Waktu / Status Terkini -->
+            <div class="p-4 md:p-5 bg-white rounded-3xl shadow-xs border-2 border-blue-900/30 flex flex-col gap-3">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="px-2.5 py-1 bg-blue-50 text-blue-900 font-bold rounded-full flex items-center gap-1.5 border border-blue-200/60">
+                        <span class="material-symbols-outlined text-sm">local_cafe</span>
+                        <span>Lapak Kuwung • Delivery</span>
+                    </span>
+                    <span class="text-[11px] font-semibold text-slate-500">Live Status</span>
                 </div>
 
-                <!-- Step 2 (Active) -->
-                <div class="relative flex items-start gap-3">
-                    <div class="absolute -left-6 w-5 h-5 rounded-full bg-blue-900 text-white flex items-center justify-center text-xs shadow-md ring-4 ring-blue-100">
-                        <span class="material-symbols-outlined text-xs">coffee</span>
-                    </div>
-                    <div class="flex-1">
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="font-bold text-blue-900">Kopi Sedang Disiapkan & Cooler Box</span>
-                            <span class="px-1.5 py-0.2 bg-blue-100 text-blue-900 font-bold text-[9px] rounded">Diproses</span>
-                        </div>
-                        <p class="text-[11px] text-slate-500 mt-0.5">Barista sedang meracik 3 kopi botol 250ml dan memasukkan ice cooling pack agar tetap dingin.</p>
-                    </div>
-                </div>
-
-                <!-- Step 3 (Pending) -->
-                <div class="relative flex items-start gap-3">
-                    <div class="absolute -left-6 w-5 h-5 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-xs">
-                        <span class="material-symbols-outlined text-xs">moped</span>
-                    </div>
-                    <div class="flex-1">
-                        <div class="text-xs font-semibold text-slate-600">Kurir Mengantar ke Lokasimu</div>
-                        <p class="text-[11px] text-slate-400">Kurir bersiap berangkat menuju Jl. Mojopahit, Sooko.</p>
-                    </div>
-                </div>
-
-                <!-- Step 4 (Pending) -->
-                <div class="relative flex items-start gap-3">
-                    <div class="absolute -left-6 w-5 h-5 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-xs">
-                        <span class="material-symbols-outlined text-xs">check_circle</span>
-                    </div>
-                    <div class="flex-1">
-                        <div class="text-xs font-semibold text-slate-600">Pesanan Selesai Diterima</div>
-                        <p class="text-[11px] text-slate-400">Konfirmasi botol kopi sampai di tujuan.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Courier & Delivery Info -->
-        <div class="p-4 bg-white rounded-2xl shadow-sm border border-slate-200/80 flex flex-col gap-3">
-            <div class="flex justify-between items-center text-xs">
-                <div class="flex items-center gap-1.5 font-bold text-slate-900">
-                    <span class="material-symbols-outlined text-blue-900 text-base">moped</span>
-                    <span>Informasi Pengantaran & Kurir</span>
-                </div>
-                <span class="px-2 py-0.5 bg-blue-50 text-blue-900 font-semibold text-[10px] rounded-full border border-blue-100">Kurir Toko</span>
-            </div>
-
-            <!-- Driver Card -->
-            <div class="p-3 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-10 h-10 rounded-full bg-blue-900 text-white font-bold text-sm flex items-center justify-center font-['Plus_Jakarta_Sans']">
-                        MI
-                    </div>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 pt-1 border-t border-slate-100">
                     <div>
-                        <div class="text-xs font-bold text-slate-900">Mas Ilham (Kurir Kopi Tiga Titik)</div>
-                        <div class="text-[11px] text-slate-600 flex items-center gap-1 mt-0.5">
-                            <span>🛵 Honda Vario Hitam</span>
-                            <span>•</span>
-                            <strong class="text-blue-900">W 4821 NA</strong>
+                        <span class="text-[11px] text-slate-400 font-medium">Estimasi Waktu</span>
+                        @if($order->status === 'diproses')
+                            <div class="text-xl md:text-2xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">15 – 20 Menit</div>
+                        @elseif($order->status === 'dikirim')
+                            <div class="text-xl md:text-2xl font-extrabold text-purple-900 font-['Plus_Jakarta_Sans']">Dalam Perjalanan 🛵</div>
+                        @elseif($order->status === 'selesai')
+                            <div class="text-xl md:text-2xl font-extrabold text-emerald-700 font-['Plus_Jakarta_Sans']">Telah Diterima ✓</div>
+                        @elseif($order->status === 'dibatalkan')
+                            <div class="text-xl md:text-2xl font-extrabold text-rose-700 font-['Plus_Jakarta_Sans']">Pesanan Dibatalkan</div>
+                        @else
+                            <div class="text-xl md:text-2xl font-extrabold text-amber-700 font-['Plus_Jakarta_Sans']">Menunggu Pembayaran</div>
+                        @endif
+                    </div>
+
+                    <div class="sm:text-right">
+                        <span class="text-[10px] text-slate-400 block font-semibold uppercase tracking-wider">Tahap Sekarang</span>
+                        <span class="text-xs font-bold text-slate-800 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm text-blue-900">{{ $order->status_icon }}</span>
+                            <span>{{ $order->status_label }}</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stepper Timeline Pelacakan Status -->
+            <div class="p-5 md:p-6 bg-white rounded-3xl shadow-xs border border-slate-200/80 flex flex-col gap-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-900 text-lg">timeline</span>
+                        <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Alur Pelacakan Pesanan</h3>
+                    </div>
+                    <span class="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span>Update Otomatis</span>
+                    </span>
+                </div>
+
+                @php
+                    $step = $order->status_step; // 1: Menunggu, 2: Diproses, 3: Dikirim, 4: Selesai, 0: Batal
+                @endphp
+
+                <!-- 4 Step Alur Transaksi -->
+                <div class="relative pl-7 space-y-6 pt-1">
+                    <!-- Garis Vertikal Penanda Alur -->
+                    <div class="absolute left-3 top-3 bottom-3 w-0.5 bg-slate-200"></div>
+
+                    <!-- Step 1: Pesanan Dibuat / Pembayaran -->
+                    <div class="relative flex items-start gap-3.5">
+                        <div class="absolute -left-7 w-6 h-6 rounded-full {{ $step >= 1 ? 'bg-blue-900 text-white shadow-xs' : 'bg-slate-200 text-slate-400' }} flex items-center justify-center text-xs shrink-0">
+                            <span class="material-symbols-outlined text-xs">check</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="font-bold {{ $step >= 1 ? 'text-slate-900' : 'text-slate-400' }}">Pesanan Dibuat & Verifikasi Pembayaran</span>
+                                <span class="text-[10px] text-slate-400">{{ $order->created_at ? $order->created_at->format('H:i') . ' WIB' : '' }}</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                                Pesanan dicatat di sistem Kopi Tiga Titik dengan metode pembayaran QRIS.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Peracikan Kopi (Diproses) -->
+                    <div class="relative flex items-start gap-3.5">
+                        <div class="absolute -left-7 w-6 h-6 rounded-full {{ $step >= 2 ? 'bg-blue-900 text-white shadow-xs ring-4 ring-blue-100' : 'bg-slate-200 text-slate-400' }} flex items-center justify-center text-xs shrink-0">
+                            <span class="material-symbols-outlined text-xs">local_cafe</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="font-bold {{ $step >= 2 ? 'text-slate-900' : 'text-slate-400' }}">Kopi Sedang Diracik & Dikemas</span>
+                                @if($step === 2)
+                                    <span class="px-1.5 py-0.2 bg-blue-100 text-blue-900 text-[9px] font-extrabold rounded">Diproses</span>
+                                @endif
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                                Barista menyiapkan botol 250ml dalam cooler pack agar kualitas dan kesegaran rasa terjaga.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Kurir Mengantar (Dikirim) -->
+                    <div class="relative flex items-start gap-3.5">
+                        <div class="absolute -left-7 w-6 h-6 rounded-full {{ $step >= 3 ? 'bg-purple-900 text-white shadow-xs ring-4 ring-purple-100' : 'bg-slate-200 text-slate-400' }} flex items-center justify-center text-xs shrink-0">
+                            <span class="material-symbols-outlined text-xs">moped</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="font-bold {{ $step >= 3 ? 'text-slate-900' : 'text-slate-400' }}">Kurir Mengantar Pesanan</span>
+                                @if($step === 3)
+                                    <span class="px-1.5 py-0.2 bg-purple-100 text-purple-900 text-[9px] font-extrabold rounded">Diantar</span>
+                                @endif
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                                Kurir toko sedang dalam perjalanan menuju alamat pengirimanmu.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: Selesai Diterima -->
+                    <div class="relative flex items-start gap-3.5">
+                        <div class="absolute -left-7 w-6 h-6 rounded-full {{ $step >= 4 ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-200 text-slate-400' }} flex items-center justify-center text-xs shrink-0">
+                            <span class="material-symbols-outlined text-xs">check_circle</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="font-bold {{ $step >= 4 ? 'text-slate-900' : 'text-slate-400' }}">Pesanan Selesai Diterima</span>
+                                @if($step >= 4)
+                                    <span class="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[9px] font-extrabold rounded">Selesai</span>
+                                @endif
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                                Pesanan telah sampai di tujuan dan diterima dengan baik.
+                            </p>
                         </div>
                     </div>
                 </div>
-                <button class="w-9 h-9 rounded-xl bg-white text-blue-900 border border-slate-200 flex items-center justify-center hover:bg-blue-50 shadow-xs transition-colors">
-                    <span class="material-symbols-outlined text-lg">call</span>
-                </button>
+
+                <!-- Log Catatan Riwayat Status (order_status_history) -->
+                @if($order->statusHistories && $order->statusHistories->isNotEmpty())
+                    <div class="pt-3 border-t border-slate-100 flex flex-col gap-2">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Catatan Riwayat Aktivitas</span>
+                        <div class="space-y-1.5">
+                            @foreach($order->statusHistories as $log)
+                                <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 text-xs flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span class="material-symbols-outlined text-sm text-blue-900 shrink-0">history</span>
+                                        <span class="text-slate-700 truncate font-medium">
+                                            Status diubah menjadi <strong class="text-slate-900 uppercase">{{ str_replace('_', ' ', $log->status_baru) }}</strong>
+                                            @if($log->keterangan)
+                                                - {{ $log->keterangan }}
+                                            @endif
+                                        </span>
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 shrink-0">{{ $log->created_at ? $log->created_at->format('d/m H:i') : '' }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
 
-            <!-- Destination Address -->
-            <div class="text-xs flex items-start gap-2 pt-1 text-slate-700">
-                <span class="material-symbols-outlined text-blue-900 text-base">location_on</span>
-                <div>
-                    <div class="font-bold text-slate-900">Alamat Tujuan Pengiriman</div>
-                    <div class="text-slate-600 mt-0.5">Jl. Mojopahit No. 45, Sooko, Mojokerto</div>
-                    <div class="text-slate-400 italic text-[11px]">Catatan: Pagar hitam samping minimarket</div>
+            <!-- Kartu Alamat & Informasi Kurir -->
+            <div class="p-5 bg-white rounded-3xl shadow-xs border border-slate-200/80 flex flex-col gap-3">
+                <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-900 text-lg">location_on</span>
+                        <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Tujuan Pengiriman & Penerima</h3>
+                    </div>
+                    <span class="text-[10px] font-extrabold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-md">DELIVERY</span>
+                </div>
+
+                <div class="flex flex-col gap-1 text-xs">
+                    <div class="font-bold text-slate-900">{{ $order->nama_penerima ?? Auth::user()->name }}</div>
+                    <p class="text-slate-500 leading-relaxed">{{ $order->alamat }}</p>
+                    <div class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-[13px]">call</span>
+                        <span>{{ $order->telepon ?? '-' }}</span>
+                    </div>
+                    @if($order->catatan)
+                        <div class="mt-1.5 p-2 bg-amber-50/70 border border-amber-200/60 rounded-xl text-[11px] text-amber-900 flex items-start gap-1.5">
+                            <span class="material-symbols-outlined text-sm shrink-0 mt-0.5">sticky_note_2</span>
+                            <span><strong>Catatan:</strong> {{ $order->catatan }}</span>
+                        </div>
+                    @endif
+                </div>
+
+                <!-- Kurir Info -->
+                <div class="mt-2 p-3 bg-blue-50/70 rounded-2xl border border-blue-100 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-blue-900 text-white font-extrabold text-xs flex items-center justify-center shrink-0">
+                            {{ $order->courier ? strtoupper(substr($order->courier->name, 0, 1)) : 'K' }}
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-900">{{ $order->courier ? $order->courier->name : 'Kurir Toko Resmi' }}</div>
+                            <div class="text-[10px] text-blue-900 font-semibold">Pengantar Khusus Kopi Tiga Titik</div>
+                        </div>
+                    </div>
+                    <span class="px-2 py-0.5 bg-white text-blue-900 font-bold text-[10px] rounded-lg border border-blue-200">
+                        Siap Antar
+                    </span>
                 </div>
             </div>
+
         </div>
 
-        <!-- Order Items Detail -->
-        <div class="p-4 bg-white rounded-2xl shadow-sm border border-slate-200/80 flex flex-col gap-2.5">
-            <div class="flex justify-between items-center text-xs">
-                <div>
-                    <span class="font-bold text-slate-900">Rincian Pesanan (3 Botol)</span>
-                    <p class="text-[11px] text-slate-400">Kemasan Botol 250ml</p>
+        <!-- Kolom Kanan: Rincian Produk & Ringkasan Pembayaran (lg:col-span-5) -->
+        <div class="lg:col-span-5 flex flex-col gap-4 lg:sticky lg:top-24">
+
+            <!-- Rincian Produk Pesanan -->
+            <div class="p-5 bg-white rounded-3xl shadow-xs border border-slate-200/80 flex flex-col gap-3.5">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Rincian Item Kopi</h3>
+                    <span class="text-xs text-slate-500 font-semibold">{{ $order->total_botol }} Botol 250ml</span>
                 </div>
-                <span class="text-sm font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">Rp 28.000</span>
+
+                <div class="flex flex-col gap-3">
+                    @foreach($order->orderItems as $item)
+                        <div class="flex items-center justify-between text-xs gap-3">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <div class="w-10 h-12 bg-slate-50 rounded-xl border border-slate-200/70 p-1 shrink-0 flex items-center justify-center">
+                                    @php
+                                        $imgSrc = $item->product && $item->product->foto_path
+                                            ? asset('storage/' . $item->product->foto_path)
+                                            : asset('products/' . $item->nama_produk . '.png');
+                                    @endphp
+                                    <img src="{{ $imgSrc }}" alt="{{ $item->nama_produk }}" class="w-full h-full object-contain" onerror="this.src='https://placehold.co/80x100/1e3a8a/ffffff?text=KTT'" />
+                                </div>
+                                <div class="min-w-0 truncate">
+                                    <span class="font-bold text-slate-900 truncate block">{{ $item->nama_produk }}</span>
+                                    <span class="text-[11px] text-slate-500">{{ $item->jumlah }} botol x Rp {{ number_format($item->harga_satuan, 0, ',', '.') }}</span>
+                                </div>
+                            </div>
+                            <span class="font-bold text-slate-900 shrink-0">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</span>
+                        </div>
+                    @endforeach
+                </div>
             </div>
 
-            <!-- Item 1 -->
-            <div class="flex items-center gap-3 py-1.5 border-t border-slate-100">
-                <img src="{{ asset('products/Titik Temu.png') }}" alt="Titik Temu" class="w-8 h-10 object-contain" />
-                <div class="flex-1">
+            <!-- Ringkasan Biaya & Pembayaran -->
+            <div class="p-5 bg-white rounded-3xl shadow-xs border border-slate-200/80 flex flex-col gap-3">
+                <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans'] pb-2 border-b border-slate-100">Ringkasan Tagihan</h3>
+
+                <div class="flex flex-col gap-2 text-xs text-slate-600">
                     <div class="flex justify-between">
-                        <span class="text-xs font-bold text-slate-900">2x Titik Temu (Gula Aren)</span>
-                        <span class="text-xs font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Rp 20.000</span>
+                        <span>Subtotal Produk</span>
+                        <span class="font-semibold text-slate-800">{{ $order->subtotal_formatted }}</span>
                     </div>
-                    <div class="text-[10px] text-slate-500">250ml • Normal Ice • Aren Asli</div>
-                    <div class="text-[10px] text-slate-400">Rp 10.000 / botol</div>
-                </div>
-            </div>
-
-            <!-- Item 2 -->
-            <div class="flex items-center gap-3 py-1.5 border-t border-slate-100">
-                <img src="{{ asset('products/Titik Hitam.png') }}" alt="Titik Hitam" class="w-8 h-10 object-contain" />
-                <div class="flex-1">
                     <div class="flex justify-between">
-                        <span class="text-xs font-bold text-slate-900">1x Titik Hitam (Cold Brew)</span>
-                        <span class="text-xs font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Rp 8.000</span>
+                        <span>Biaya Ongkos Kirim</span>
+                        <span class="font-semibold text-slate-800">{{ $order->ongkir_formatted }}</span>
                     </div>
-                    <div class="text-[10px] text-slate-500">250ml • Black Americano Pekat</div>
-                    <div class="text-[10px] text-slate-400">Rp 8.000 / botol</div>
+                    <div class="border-t border-dashed border-slate-200 my-1"></div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="font-bold text-slate-900">Total Pembayaran</span>
+                        <span class="font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] text-base">{{ $order->total_formatted }}</span>
+                    </div>
+                </div>
+
+                <!-- Metode Pembayaran Badge -->
+                <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 flex items-center justify-between text-xs mt-1">
+                    <div class="flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-blue-900 text-base">qr_code_scanner</span>
+                        <span class="font-semibold text-slate-800">QRIS (Midtrans)</span>
+                    </div>
+                    <span class="px-2 py-0.5 bg-emerald-50 text-emerald-800 font-bold text-[10px] rounded-md border border-emerald-200">
+                        {{ $order->payment && $order->payment->isSuccess() ? 'Lunas Terverifikasi' : 'Terverifikasi' }}
+                    </span>
+                </div>
+
+                <!-- Tombol Aksi Bawah -->
+                <div class="flex flex-col gap-2 pt-2">
+                    <a href="{{ url('/katalog') }}" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs">
+                        <span class="material-symbols-outlined text-sm">storefront</span>
+                        <span>Pesan Menu Lain</span>
+                    </a>
+                    <a href="{{ route('orders') }}" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors">
+                        <span class="material-symbols-outlined text-sm">receipt_long</span>
+                        <span>Lihat Semua Pesanan Saya</span>
+                    </a>
                 </div>
             </div>
 
-            <div class="border-t border-dashed border-slate-200 my-1"></div>
-
-            <div class="flex flex-col gap-1 text-xs">
-                <div class="flex justify-between text-slate-600">
-                    <span>Subtotal Produk</span>
-                    <span class="font-semibold text-slate-800">Rp 28.000</span>
-                </div>
-                <div class="flex justify-between text-slate-600">
-                    <span>Ongkos Kirim Lapak (Promo)</span>
-                    <span class="font-bold text-emerald-600">Gratis</span>
-                </div>
-            </div>
-
-            <div class="border-t border-slate-100 pt-2 flex justify-between items-center">
-                <span class="text-xs font-bold text-slate-900">Total Pembayaran</span>
-                <span class="text-base font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">Rp 28.000</span>
-            </div>
-
-            <div class="flex justify-between items-center pt-1 text-xs text-slate-500">
-                <span>Metode Pembayaran</span>
-                <span class="font-bold text-slate-800 flex items-center gap-1">
-                    <span class="material-symbols-outlined text-xs">qr_code_2</span>
-                    <span>QRIS</span>
-                </span>
-            </div>
         </div>
 
     </div>
 
-    <!-- Global Bottom Navigation Bar -->
-    <div class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-96 bg-white border-t border-slate-200 py-1.5 px-6 flex justify-between items-center z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
-        <a href="{{ url('/landing') }}" class="flex flex-col items-center text-gray-400 hover:text-blue-800 transition-colors">
-            <span class="material-symbols-outlined text-2xl">home</span>
-            <span class="text-[10px] font-medium font-['Inter']">Beranda</span>
-        </a>
-        <a href="{{ url('/katalog') }}" class="flex flex-col items-center text-gray-400 hover:text-blue-800 transition-colors">
-            <span class="material-symbols-outlined text-2xl">coffee</span>
-            <span class="text-[10px] font-medium font-['Inter']">Menu</span>
-        </a>
-        <a href="{{ url('/riwayat-pesanan') }}" class="flex flex-col items-center text-blue-800">
-            <span class="material-symbols-outlined text-2xl font-bold">receipt_long</span>
-            <span class="text-[10px] font-bold font-['Inter']">Pesanan</span>
-        </a>
-        <a href="{{ url('/profil-pelanggan') }}" class="flex flex-col items-center text-gray-400 hover:text-blue-800 transition-colors">
-            <span class="material-symbols-outlined text-2xl">person</span>
-            <span class="text-[10px] font-medium font-['Inter']">Akun</span>
-        </a>
-    </div>
+@endif
 
-</div>
-</body>
-</html>
+@endsection

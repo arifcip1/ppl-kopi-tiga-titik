@@ -142,44 +142,7 @@
                     @endif
                 </div>
 
-                <!-- Section Rekomendasi Menu Favorit Lainnya (Upsell) -->
-                @if(isset($upsellProducts) && $upsellProducts->isNotEmpty())
-                    <div class="p-4 md:p-5 bg-white rounded-2xl shadow-xs border border-slate-200/80 flex flex-col gap-3">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="material-symbols-outlined text-blue-900 text-lg">local_cafe</span>
-                                <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Tambah Varian Favorit
-                                    Lainnya</h3>
-                            </div>
-                            <span
-                                class="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">Pilihan
-                                Barista</span>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                            @foreach($upsellProducts as $upsell)
-                                <div
-                                    class="p-3 bg-slate-50 hover:bg-blue-50/50 rounded-xl border border-slate-200/70 transition-all flex items-center justify-between gap-3">
-                                    <div class="flex items-center gap-3 min-w-0">
-                                        <div
-                                            class="w-10 h-10 rounded-lg bg-blue-100 text-blue-900 flex items-center justify-center shrink-0">
-                                            <span class="material-symbols-outlined text-xl">coffee</span>
-                                        </div>
-                                        <div class="truncate">
-                                            <div class="text-xs font-bold text-slate-900 truncate">{{ $upsell->nama }}</div>
-                                            <div class="text-[11px] font-extrabold text-blue-900">Rp
-                                                {{ number_format($upsell->harga, 0, ',', '.') }}</div>
-                                        </div>
-                                    </div>
-                                    <button type="button" onclick="addUpsellProduct({{ $upsell->id }})"
-                                        class="px-2.5 py-1 bg-white hover:bg-blue-900 text-blue-900 hover:text-white rounded-lg border border-slate-200 hover:border-blue-900 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-2xs">
-                                        <span class="material-symbols-outlined text-sm font-bold">add</span>
-                                        <span>Tambah</span>
-                                    </button>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
+
 
 
             </div>
@@ -409,31 +372,6 @@
                 });
         }
 
-        // Tambah varian rekomendasi (upsell)
-        function addUpsellProduct(productId) {
-            fetch(`{{ route('cart.items.store') }}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ product_id: productId, jumlah: 1 })
-            })
-                .then(async (res) => {
-                    const data = await res.json();
-                    if (!res.ok) {
-                        throw new Error(data.message || 'Gagal menambahkan produk');
-                    }
-                    return data;
-                })
-                .then(() => {
-                    showToast('Produk ditambahkan ke keranjang!');
-                    setTimeout(() => window.location.reload(), 350);
-                })
-                .catch((err) => {
-                    showToast(err.message, true);
-                });
-        }
+
     </script>
 @endpush

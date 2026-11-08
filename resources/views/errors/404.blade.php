@@ -19,7 +19,7 @@
     <!-- Top Navigation Simple Header -->
     <header class="w-full bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-30">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-            <a href="{{ url('/') }}" class="flex items-center gap-2.5 group">
+            <a href="{{ Auth::check() ? (in_array(Auth::user()->role ?? '', ['admin', 'owner']) ? url('/owner/dashboard') : (Auth::user()->role === 'kurir' ? url('/kurir/tugas-baru') : url('/katalog'))) : url('/') }}" class="flex items-center gap-2.5 group">
                 <div class="w-9 h-9 bg-blue-900 rounded-xl shadow-xs flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
                     <img class="w-6 h-6 object-contain" src="{{ asset('images/logo.png') }}" alt="Logo Kopi Tiga Titik" onerror="this.src='https://placehold.co/40x40/1e3a8a/ffffff?text=KTT'" />
                 </div>
@@ -34,10 +34,15 @@
                         <span class="material-symbols-outlined text-base">dashboard</span>
                         <span>Dashboard Owner</span>
                     </a>
+                @elseif(Auth::user()->role === 'kurir')
+                    <a href="{{ url('/kurir/tugas-baru') }}" class="text-xs font-bold text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-xl border border-indigo-200 flex items-center gap-1 transition-colors">
+                        <span class="material-symbols-outlined text-base">local_shipping</span>
+                        <span>Dashboard Kurir</span>
+                    </a>
                 @else
                     <a href="{{ url('/katalog') }}" class="text-xs font-semibold text-blue-900 hover:text-blue-700 flex items-center gap-1 transition-colors">
                         <span class="material-symbols-outlined text-base">storefront</span>
-                        <span>Lihat Menu</span>
+                        <span>Katalog Menu</span>
                     </a>
                 @endif
             @else
@@ -83,14 +88,19 @@
                             <span class="material-symbols-outlined text-lg">inventory_2</span>
                             <span>Kelola Produk</span>
                         </a>
-                    @else
-                        <a href="{{ url('/') }}" class="w-full sm:w-auto px-5 py-3 bg-blue-900 hover:bg-blue-800 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-98">
-                            <span class="material-symbols-outlined text-lg">home</span>
-                            <span>Kembali ke Beranda</span>
+                    @elseif(Auth::user()->role === 'kurir')
+                        <a href="{{ url('/kurir/tugas-baru') }}" class="w-full sm:w-auto px-5 py-3 bg-blue-900 hover:bg-blue-800 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-98">
+                            <span class="material-symbols-outlined text-lg">local_shipping</span>
+                            <span>Kembali ke Dashboard Kurir</span>
                         </a>
-                        <a href="{{ url('/katalog') }}" class="w-full sm:w-auto px-5 py-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs sm:text-sm font-semibold rounded-2xl shadow-xs transition-all flex items-center justify-center gap-2 active:scale-98">
-                            <span class="material-symbols-outlined text-lg">menu_book</span>
-                            <span>Lihat Katalog Menu</span>
+                    @else
+                        <a href="{{ url('/katalog') }}" class="w-full sm:w-auto px-5 py-3 bg-blue-900 hover:bg-blue-800 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-98">
+                            <span class="material-symbols-outlined text-lg">storefront</span>
+                            <span>Kembali ke Katalog Menu</span>
+                        </a>
+                        <a href="{{ url('/cart') }}" class="w-full sm:w-auto px-5 py-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs sm:text-sm font-semibold rounded-2xl shadow-xs transition-all flex items-center justify-center gap-2 active:scale-98">
+                            <span class="material-symbols-outlined text-lg">shopping_cart</span>
+                            <span>Keranjang Belanja</span>
                         </a>
                     @endif
                 @else
