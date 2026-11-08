@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +56,13 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/api/cart/items/{id}', [CartController::class, 'destroy'])->name('api.cart.destroy');
 
     Route::get('/checkout', fn() => view('Deskop Cart & Checkout Page'))->name('checkout');
+
+    // Transaksi & Checkout Pelanggan (PPL-18)
+    Route::middleware(['role:pelanggan'])->group(function () {
+        Route::post('/checkout', [OrderController::class, 'checkout'])->name('checkout.process');
+        Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+    });
+
     Route::get('/pembayaran-qris', fn() => view('Pembayaran QRIS Page'))->name('payment');
     Route::get('/tracking', fn() => view('Order Tracking & Live Status'));
     Route::get('/order-tracking', fn() => view('Order Tracking & Live Status'))->name('tracking');
