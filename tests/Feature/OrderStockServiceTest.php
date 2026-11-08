@@ -19,11 +19,31 @@ class OrderStockServiceTest extends TestCase
 
     private OrderStockService $service;
 
+    /**
+     * True jika sebuah test melakukan DB::commit() manual sehingga data lolos
+     * dari rollback RefreshDatabase dan harus dibersihkan agar tidak bocor ke test lain.
+     */
+    private bool $committedOutsideTransaction = false;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->service = new OrderStockService();
+    }
+
+    protected function tearDown(): void
+    {
+        if ($this->committedOutsideTransaction) {
+            while (\Illuminate\Support\Facades\DB::transactionLevel() > 0) {
+                \Illuminate\Support\Facades\DB::rollBack();
+            }
+
+            // Database in-memory dibuat ulang karena data test sudah ter-commit permanen.
+            $this->artisan('migrate:fresh');
+        }
+
+        parent::tearDown();
     }
 
     /**
@@ -343,6 +363,7 @@ class OrderStockServiceTest extends TestCase
         // Di SQLite, PRAGMA foreign_keys = OFF hanya berlaku di luar transaksi.
         // Commit transaksi RefreshDatabase sementara untuk menyimulasikan produk terhapus.
         \Illuminate\Support\Facades\DB::commit();
+        $this->committedOutsideTransaction = true;
         \Illuminate\Support\Facades\DB::statement('PRAGMA foreign_keys = OFF;');
         $b->delete();
         \Illuminate\Support\Facades\DB::statement('PRAGMA foreign_keys = ON;');
