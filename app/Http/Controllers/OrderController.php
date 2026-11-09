@@ -15,6 +15,39 @@ use Illuminate\View\View;
 class OrderController extends Controller
 {
     /**
+     * Tampilkan formulir checkout dan ringkasan pesanan pelanggan (PPL-16 / PPL-20).
+     * Endpoint: GET /checkout
+     */
+    public function showCheckout(Request $request): View|RedirectResponse
+    {
+        $user = $request->user();
+        $cartItems = $user->cartItems()
+            ->with('product')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        if ($cartItems->isEmpty()) {
+            return redirect()->route('cart')->with('warning', 'Keranjang belanja Anda masih kosong. Silakan pilih menu kopi terlebih dahulu.');
+        }
+
+        $subtotal = 0;
+        $totalJumlah = 0;
+
+        foreach ($cartItems as $item) {
+            $itemSubtotal = $item->product ? ($item->product->harga * $item->jumlah) : 0;
+            $item->subtotal = $itemSubtotal;
+            $subtotal += $itemSubtotal;
+            $totalJumlah += $item->jumlah;
+        }
+
+        // Ongkos kirim sementara Rp 0 (sesuai FR-5.8 sampai F7 aktif)
+        $ongkir = 0;
+        $total = $subtotal + $ongkir;
+
+        return view('Deskop Cart & Checkout Page', compact('cartItems', 'subtotal', 'totalJumlah', 'ongkir', 'total'));
+    }
+
+    /**
      * Memproses checkout pesanan pelanggan (PPL-18).
      * Endpoint: POST /checkout
      */

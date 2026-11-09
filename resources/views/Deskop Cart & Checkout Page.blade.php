@@ -67,6 +67,9 @@
 
 @section('content')
 
+    <!-- Komponen Notifikasi Global Flash Message (Sesuai PPL-24) -->
+    <x-flash-message />
+
     <!-- ========================================================================= -->
     <!-- 1. STEP PROGRESS INDICATOR & LAPAK BANNER -->
     <!-- ========================================================================= -->
@@ -135,7 +138,7 @@
     <!-- ========================================================================= -->
     <!-- 2. FORM CHECKOUT & PETA LOKASI DENGAN LAYOUT RESPONSIVE 2-KOLOM -->
     <!-- ========================================================================= -->
-    <form id="formCheckout" action="{{ url('/pembayaran-qris') }}" method="GET" onsubmit="handleCheckoutSubmit(event)">
+    <form id="formCheckout" action="{{ route('checkout.process') }}" method="POST" onsubmit="handleCheckoutSubmit(event)">
         @csrf
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
@@ -174,10 +177,11 @@
                                        id="nama_penerima" 
                                        name="nama_penerima" 
                                        required
-                                       value="{{ Auth::user()->name ?? 'Dimas Suryo' }}"
+                                       value="{{ old('nama_penerima', Auth::user()->name ?? 'Dimas Suryo') }}"
                                        placeholder="Contoh: Dimas Suryo" 
                                        class="w-full pl-11 pr-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 transition-all placeholder:text-slate-400" />
                             </div>
+                            <x-input-error for="nama_penerima" class="mt-1" />
                         </div>
 
                         <!-- Nomor Kontak / WhatsApp -->
@@ -193,11 +197,12 @@
                                        id="telepon" 
                                        name="telepon" 
                                        required
-                                       value="{{ Auth::user()->telepon ?? '081234567890' }}"
+                                       value="{{ old('telepon', Auth::user()->telepon ?? '081234567890') }}"
                                        placeholder="08xxxxxxxxxx" 
                                        pattern="08[0-9]{8,12}"
                                        class="w-full pl-11 pr-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 transition-all placeholder:text-slate-400" />
                             </div>
+                            <x-input-error for="telepon" class="mt-1" />
                             <span class="text-[10px] text-slate-400 mt-1 block">Format: 08xx (10 - 13 digit angka)</span>
                         </div>
                     </div>
@@ -232,7 +237,7 @@
                             <span class="material-symbols-outlined text-lg text-emerald-600">location_searching</span>
                             <span>Koordinat Terpilih:</span>
                             <span class="font-mono font-bold text-slate-900 bg-white px-2.5 py-0.5 rounded border border-slate-200 text-[11px]" id="display-coords">
-                                -7.472600, 112.438500
+                                {{ old('lat', '-7.472600') }}, {{ old('lng', '112.438500') }}
                             </span>
                         </div>
                         <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md flex items-center gap-1.5">
@@ -252,8 +257,10 @@
                     </div>
 
                     <!-- Hidden Inputs Koordinat (Untuk Payload Backend Form Submission) -->
-                    <input type="hidden" name="lat" id="input_lat" value="-7.472600">
-                    <input type="hidden" name="lng" id="input_lng" value="112.438500">
+                    <input type="hidden" name="lat" id="input_lat" value="{{ old('lat', '-7.472600') }}">
+                    <input type="hidden" name="lng" id="input_lng" value="{{ old('lng', '112.438500') }}">
+                    <x-input-error for="lat" class="mt-1" />
+                    <x-input-error for="lng" class="mt-1" />
 
                     <!-- Detail Alamat Lengkap (Textarea) -->
                     <div>
@@ -267,7 +274,8 @@
                                   rows="3" 
                                   required
                                   placeholder="Tuliskan nama jalan, nomor rumah, RT/RW, kelurahan, dan patokan (Contoh: Jl. Kuwung No. 24, RT 02 / RW 01, Kel. Mergelo, pagar hitam depan pos satpam)" 
-                                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 transition-all leading-relaxed placeholder:text-slate-400">Jl. Kuwung No. 24, RT 02 / RW 01, Kel. Mergelo, Kota Mojokerto (Pagar hitam samping warung kelontong)</textarea>
+                                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 transition-all leading-relaxed placeholder:text-slate-400">{{ old('alamat', Auth::user()->alamat ?? 'Jl. Kuwung No. 24, RT 02 / RW 01, Kel. Mergelo, Kota Mojokerto (Pagar hitam samping warung kelontong)') }}</textarea>
+                        <x-input-error for="alamat" class="mt-1" />
                     </div>
 
                     <!-- Catatan Khusus Barista & Kurir (Opsional) -->
@@ -281,7 +289,8 @@
                                   name="catatan" 
                                   rows="2" 
                                   placeholder="Contoh: Titik Temu mohon less sugar, jika sampai tolong bunyikan bel pagar / WA" 
-                                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 transition-all leading-relaxed placeholder:text-slate-400"></textarea>
+                                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 transition-all leading-relaxed placeholder:text-slate-400">{{ old('catatan') }}</textarea>
+                        <x-input-error for="catatan" class="mt-1" />
                     </div>
                 </div>
 
@@ -362,49 +371,65 @@
                         </a>
                     </div>
 
-                    <!-- List Produk (2 Item Snapshot Kopi Botol 250ml) -->
+                    <!-- List Produk Keranjang Riil Pelanggan -->
                     <div class="flex flex-col gap-3">
-                        <!-- Item 1: Titik Temu -->
-                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 flex items-center gap-3">
-                            <div class="w-12 h-14 bg-white rounded-lg p-1 border border-slate-200/80 flex items-center justify-center shrink-0">
-                                <img src="{{ asset('products/Titik Temu.png') }}" 
-                                     alt="Titik Temu" 
-                                     class="w-full h-full object-contain"
-                                     onerror="this.src='https://placehold.co/100x120/1e3a8a/ffffff?text=Temu'" />
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-start justify-between gap-1">
-                                    <h4 class="text-xs font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans']">Titik Temu</h4>
-                                    <span class="text-xs font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">Rp 20.000</span>
+                        @if(isset($cartItems) && $cartItems->isNotEmpty())
+                            @foreach($cartItems as $item)
+                                <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 flex items-center gap-3">
+                                    <div class="w-12 h-14 bg-white rounded-lg p-1 border border-slate-200/80 flex items-center justify-center shrink-0">
+                                        <img src="{{ $item->product?->foto ? asset('storage/' . $item->product->foto) : asset('products/' . ($item->product?->nama ?? 'Titik Temu') . '.png') }}" 
+                                             alt="{{ $item->product?->nama ?? 'Produk' }}" 
+                                             class="w-full h-full object-contain"
+                                             onerror="this.src='{{ asset('products/All Produk.png') }}'" />
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-start justify-between gap-1">
+                                            <h4 class="text-xs font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans']">{{ $item->product?->nama ?? 'Produk Kopi' }}</h4>
+                                            <span class="text-xs font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">Rp {{ number_format($item->subtotal ?? (($item->product?->harga ?? 10000) * $item->jumlah), 0, ',', '.') }}</span>
+                                        </div>
+                                        <p class="text-[10px] text-slate-500">{{ $item->product?->deskripsi ?? 'Kopi Botol 250ml' }}</p>
+                                        <div class="flex items-center justify-between text-[10px] text-slate-600 mt-1 font-semibold">
+                                            <span>{{ $item->jumlah }} botol @ Rp {{ number_format($item->product?->harga ?? 10000, 0, ',', '.') }}</span>
+                                            <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Botol Segar</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <p class="text-[10px] text-slate-500">Kopi Susu Gula Aren 250ml</p>
-                                <div class="flex items-center justify-between text-[10px] text-slate-600 mt-1 font-semibold">
-                                    <span>2 botol @ Rp 10.000</span>
-                                    <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Botol Segar</span>
+                            @endforeach
+                        @else
+                            <!-- Fallback Sample Snapshot jika dibuka langsung tanpa sesi keranjang -->
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 flex items-center gap-3">
+                                <div class="w-12 h-14 bg-white rounded-lg p-1 border border-slate-200/80 flex items-center justify-center shrink-0">
+                                    <img src="{{ asset('products/Titik Temu.png') }}" alt="Titik Temu" class="w-full h-full object-contain" />
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-start justify-between gap-1">
+                                        <h4 class="text-xs font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans']">Titik Temu</h4>
+                                        <span class="text-xs font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">Rp 20.000</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-500">Kopi Susu Gula Aren 250ml</p>
+                                    <div class="flex items-center justify-between text-[10px] text-slate-600 mt-1 font-semibold">
+                                        <span>2 botol @ Rp 10.000</span>
+                                        <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Botol Segar</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Item 2: Titik Hitam -->
-                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 flex items-center gap-3">
-                            <div class="w-12 h-14 bg-white rounded-lg p-1 border border-slate-200/80 flex items-center justify-center shrink-0">
-                                <img src="{{ asset('products/Titik Hitam.png') }}" 
-                                     alt="Titik Hitam" 
-                                     class="w-full h-full object-contain"
-                                     onerror="this.src='https://placehold.co/100x120/1e3a8a/ffffff?text=Hitam'" />
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-start justify-between gap-1">
-                                    <h4 class="text-xs font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans']">Titik Hitam</h4>
-                                    <span class="text-xs font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">Rp 8.000</span>
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 flex items-center gap-3">
+                                <div class="w-12 h-14 bg-white rounded-lg p-1 border border-slate-200/80 flex items-center justify-center shrink-0">
+                                    <img src="{{ asset('products/Titik Hitam.png') }}" alt="Titik Hitam" class="w-full h-full object-contain" />
                                 </div>
-                                <p class="text-[10px] text-slate-500">Americano Dingin 250ml</p>
-                                <div class="flex items-center justify-between text-[10px] text-slate-600 mt-1 font-semibold">
-                                    <span>1 botol @ Rp 8.000</span>
-                                    <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Botol Segar</span>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-start justify-between gap-1">
+                                        <h4 class="text-xs font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans']">Titik Hitam</h4>
+                                        <span class="text-xs font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">Rp 8.000</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-500">Americano Dingin 250ml</p>
+                                    <div class="flex items-center justify-between text-[10px] text-slate-600 mt-1 font-semibold">
+                                        <span>1 botol @ Rp 8.000</span>
+                                        <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Botol Segar</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        @endif
                     </div>
 
                     <!-- Total Item Badge -->
@@ -413,7 +438,7 @@
                             <span class="material-symbols-outlined text-sm">local_cafe</span>
                             <span>Total Minuman:</span>
                         </span>
-                        <span class="font-bold">3 Botol 250ml Siap Seduh</span>
+                        <span class="font-bold">{{ isset($totalJumlah) ? $totalJumlah : 3 }} Botol 250ml Siap Seduh</span>
                     </div>
                 </div>
 
@@ -423,8 +448,8 @@
 
                     <div class="flex flex-col gap-2.5 text-xs text-slate-700">
                         <div class="flex justify-between items-center">
-                            <span>Subtotal Produk (3 Botol)</span>
-                            <span class="font-bold text-slate-900">Rp 28.000</span>
+                            <span>Subtotal Produk ({{ isset($totalJumlah) ? $totalJumlah : 3 }} Botol)</span>
+                            <span class="font-bold text-slate-900">Rp {{ isset($subtotal) ? number_format($subtotal, 0, ',', '.') : '28.000' }}</span>
                         </div>
 
                         <!-- Ongkir Sementara Rp 0 Sesuai FR-5.8 -->
@@ -435,7 +460,7 @@
                             </span>
                             <div class="flex items-center gap-1.5">
                                 <span class="text-[10px] line-through text-slate-400">Rp 5.000</span>
-                                <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">Rp 0 (Promo)</span>
+                                <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">Rp {{ isset($ongkir) ? number_format($ongkir, 0, ',', '.') : '0' }} (Promo)</span>
                             </div>
                         </div>
 
@@ -456,7 +481,7 @@
                             <span class="text-[10px] text-slate-400 font-medium">Termasuk PPN & Jasa Pengantaran</span>
                         </div>
                         <div class="text-right">
-                            <span class="text-2xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] block leading-none">Rp 28.000</span>
+                            <span class="text-2xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] block leading-none">Rp {{ isset($total) ? number_format($total, 0, ',', '.') : '28.000' }}</span>
                         </div>
                     </div>
 
@@ -476,7 +501,7 @@
                             id="btn-submit-order" 
                             class="w-full py-3.5 bg-blue-900 hover:bg-blue-800 active:scale-98 text-white rounded-xl font-bold text-sm inline-flex items-center justify-center gap-2 shadow-md shadow-blue-900/20 transition-all cursor-pointer">
                         <span class="material-symbols-outlined text-lg leading-none" id="btn-submit-icon">qr_code_2</span>
-                        <span id="btn-submit-text">Buat Pesanan & Bayar QRIS (Rp 28.000)</span>
+                        <span id="btn-submit-text">Buat Pesanan & Bayar QRIS (Rp {{ isset($total) ? number_format($total, 0, ',', '.') : '28.000' }})</span>
                     </button>
 
                     <!-- Jaminan & Keamanan -->
@@ -660,8 +685,10 @@
                 return false;
             }
 
-            // Cegah double submit dengan menonaktifkan tombol dan memunculkan animasi loading
-            submitBtn.disabled = true;
+            // Ubah tampilan tombol ke loading state & cegah double submit
+            setTimeout(function() {
+                submitBtn.disabled = true;
+            }, 10);
             submitBtn.classList.remove('hover:bg-blue-800', 'cursor-pointer');
             submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
 
@@ -673,7 +700,6 @@
             `;
             submitText.innerText = "Memproses Pesanan & Membuka QRIS...";
 
-            // Lanjutkan navigasi/submit secara mulus
             return true;
         }
     </script>
