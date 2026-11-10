@@ -10,7 +10,7 @@
     <!-- Leaflet CSS via CDN -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <style>
-        /* Standarisasi Alignment Material Symbols agar selalu presisi di tengah */
+        /* Standarisasi Alignment Material Symbols */
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
             vertical-align: middle;
@@ -20,12 +20,11 @@
             line-height: 1;
         }
 
-        /* Custom Leaflet Map Container & Control Stacking */
+        /* Container Peta Leaflet */
         #map {
             width: 100%;
             height: 320px;
             z-index: 10;
-            border-radius: 1rem;
         }
         @media (min-width: 768px) {
             #map {
@@ -36,30 +35,52 @@
             font-family: 'Inter', sans-serif !important;
         }
         .leaflet-popup-content-wrapper {
-            border-radius: 0.75rem;
-            padding: 2px;
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border-radius: 0.875rem;
+            padding: 4px;
+            box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.15), 0 8px 10px -6px rgba(15, 23, 42, 0.1);
+            border: 1px solid #e2e8f0;
         }
         .leaflet-popup-content {
             margin: 8px 12px;
             font-size: 11px;
-            line-height: 1.4;
+            line-height: 1.45;
             color: #1e293b;
-            font-weight: 600;
         }
-        /* Custom Map Pin Marker */
+
+        /* Custom Map Pin Marker dengan Efek Radar Pulse */
         .custom-pin-marker {
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: visible !important;
         }
+        .pin-radar {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(30, 58, 138, 0.25);
+            animation: pinPulse 2s ease-out infinite;
+            pointer-events: none;
+            top: -4px;
+            left: -4px;
+        }
+        @keyframes pinPulse {
+            0% {
+                transform: scale(0.6);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.6);
+                opacity: 0;
+            }
+        }
     </style>
 @endpush
 
 @section('header_actions')
     <!-- Tombol Navigasi Kembali ke Keranjang Belanja -->
-    <a href="{{ url('/cart') }}" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors inline-flex items-center gap-1.5 text-xs font-semibold shadow-xs">
+    <a href="{{ url('/cart') }}" class="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-xl border border-slate-200 transition-all inline-flex items-center gap-1.5 text-xs font-semibold shadow-2xs hover:shadow-xs active:scale-95">
         <span class="material-symbols-outlined text-base">arrow_back</span>
         <span class="hidden sm:inline">Kembali ke Keranjang</span>
     </a>
@@ -67,70 +88,70 @@
 
 @section('content')
 
-    <!-- Komponen Notifikasi Global Flash Message (Sesuai PPL-24) -->
-    <x-flash-message />
-
     <!-- ========================================================================= -->
     <!-- 1. STEP PROGRESS INDICATOR & LAPAK BANNER -->
     <!-- ========================================================================= -->
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-stretch">
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
         
-        <!-- Step Indicator -->
-        <div class="md:col-span-7 bg-white p-3.5 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between">
-            <!-- Step 1: Keranjang (Done) -->
-            <div class="flex items-center gap-2">
-                <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">
-                    <span class="material-symbols-outlined text-sm font-bold">check</span>
+        <!-- Step Progress Indicator -->
+        <div class="md:col-span-7 bg-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between">
+            <!-- Step 1: Keranjang (Selesai) -->
+            <a href="{{ url('/cart') }}" class="flex items-center gap-2.5 group cursor-pointer" title="Kembali ke Keranjang">
+                <div class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center font-bold text-xs shrink-0 group-hover:bg-emerald-100 transition-colors">
+                    <span class="material-symbols-outlined text-base font-bold">check</span>
                 </div>
                 <div>
-                    <span class="text-xs font-bold text-slate-900 block leading-tight">Keranjang</span>
+                    <span class="text-xs font-bold text-slate-900 block leading-tight group-hover:text-blue-900 transition-colors">1. Keranjang</span>
                     <span class="text-[10px] text-emerald-600 font-semibold hidden sm:block">Item Terpilih</span>
                 </div>
-            </div>
+            </a>
 
-            <div class="flex-1 h-0.5 bg-emerald-200 mx-3"></div>
+            <!-- Divider 1 -> 2 -->
+            <div class="flex-1 h-0.5 bg-emerald-300 mx-3 rounded-full"></div>
 
-            <!-- Step 2: Checkout & Alamat (Active) -->
-            <div class="flex items-center gap-2">
-                <div class="w-7 h-7 rounded-full bg-blue-900 text-white flex items-center justify-center font-bold text-xs shrink-0 ring-4 ring-blue-100">
+            <!-- Step 2: Pengiriman (Aktif) -->
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-blue-900 text-white flex items-center justify-center font-bold text-xs shrink-0 ring-4 ring-blue-100 shadow-xs">
                     2
                 </div>
                 <div>
-                    <span class="text-xs font-bold text-blue-900 block leading-tight">Pengiriman</span>
-                    <span class="text-[10px] text-blue-800 font-semibold hidden sm:block">Titik Lokasi</span>
+                    <span class="text-xs font-bold text-blue-900 block leading-tight">2. Pengiriman</span>
+                    <span class="text-[10px] text-blue-700 font-semibold hidden sm:block">Alamat & Peta</span>
                 </div>
             </div>
 
-            <div class="flex-1 h-0.5 bg-slate-200 mx-3"></div>
+            <!-- Divider 2 -> 3 -->
+            <div class="flex-1 h-0.5 bg-slate-200 mx-3 rounded-full"></div>
 
-            <!-- Step 3: Pembayaran QRIS (Next) -->
-            <div class="flex items-center gap-2 opacity-60">
-                <div class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-xs shrink-0">
+            <!-- Step 3: Pembayaran QRIS (Berikutnya) -->
+            <div class="flex items-center gap-2.5 opacity-60">
+                <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 border border-slate-200 flex items-center justify-center font-bold text-xs shrink-0">
                     3
                 </div>
                 <div>
-                    <span class="text-xs font-bold text-slate-500 block leading-tight">Pembayaran</span>
+                    <span class="text-xs font-bold text-slate-600 block leading-tight">3. Pembayaran</span>
                     <span class="text-[10px] text-slate-400 font-semibold hidden sm:block">QRIS Dinamis</span>
                 </div>
             </div>
         </div>
 
-        <!-- Lapak Info Banner -->
-        <div class="md:col-span-5 bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-3.5 rounded-2xl shadow-xs flex items-center justify-between">
-            <div class="flex items-center gap-2.5">
-                <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/20">
+        <!-- Lapak Info Banner Mojokerto -->
+        <div class="md:col-span-5 bg-slate-900 text-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/15">
                     <span class="material-symbols-outlined text-amber-300 text-xl">storefront</span>
                 </div>
                 <div>
                     <div class="flex items-center gap-1.5">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span class="text-xs font-bold font-['Plus_Jakarta_Sans']">Lapak Jl. Kuwung, Mojokerto</span>
+                        <span class="text-xs font-bold font-['Plus_Jakarta_Sans'] text-white">Lapak Kuwung, Mojokerto</span>
                     </div>
-                    <p class="text-[10px] text-blue-100">Jam Operasional: 15.00 - 18.00 WIB • Kurir Siaga</p>
+                    <p class="text-[11px] text-slate-300 mt-0.5">Operasional: 15.00 - 18.00 WIB • Kurir Siaga</p>
                 </div>
             </div>
-            <span class="px-2.5 py-1 bg-white/15 rounded-lg text-[10px] font-bold tracking-tight border border-white/20 shrink-0">
-                🛵 Delivery
+            <span class="px-2.5 py-1 bg-white/10 rounded-lg text-[10px] font-bold tracking-tight border border-white/15 shrink-0 text-emerald-300 flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">two_wheeler</span>
+                <span>Delivery</span>
             </span>
         </div>
     </div>
@@ -141,7 +162,7 @@
     <form id="formCheckout" action="{{ route('checkout.process') }}" method="POST" onsubmit="handleCheckoutSubmit(event)">
         @csrf
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start mt-1">
             
             <!-- ================================================================= -->
             <!-- KOLOM KIRI (7 SPAN): DATA PENERIMA, PETA LEAFLET & METODE BAYAR -->
@@ -151,16 +172,16 @@
                 <!-- CARD 1: DATA PENERIMA PESANAN (FR-5.1) -->
                 <div class="bg-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col gap-4">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div class="flex items-center gap-2.5">
-                            <span class="w-8 h-8 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center shrink-0 shadow-2xs">
+                        <div class="flex items-center gap-3">
+                            <span class="w-9 h-9 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
                                 <span class="material-symbols-outlined text-lg">person</span>
                             </span>
                             <div>
                                 <h2 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">1. Informasi Penerima Pesanan</h2>
-                                <p class="text-[11px] text-slate-500">Pastikan nomor telepon terhubung ke WhatsApp aktif untuk kurir</p>
+                                <p class="text-[11px] text-slate-500">Pastikan nomor telepon terhubung ke WhatsApp aktif untuk kurir pengantaran</p>
                             </div>
                         </div>
-                        <span class="px-2.5 py-0.5 bg-blue-50 text-blue-900 border border-blue-200 text-[10px] font-bold rounded-lg">Wajib Diisi</span>
+                        <span class="px-2.5 py-1 bg-blue-50 text-blue-900 border border-blue-200 text-[10px] font-bold rounded-full">Wajib Diisi</span>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -171,7 +192,7 @@
                             </label>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                    <span class="material-symbols-outlined text-[19px]">person</span>
+                                    <span class="material-symbols-outlined text-[19px]">badge</span>
                                 </div>
                                 <input type="text" 
                                        id="nama_penerima" 
@@ -179,7 +200,7 @@
                                        required
                                        value="{{ old('nama_penerima', Auth::user()->name ?? 'Dimas Suryo') }}"
                                        placeholder="Contoh: Dimas Suryo" 
-                                       class="w-full pl-11 pr-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 transition-all placeholder:text-slate-400" />
+                                       class="w-full pl-11 pr-3.5 py-2.5 bg-slate-50/70 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium hover:border-slate-400 focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10 transition-all placeholder:text-slate-400" />
                             </div>
                             <x-input-error for="nama_penerima" class="mt-1" />
                         </div>
@@ -200,10 +221,10 @@
                                        value="{{ old('telepon', Auth::user()->telepon ?? '081234567890') }}"
                                        placeholder="08xxxxxxxxxx" 
                                        pattern="08[0-9]{8,12}"
-                                       class="w-full pl-11 pr-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 transition-all placeholder:text-slate-400" />
+                                       class="w-full pl-11 pr-3.5 py-2.5 bg-slate-50/70 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium hover:border-slate-400 focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10 transition-all placeholder:text-slate-400" />
                             </div>
                             <x-input-error for="telepon" class="mt-1" />
-                            <span class="text-[10px] text-slate-400 mt-1 block">Format: 08xx (10 - 13 digit angka)</span>
+                            <span class="text-[10px] text-slate-400 mt-1 block">Format: 08xx (10 - 13 digit angka WhatsApp aktif)</span>
                         </div>
                     </div>
                 </div>
@@ -211,13 +232,13 @@
                 <!-- CARD 2: TITIK PENGANTARAN KURIR & PETA INTERAKTIF LEAFLET (FR-5.2 & FR-7.1) -->
                 <div class="bg-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col gap-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 pb-3">
-                        <div class="flex items-center gap-2.5">
-                            <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 shadow-2xs">
+                        <div class="flex items-center gap-3">
+                            <span class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-100 shadow-2xs">
                                 <span class="material-symbols-outlined text-lg">pin_drop</span>
                             </span>
                             <div>
                                 <h2 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">2. Titik Pengantaran Kurir (Peta Mojokerto)</h2>
-                                <p class="text-[11px] text-slate-500">Geser pin pada peta atau klik tombol GPS agar kurir sampai tepat waktu</p>
+                                <p class="text-[11px] text-slate-500">Geser pin pada peta atau klik tombol GPS agar kurir sampai tepat ke alamat Anda</p>
                             </div>
                         </div>
 
@@ -232,27 +253,27 @@
                     </div>
 
                     <!-- Koordinat Indicator & Live Chip -->
-                    <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/70 text-xs">
-                        <div class="flex items-center gap-2 text-slate-600 font-medium">
-                            <span class="material-symbols-outlined text-lg text-emerald-600">location_searching</span>
-                            <span>Koordinat Terpilih:</span>
-                            <span class="font-mono font-bold text-slate-900 bg-white px-2.5 py-0.5 rounded border border-slate-200 text-[11px]" id="display-coords">
+                    <div class="flex flex-wrap items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 text-xs">
+                        <div class="flex items-center gap-2 text-slate-700 font-medium">
+                            <span class="material-symbols-outlined text-base text-emerald-600">location_searching</span>
+                            <span class="text-xs">Koordinat Terpilih:</span>
+                            <span class="font-mono font-bold text-slate-900 bg-white px-2.5 py-0.5 rounded-md border border-slate-200 text-xs shadow-2xs" id="display-coords">
                                 {{ old('lat', '-7.472600') }}, {{ old('lng', '112.438500') }}
                             </span>
                         </div>
-                        <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md flex items-center gap-1.5">
+                        <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full flex items-center gap-1.5 border border-emerald-200">
                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span>Akurasi GPS Mojokerto</span>
+                            <span>GPS Mojokerto Siaga</span>
                         </span>
                     </div>
 
                     <!-- Leaflet Map Container -->
-                    <div class="relative overflow-hidden rounded-2xl border border-slate-300">
+                    <div class="relative overflow-hidden rounded-2xl border border-slate-300 shadow-2xs">
                         <div id="map"></div>
-                        <!-- Petunjuk Overlay di Peta -->
-                        <div class="absolute bottom-2.5 left-2.5 z-20 bg-white/95 backdrop-blur-xs px-3 py-1.5 rounded-xl border border-slate-200/90 shadow-xs text-[10px] text-slate-700 font-medium flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-xs text-blue-900">touch_app</span>
-                            <span>Klik di peta atau geser pin kopi untuk memindahkan titik</span>
+                        <!-- Petunjuk Floating di Peta -->
+                        <div class="absolute bottom-3 left-3 z-20 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm text-[11px] text-slate-700 font-medium flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm text-blue-900">touch_app</span>
+                            <span>Klik di peta atau geser pin kopi untuk memindahkan lokasi pengantaran</span>
                         </div>
                     </div>
 
@@ -274,7 +295,7 @@
                                   rows="3" 
                                   required
                                   placeholder="Tuliskan nama jalan, nomor rumah, RT/RW, kelurahan, dan patokan (Contoh: Jl. Kuwung No. 24, RT 02 / RW 01, Kel. Mergelo, pagar hitam depan pos satpam)" 
-                                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 transition-all leading-relaxed placeholder:text-slate-400">{{ old('alamat', Auth::user()->alamat ?? 'Jl. Kuwung No. 24, RT 02 / RW 01, Kel. Mergelo, Kota Mojokerto (Pagar hitam samping warung kelontong)') }}</textarea>
+                                  class="w-full px-3.5 py-2.5 bg-slate-50/70 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium hover:border-slate-400 focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10 transition-all leading-relaxed placeholder:text-slate-400">{{ old('alamat', Auth::user()->alamat ?? 'Jl. Kuwung No. 24, RT 02 / RW 01, Kel. Mergelo, Kota Mojokerto (Pagar hitam samping warung kelontong)') }}</textarea>
                         <x-input-error for="alamat" class="mt-1" />
                     </div>
 
@@ -289,28 +310,28 @@
                                   name="catatan" 
                                   rows="2" 
                                   placeholder="Contoh: Titik Temu mohon less sugar, jika sampai tolong bunyikan bel pagar / WA" 
-                                  class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-900/10 transition-all leading-relaxed placeholder:text-slate-400">{{ old('catatan') }}</textarea>
+                                  class="w-full px-3.5 py-2.5 bg-slate-50/70 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium hover:border-slate-400 focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10 transition-all leading-relaxed placeholder:text-slate-400">{{ old('catatan') }}</textarea>
                         <x-input-error for="catatan" class="mt-1" />
                     </div>
                 </div>
 
                 <!-- CARD 3: PILIHAN METODE PEMBAYARAN (FR-6.3 - QRIS Dinamis) -->
-                <div class="bg-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col gap-3.5">
+                <div class="bg-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col gap-4">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div class="flex items-center gap-2.5">
-                            <span class="w-8 h-8 rounded-xl bg-amber-50 text-amber-800 flex items-center justify-center shrink-0 shadow-2xs">
+                        <div class="flex items-center gap-3">
+                            <span class="w-9 h-9 rounded-xl bg-amber-50 text-amber-800 flex items-center justify-center shrink-0 border border-amber-100 shadow-2xs">
                                 <span class="material-symbols-outlined text-lg">payments</span>
                             </span>
                             <div>
                                 <h2 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">3. Metode Pembayaran</h2>
-                                <p class="text-[11px] text-slate-500">Pembayaran instan dan otomatis terverifikasi sistem</p>
+                                <p class="text-[11px] text-slate-500">Pembayaran instan dan otomatis terverifikasi sistem tanpa upload bukti transfer</p>
                             </div>
                         </div>
-                        <span class="px-2.5 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold rounded-lg">Verifikasi Otomatis</span>
+                        <span class="px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold rounded-full">Verifikasi Otomatis</span>
                     </div>
 
-                    <!-- Pilihan QRIS (Active Card) -->
-                    <label class="relative block p-4 bg-blue-50/50 border-2 border-blue-900 rounded-2xl cursor-pointer hover:bg-blue-50/80 transition-colors">
+                    <!-- Pilihan QRIS Dinamis (Active Card) -->
+                    <label class="relative block p-4 bg-gradient-to-br from-blue-50/70 via-blue-50/40 to-white border-2 border-blue-900 rounded-2xl cursor-pointer hover:shadow-xs transition-all">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-start gap-3">
                                 <div class="pt-0.5">
@@ -322,30 +343,34 @@
                                 </div>
                                 <div class="flex-1">
                                     <div class="flex items-center gap-2 flex-wrap">
-                                        <span class="text-xs font-bold text-slate-900 font-['Plus_Jakarta_Sans']">QRIS (Midtrans Sandbox / QRIS Dinamis)</span>
-                                        <span class="px-2 py-0.5 bg-blue-900 text-white font-extrabold text-[9px] rounded uppercase tracking-wider">INSTAN</span>
+                                        <span class="px-2 py-0.5 bg-[#E1251B] text-white font-black text-[10px] rounded tracking-wider shadow-2xs">QRIS</span>
+                                        <span class="text-xs font-bold text-slate-900 font-['Plus_Jakarta_Sans']">QRIS Dinamis (Midtrans)</span>
+                                        <span class="px-2 py-0.5 bg-blue-900 text-white font-extrabold text-[9px] rounded-full uppercase tracking-wider">INSTAN</span>
                                     </div>
-                                    <p class="text-[11px] text-slate-600 mt-1 leading-relaxed">
-                                        Scan barcode QRIS dengan aplikasi m-Banking (BCA, Mandiri Livin, BRImo, BNI) atau e-Wallet favoritmu (GoPay, OVO, Dana, ShopeePay).
+                                    <p class="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
+                                        Scan barcode QRIS dengan aplikasi m-Banking (BCA, Mandiri Livin, BRImo, BNI) atau e-Wallet favoritmu (GoPay, OVO, DANA, ShopeePay).
                                     </p>
-                                    <div class="flex items-center gap-2 mt-2 pt-2 border-t border-blue-100/80 flex-wrap">
-                                        <span class="px-2 py-0.5 bg-white rounded-md border border-slate-200 text-[9px] font-bold text-slate-700 shadow-2xs">GoPay</span>
-                                        <span class="px-2 py-0.5 bg-white rounded-md border border-slate-200 text-[9px] font-bold text-slate-700 shadow-2xs">OVO</span>
-                                        <span class="px-2 py-0.5 bg-white rounded-md border border-slate-200 text-[9px] font-bold text-slate-700 shadow-2xs">DANA</span>
-                                        <span class="px-2 py-0.5 bg-white rounded-md border border-slate-200 text-[9px] font-bold text-slate-700 shadow-2xs">ShopeePay</span>
-                                        <span class="px-2 py-0.5 bg-white rounded-md border border-slate-200 text-[9px] font-bold text-slate-700 shadow-2xs">Semua Bank</span>
+                                    <div class="flex items-center gap-1.5 mt-2.5 pt-2.5 border-t border-blue-100 flex-wrap">
+                                        <span class="px-2 py-0.5 bg-white rounded-md border border-slate-200 text-[10px] font-bold text-slate-700 shadow-2xs">GoPay</span>
+                                        <span class="px-2 py-0.5 bg-white rounded-md border border-slate-200 text-[10px] font-bold text-slate-700 shadow-2xs">OVO</span>
+                                        <span class="px-2 py-0.5 bg-white rounded-md border border-slate-200 text-[10px] font-bold text-slate-700 shadow-2xs">DANA</span>
+                                        <span class="px-2 py-0.5 bg-white rounded-md border border-slate-200 text-[10px] font-bold text-slate-700 shadow-2xs">ShopeePay</span>
+                                        <span class="px-2 py-0.5 bg-white rounded-md border border-slate-200 text-[10px] font-bold text-slate-700 shadow-2xs">BCA</span>
+                                        <span class="px-2 py-0.5 bg-white rounded-md border border-slate-200 text-[10px] font-bold text-slate-700 shadow-2xs">Mandiri</span>
+                                        <span class="px-2 py-0.5 bg-white rounded-md border border-slate-200 text-[10px] font-bold text-slate-700 shadow-2xs">BRI</span>
+                                        <span class="px-2 py-0.5 bg-white rounded-md border border-slate-200 text-[10px] font-bold text-slate-700 shadow-2xs">BNI</span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="w-11 h-11 rounded-xl bg-white border border-blue-200 flex items-center justify-center shrink-0 shadow-2xs">
+                            <div class="w-12 h-12 rounded-2xl bg-white border border-blue-200 flex items-center justify-center shrink-0 shadow-xs">
                                 <span class="material-symbols-outlined text-blue-900 text-2xl">qr_code_2</span>
                             </div>
                         </div>
                     </label>
 
-                    <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/70 flex items-center gap-2 text-[11px] text-slate-500">
-                        <span class="material-symbols-outlined text-base text-blue-900 shrink-0">info</span>
-                        <span>QRIS dinamis berlaku selama 10 menit setelah tombol pesanan dikonfirmasi.</span>
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center gap-2.5 text-xs text-slate-600">
+                        <span class="material-symbols-outlined text-base text-blue-900 shrink-0">timer</span>
+                        <span>QRIS dinamis berlaku selama 10 menit setelah tombol konfirmasi ditekan.</span>
                     </div>
                 </div>
 
@@ -359,24 +384,27 @@
                 <!-- CARD 4: DAFTAR ITEM PESANAN (FR-5.6) -->
                 <div class="bg-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col gap-3.5">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                        <div class="flex items-center gap-2.5">
-                            <span class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-900 flex items-center justify-center shrink-0 shadow-2xs">
+                        <div class="flex items-center gap-3">
+                            <span class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-900 flex items-center justify-center shrink-0 border border-indigo-100 shadow-2xs">
                                 <span class="material-symbols-outlined text-lg">shopping_bag</span>
                             </span>
-                            <h2 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Ringkasan Pesanan</h2>
+                            <div>
+                                <h2 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Ringkasan Pesanan</h2>
+                                <span class="text-[11px] text-slate-500">{{ isset($totalJumlah) ? $totalJumlah : 3 }} item siap diracik</span>
+                            </div>
                         </div>
-                        <a href="{{ url('/cart') }}" class="text-xs font-bold text-blue-900 hover:text-blue-800 hover:underline inline-flex items-center gap-1">
+                        <a href="{{ url('/cart') }}" class="text-xs font-bold text-blue-900 hover:text-blue-800 hover:underline inline-flex items-center gap-1 py-1 px-2.5 rounded-lg bg-blue-50/70">
                             <span>Ubah</span>
                             <span class="material-symbols-outlined text-sm">edit</span>
                         </a>
                     </div>
 
                     <!-- List Produk Keranjang Riil Pelanggan -->
-                    <div class="flex flex-col gap-3">
+                    <div class="flex flex-col gap-2.5 max-h-[320px] overflow-y-auto pr-0.5">
                         @if(isset($cartItems) && $cartItems->isNotEmpty())
                             @foreach($cartItems as $item)
-                                <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 flex items-center gap-3">
-                                    <div class="w-12 h-14 bg-white rounded-lg p-1 border border-slate-200/80 flex items-center justify-center shrink-0">
+                                <div class="p-2.5 bg-slate-50/80 hover:bg-slate-50 rounded-xl border border-slate-200/70 flex items-center gap-3 transition-colors">
+                                    <div class="w-13 h-14 bg-white rounded-xl p-1.5 border border-slate-200 flex items-center justify-center shrink-0 shadow-2xs">
                                         <img src="{{ $item->product?->foto ? asset('storage/' . $item->product->foto) : asset('products/' . ($item->product?->nama ?? 'Titik Temu') . '.png') }}" 
                                              alt="{{ $item->product?->nama ?? 'Produk' }}" 
                                              class="w-full h-full object-contain"
@@ -387,18 +415,18 @@
                                             <h4 class="text-xs font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans']">{{ $item->product?->nama ?? 'Produk Kopi' }}</h4>
                                             <span class="text-xs font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">Rp {{ number_format($item->subtotal ?? (($item->product?->harga ?? 10000) * $item->jumlah), 0, ',', '.') }}</span>
                                         </div>
-                                        <p class="text-[10px] text-slate-500">{{ $item->product?->deskripsi ?? 'Kopi Botol 250ml' }}</p>
+                                        <p class="text-[10px] text-slate-500 truncate">{{ $item->product?->deskripsi ?? 'Kopi Botol 250ml' }}</p>
                                         <div class="flex items-center justify-between text-[10px] text-slate-600 mt-1 font-semibold">
                                             <span>{{ $item->jumlah }} botol @ Rp {{ number_format($item->product?->harga ?? 10000, 0, ',', '.') }}</span>
-                                            <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Botol Segar</span>
+                                            <span class="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">Botol Segar</span>
                                         </div>
                                     </div>
                                 </div>
                             @endforeach
                         @else
                             <!-- Fallback Sample Snapshot jika dibuka langsung tanpa sesi keranjang -->
-                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 flex items-center gap-3">
-                                <div class="w-12 h-14 bg-white rounded-lg p-1 border border-slate-200/80 flex items-center justify-center shrink-0">
+                            <div class="p-2.5 bg-slate-50/80 rounded-xl border border-slate-200/70 flex items-center gap-3">
+                                <div class="w-13 h-14 bg-white rounded-xl p-1.5 border border-slate-200 flex items-center justify-center shrink-0 shadow-2xs">
                                     <img src="{{ asset('products/Titik Temu.png') }}" alt="Titik Temu" class="w-full h-full object-contain" />
                                 </div>
                                 <div class="flex-1 min-w-0">
@@ -409,12 +437,12 @@
                                     <p class="text-[10px] text-slate-500">Kopi Susu Gula Aren 250ml</p>
                                     <div class="flex items-center justify-between text-[10px] text-slate-600 mt-1 font-semibold">
                                         <span>2 botol @ Rp 10.000</span>
-                                        <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Botol Segar</span>
+                                        <span class="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">Botol Segar</span>
                                     </div>
                                 </div>
                             </div>
-                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 flex items-center gap-3">
-                                <div class="w-12 h-14 bg-white rounded-lg p-1 border border-slate-200/80 flex items-center justify-center shrink-0">
+                            <div class="p-2.5 bg-slate-50/80 rounded-xl border border-slate-200/70 flex items-center gap-3">
+                                <div class="w-13 h-14 bg-white rounded-xl p-1.5 border border-slate-200 flex items-center justify-center shrink-0 shadow-2xs">
                                     <img src="{{ asset('products/Titik Hitam.png') }}" alt="Titik Hitam" class="w-full h-full object-contain" />
                                 </div>
                                 <div class="flex-1 min-w-0">
@@ -425,7 +453,7 @@
                                     <p class="text-[10px] text-slate-500">Americano Dingin 250ml</p>
                                     <div class="flex items-center justify-between text-[10px] text-slate-600 mt-1 font-semibold">
                                         <span>1 botol @ Rp 8.000</span>
-                                        <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Botol Segar</span>
+                                        <span class="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">Botol Segar</span>
                                     </div>
                                 </div>
                             </div>
@@ -433,12 +461,12 @@
                     </div>
 
                     <!-- Total Item Badge -->
-                    <div class="p-2 bg-blue-50/60 rounded-xl border border-blue-100 flex items-center justify-between text-xs text-blue-900 font-semibold">
+                    <div class="p-2.5 bg-blue-50/70 rounded-xl border border-blue-100 flex items-center justify-between text-xs text-blue-900 font-semibold">
                         <span class="inline-flex items-center gap-1.5">
                             <span class="material-symbols-outlined text-sm">local_cafe</span>
                             <span>Total Minuman:</span>
                         </span>
-                        <span class="font-bold">{{ isset($totalJumlah) ? $totalJumlah : 3 }} Botol 250ml Siap Seduh</span>
+                        <span class="font-bold">{{ isset($totalJumlah) ? $totalJumlah : 3 }} Botol Siap Seduh</span>
                     </div>
                 </div>
 
@@ -472,7 +500,7 @@
                         </div>
                     </div>
 
-                    <div class="border-t border-slate-200 my-0.5"></div>
+                    <div class="border-t border-dashed border-slate-200 my-0.5"></div>
 
                     <!-- Total Akhir -->
                     <div class="flex justify-between items-baseline">
@@ -481,15 +509,15 @@
                             <span class="text-[10px] text-slate-400 font-medium">Termasuk PPN & Jasa Pengantaran</span>
                         </div>
                         <div class="text-right">
-                            <span class="text-2xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] block leading-none">Rp {{ isset($total) ? number_format($total, 0, ',', '.') : '28.000' }}</span>
+                            <span class="text-2xl md:text-3xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] block leading-none">Rp {{ isset($total) ? number_format($total, 0, ',', '.') : '28.000' }}</span>
                         </div>
                     </div>
 
                     <!-- ========================================================= -->
                     <!-- PERINGATAN WAJIB PRD (FR-5.2) -->
                     <!-- ========================================================= -->
-                    <div class="p-3 bg-amber-50 rounded-xl border border-amber-200/80 flex items-start gap-2.5 text-amber-900">
-                        <span class="material-symbols-outlined text-amber-600 text-lg shrink-0 mt-0.5">warning</span>
+                    <div class="p-3.5 bg-amber-50 rounded-2xl border border-amber-200 flex items-start gap-3 text-amber-950">
+                        <span class="material-symbols-outlined text-amber-600 text-xl shrink-0 mt-0.5">warning</span>
                         <div class="text-[11px] leading-relaxed">
                             <strong class="font-bold block text-amber-950 mb-0.5">Peringatan Penting:</strong>
                             Jika pesanan sudah dibayar, pesanan langsung masuk ke antrean racik barista dan <strong>tidak dapat dibatalkan atau diubah</strong>.
@@ -499,13 +527,13 @@
                     <!-- TOMBOL SUBMIT & PENCEGAHAN DOUBLE SUBMIT (FR-5.2) -->
                     <button type="submit" 
                             id="btn-submit-order" 
-                            class="w-full py-3.5 bg-blue-900 hover:bg-blue-800 active:scale-98 text-white rounded-xl font-bold text-sm inline-flex items-center justify-center gap-2 shadow-md shadow-blue-900/20 transition-all cursor-pointer">
-                        <span class="material-symbols-outlined text-lg leading-none" id="btn-submit-icon">qr_code_2</span>
+                            class="w-full py-4 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 active:scale-98 text-white rounded-2xl font-bold text-sm inline-flex items-center justify-center gap-2.5 shadow-lg shadow-blue-900/20 transition-all cursor-pointer">
+                        <span class="material-symbols-outlined text-xl leading-none" id="btn-submit-icon">qr_code_2</span>
                         <span id="btn-submit-text">Buat Pesanan & Bayar QRIS (Rp {{ isset($total) ? number_format($total, 0, ',', '.') : '28.000' }})</span>
                     </button>
 
                     <!-- Jaminan & Keamanan -->
-                    <div class="inline-flex items-center justify-center gap-2 text-[10px] text-slate-400 font-medium pt-1">
+                    <div class="inline-flex items-center justify-center gap-2 text-[11px] text-slate-400 font-medium pt-1">
                         <span class="material-symbols-outlined text-sm text-emerald-600">verified_user</span>
                         <span>Pembayaran Aman Enkripsi 256-Bit via QRIS Midtrans</span>
                     </div>
@@ -542,7 +570,7 @@
             // 1. Buat instance Leaflet Map
             map = L.map('map', {
                 center: [DEFAULT_LAT, DEFAULT_LNG],
-                zoom: 15,
+                zoom: 16,
                 scrollWheelZoom: false, // Hindari scroll halaman terganggu
             });
 
@@ -552,20 +580,21 @@
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
             }).addTo(map);
 
-            // 3. Custom Marker Icon (Pin Merah Modern dengan Icon Kopi)
+            // 3. Custom Marker Icon (Pin Kopi Tiga Titik dengan Efek Gelombang Radar)
             const pinIcon = L.divIcon({
                 className: 'custom-pin-marker',
                 html: `
-                    <div style="position: relative; display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.25));">
-                        <div style="width: 36px; height: 36px; background: #1e3a8a; border: 2.5px solid #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
-                            <span class="material-symbols-outlined" style="font-size: 19px; line-height: 1;">local_cafe</span>
+                    <div style="position: relative; display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 6px 8px rgba(15, 23, 42, 0.3));">
+                        <div class="pin-radar"></div>
+                        <div style="width: 38px; height: 38px; background: #1e3a8a; border: 2.5px solid #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; position: relative; z-index: 2;">
+                            <span class="material-symbols-outlined" style="font-size: 20px; line-height: 1;">local_cafe</span>
                         </div>
-                        <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid #1e3a8a; margin-top: -1px;"></div>
+                        <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 9px solid #1e3a8a; margin-top: -1px; position: relative; z-index: 2;"></div>
                     </div>
                 `,
-                iconSize: [36, 44],
-                iconAnchor: [18, 44],
-                popupAnchor: [0, -44]
+                iconSize: [38, 46],
+                iconAnchor: [19, 46],
+                popupAnchor: [0, -46]
             });
 
             // 4. Tambahkan Marker Draggable
@@ -574,7 +603,7 @@
                 icon: pinIcon
             }).addTo(map);
 
-            marker.bindPopup("<b>Titik Pengantaran Anda</b><br>Geser pin ke lokasi rumah Anda.").openPopup();
+            marker.bindPopup("<b>Titik Pengantaran Anda</b><br>Geser pin ke lokasi rumah / kantor Anda.").openPopup();
 
             // 5. Event Listener: Saat pin selesai digeser (dragend)
             marker.on('dragend', function (event) {
@@ -610,7 +639,7 @@
             if (displayCoords) displayCoords.innerText = `${formattedLat}, ${formattedLng}`;
 
             if (marker) {
-                marker.setPopupContent(`<b>Titik Pengantaran:</b><br>${formattedLat}, ${formattedLng}`);
+                marker.setPopupContent(`<b>Titik Pengantaran Terpilih:</b><br>${formattedLat}, ${formattedLng}`);
             }
         }
 
@@ -634,7 +663,7 @@
                     const lng = position.coords.longitude;
 
                     // Pindahkan posisi peta dan marker
-                    map.setView([lat, lng], 16);
+                    map.setView([lat, lng], 17);
                     marker.setLatLng([lat, lng]);
                     updateCoordinates(lat, lng);
                     marker.bindPopup("<b>Lokasi Anda Terdeteksi!</b><br>Titik pengantaran berhasil diperbarui.").openPopup();
@@ -689,11 +718,11 @@
             setTimeout(function() {
                 submitBtn.disabled = true;
             }, 10);
-            submitBtn.classList.remove('hover:bg-blue-800', 'cursor-pointer');
+            submitBtn.classList.remove('hover:from-blue-800', 'hover:to-indigo-800', 'cursor-pointer');
             submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
 
             submitIcon.innerHTML = `
-                <svg class="animate-spin h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg class="animate-spin h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
