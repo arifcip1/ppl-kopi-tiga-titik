@@ -437,4 +437,77 @@ class OrderEndpointTest extends TestCase
 
         $response->assertStatus(404);
     }
+
+    // =========================================================================
+    // PENGUJIAN CHECKOUT VIEW & API (PPL 16 / PPL-20)
+    // =========================================================================
+
+    public function test_guest_accessing_checkout_page_is_redirected_to_login(): void
+    {
+        $response = $this->get('/checkout');
+        $response->assertRedirect('/login');
+    }
+
+    public function test_non_customer_accessing_checkout_page_is_forbidden(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $courier = User::factory()->kurir()->create();
+
+        $this->actingAs($admin)->get('/checkout')->assertStatus(403);
+        $this->actingAs($courier)->get('/checkout')->assertStatus(403);
+    }
+
+    public function test_customer_with_empty_cart_visiting_checkout_is_redirected_to_cart(): void
+    {
+        $response = $this->actingAs($this->customer)->get('/checkout');
+
+        $response->assertRedirect('/cart');
+        $response->assertSessionHas('warning', 'Keranjang belanja Anda masih kosong. Silakan pilih menu kopi terlebih dahulu.');
+    }
+
+    public function test_customer_with_items_in_cart_can_view_checkout_page(): void
+    {
+        $product = Product::factory()->create(['nama' => 'Titik Temu', 'harga' => 10000, 'stok' => 5, 'aktif' => true]);
+        CartItem::create(['user_id' => $this->customer->id, 'product_id' => $product->id, 'jumlah' => 2]);
+
+        $response = $this->actingAs($this->customer)->get('/checkout');
+
+        $response->assertStatus(200);
+        $response->assertSee('Checkout &amp; Pengiriman', false);
+        $response->assertSee('Titik Temu');
+        $response->assertSee('20.000');
+    }
+
+    public function test_web_checkout_submission_redirects_to_payment_page(): void
+    {
+        $product = Product::factory()->create(['nama' => 'Titik Hitam', 'harga' => 8000, 'stok' => 10, 'aktif' => true]);
+        CartItem::create(['user_id' => $this->customer->id, 'product_id' => $product->id, 'jumlah' => 1]);
+
+        $response = $this->actingAs($this->customer)->post('/checkout', $this->validRecipient());
+
+        $response->assertRedirect(route('payment'));
+        $response->assertSessionHas('order_id');
+        $response->assertSessionHas('success');
+
+        $this->assertSame(0, CartItem::where('user_id', $this->customer->id)->count());
+        $this->assertSame(9, $product->fresh()->stok);
+        $this->assertSame(1, Order::where('user_id', $this->customer->id)->count());
+    }
+
+    public function test_api_orders_store_endpoint_returns_created_json(): void
+    {
+        $product = Product::factory()->create(['nama' => 'Titik Manja', 'harga' => 10000, 'stok' => 10, 'aktif' => true]);
+        CartItem::create(['user_id' => $this->customer->id, 'product_id' => $product->id, 'jumlah' => 2]);
+
+        $response = $this->actingAs($this->customer)->postJson('/api/orders', $this->validRecipient());
+
+        $response->assertStatus(201)
+            ->assertJsonStructure([
+                'message',
+                'data' => ['id', 'kode', 'subtotal', 'ongkir', 'total', 'status'],
+            ]);
+
+        $this->assertSame(0, CartItem::where('user_id', $this->customer->id)->count());
+        $this->assertSame(8, $product->fresh()->stok);
+    }
 }

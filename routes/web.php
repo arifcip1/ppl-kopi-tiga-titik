@@ -79,11 +79,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/orders', [OrderController::class, 'index'])->name('api.orders.index');
     Route::get('/api/orders/{kode}', [OrderController::class, 'show'])->name('api.orders.show');
 
-    Route::get('/checkout', fn() => view('Deskop Cart & Checkout Page'))->name('checkout');
-
-    // Transaksi & Checkout Pelanggan (PPL-18)
+    // Transaksi & Checkout Pelanggan (PPL 16 / PPL-20)
     Route::middleware(['role:pelanggan'])->group(function () {
+        Route::get('/checkout', [OrderController::class, 'showCheckout'])->name('checkout');
         Route::post('/checkout', [OrderController::class, 'checkout'])->name('checkout.process');
+        Route::post('/api/orders', [OrderController::class, 'checkout'])->name('api.orders.store');
+        Route::post('/api/checkout', [OrderController::class, 'checkout'])->name('api.checkout.store');
         Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
     });
 
