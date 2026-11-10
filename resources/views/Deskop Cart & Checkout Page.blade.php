@@ -136,21 +136,22 @@
         </div>
 
         <!-- Lapak Info Banner Mojokerto -->
-        <div class="md:col-span-5 bg-slate-900 text-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-800 flex items-center justify-between">
+        <div class="md:col-span-5 bg-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/15">
-                    <span class="material-symbols-outlined text-amber-300 text-xl">storefront</span>
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
+                    <span class="material-symbols-outlined text-amber-500 text-xl">storefront</span>
                 </div>
                 <div>
-                    <div class="flex items-center gap-1.5">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <span class="text-xs font-bold font-['Plus_Jakarta_Sans'] text-white">Lapak Kuwung, Mojokerto</span>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-xs font-bold font-['Plus_Jakarta_Sans'] text-slate-900">Lapak Jl. Kuwung, Mojokerto</span>
+                        <span class="px-2 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold rounded-full hidden sm:inline-block">Buka</span>
                     </div>
-                    <p class="text-[11px] text-slate-300 mt-0.5">Operasional: 15.00 - 18.00 WIB • Kurir Siaga</p>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Operasional: 15.00 - 18.00 WIB • Kurir Siaga</p>
                 </div>
             </div>
-            <span class="px-2.5 py-1 bg-white/10 rounded-lg text-[10px] font-bold tracking-tight border border-white/15 shrink-0 text-emerald-300 flex items-center gap-1">
-                <span class="material-symbols-outlined text-xs">two_wheeler</span>
+            <span class="px-3 py-1.5 bg-blue-50 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold tracking-tight shrink-0 flex items-center gap-1.5 shadow-2xs">
+                <span class="material-symbols-outlined text-sm">two_wheeler</span>
                 <span>Delivery</span>
             </span>
         </div>
@@ -190,17 +191,15 @@
                             <label for="nama_penerima" class="block text-xs font-bold text-slate-700 mb-1.5">
                                 Nama Lengkap Penerima <span class="text-rose-500">*</span>
                             </label>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                    <span class="material-symbols-outlined text-[19px]">badge</span>
-                                </div>
+                            <div class="flex items-center bg-slate-50/80 border border-slate-300 rounded-xl px-3.5 py-2.5 hover:border-slate-400 focus-within:bg-white focus-within:border-blue-900 focus-within:ring-4 focus-within:ring-blue-900/10 transition-all">
+                                <span class="material-symbols-outlined text-slate-400 text-xl mr-2.5 shrink-0 select-none">badge</span>
                                 <input type="text" 
                                        id="nama_penerima" 
                                        name="nama_penerima" 
                                        required
                                        value="{{ old('nama_penerima', Auth::user()->name ?? 'Dimas Suryo') }}"
                                        placeholder="Contoh: Dimas Suryo" 
-                                       class="w-full pl-11 pr-3.5 py-2.5 bg-slate-50/70 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium hover:border-slate-400 focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10 transition-all placeholder:text-slate-400" />
+                                       class="w-full bg-transparent border-0 outline-none p-0 text-xs text-slate-900 font-medium placeholder:text-slate-400 focus:ring-0 focus:outline-none" />
                             </div>
                             <x-input-error for="nama_penerima" class="mt-1" />
                         </div>
@@ -210,10 +209,8 @@
                             <label for="telepon" class="block text-xs font-bold text-slate-700 mb-1.5">
                                 Nomor WhatsApp / HP <span class="text-rose-500">*</span>
                             </label>
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                                    <span class="material-symbols-outlined text-[19px]">call</span>
-                                </div>
+                            <div class="flex items-center bg-slate-50/80 border border-slate-300 rounded-xl px-3.5 py-2.5 hover:border-slate-400 focus-within:bg-white focus-within:border-blue-900 focus-within:ring-4 focus-within:ring-blue-900/10 transition-all">
+                                <span class="material-symbols-outlined text-slate-400 text-xl mr-2.5 shrink-0 select-none">call</span>
                                 <input type="tel" 
                                        id="telepon" 
                                        name="telepon" 
@@ -221,7 +218,7 @@
                                        value="{{ old('telepon', Auth::user()->telepon ?? '081234567890') }}"
                                        placeholder="08xxxxxxxxxx" 
                                        pattern="08[0-9]{8,12}"
-                                       class="w-full pl-11 pr-3.5 py-2.5 bg-slate-50/70 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium hover:border-slate-400 focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10 transition-all placeholder:text-slate-400" />
+                                       class="w-full bg-transparent border-0 outline-none p-0 text-xs text-slate-900 font-medium placeholder:text-slate-400 focus:ring-0 focus:outline-none" />
                             </div>
                             <x-input-error for="telepon" class="mt-1" />
                             <span class="text-[10px] text-slate-400 mt-1 block">Format: 08xx (10 - 13 digit angka WhatsApp aktif)</span>
