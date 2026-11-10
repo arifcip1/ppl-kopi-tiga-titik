@@ -78,29 +78,29 @@
                                 $subtotalItem = $item->subtotal ?? ($hargaSatuan * $item->jumlah);
                             @endphp
                             <div id="cart-item-{{ $item->id }}"
-                                class="cart-item-row p-4 md:p-5 bg-white rounded-2xl shadow-xs border border-slate-200/90 hover:border-blue-900/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 group"
+                                class="cart-item-row p-3.5 sm:p-4 md:p-5 bg-white rounded-2xl shadow-xs border border-slate-200/90 hover:border-blue-900/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 group"
                                 data-id="{{ $item->id }}" data-price="{{ $hargaSatuan }}" data-stock="{{ $stokTersedia }}">
                                 
                                 <!-- Info Kiri: Foto Botol & Info Produk -->
-                                <div class="flex items-center gap-3.5 md:gap-4 flex-1 min-w-0">
+                                <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                                     <div
-                                        class="w-16 h-20 md:w-20 md:h-24 bg-slate-50 rounded-xl flex items-center justify-center p-1.5 border border-slate-100 shrink-0 overflow-hidden shadow-2xs">
+                                        class="w-14 h-18 sm:w-16 sm:h-20 md:w-20 md:h-24 bg-slate-50 rounded-xl flex items-center justify-center p-1.5 border border-slate-100 shrink-0 overflow-hidden shadow-2xs">
                                         <img src="{{ $fotoUrl }}" alt="{{ $prod->nama ?? 'Produk' }}"
                                             class="w-full h-full object-contain group-hover:scale-105 transition-transform"
                                             onerror="this.src='https://placehold.co/150x200/1e3a8a/ffffff?text={{ urlencode($prod->nama ?? 'Kopi') }}'" />
                                     </div>
                                     <div class="flex-1 min-w-0 flex flex-col justify-center">
                                         <h3
-                                            class="font-bold text-slate-900 text-sm md:text-base font-['Plus_Jakarta_Sans'] truncate leading-tight">
+                                            class="font-bold text-slate-900 text-xs sm:text-sm md:text-base font-['Plus_Jakarta_Sans'] truncate leading-tight">
                                             {{ $prod->nama ?? 'Produk Kopi' }}</h3>
-                                        <p class="text-slate-500 text-xs mt-1 truncate">{{ $prod->rasa ?? '250ml' }}</p>
-                                        <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-                                            <span class="text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
+                                        <p class="text-slate-500 text-[11px] sm:text-xs mt-0.5 truncate">{{ $prod->rasa ?? '250ml' }}</p>
+                                        <div class="flex items-center gap-2 mt-1 flex-wrap">
+                                            <span class="text-[11px] sm:text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
                                                 Rp {{ number_format($hargaSatuan, 0, ',', '.') }} / btl
                                             </span>
                                             @if($stokTersedia <= 5)
                                                 <span
-                                                    class="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md font-semibold">
+                                                    class="text-[9px] sm:text-[10px] text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded-md font-semibold">
                                                     Sisa {{ $stokTersedia }}
                                                 </span>
                                             @endif
@@ -108,14 +108,14 @@
                                     </div>
                                 </div>
 
-                                <!-- Aksi Kanan: Subtotal, Tombol Hapus & Counter Qty -->
+                                <!-- Aksi Kanan: Subtotal, Tombol Hapus & Counter Qty (Full width di Mobile) -->
                                 <div
-                                    class="flex items-center justify-between md:justify-end gap-4 md:gap-6 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100 shrink-0">
+                                    class="flex items-center justify-between md:justify-end gap-3 sm:gap-6 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-slate-100 w-full md:w-auto shrink-0">
                                     
                                     <!-- Subtotal Item & Tombol Hapus -->
-                                    <div class="flex items-center gap-2 md:gap-3 text-right">
+                                    <div class="flex items-center gap-2 sm:gap-3 text-right">
                                         <span id="subtotal-{{ $item->id }}"
-                                            class="text-blue-900 font-extrabold text-base md:text-lg font-['Plus_Jakarta_Sans']">
+                                            class="text-blue-900 font-extrabold text-sm sm:text-base md:text-lg font-['Plus_Jakarta_Sans']">
                                             Rp {{ number_format($subtotalItem, 0, ',', '.') }}
                                         </span>
                                         <button type="button" onclick="deleteCartItem({{ $item->id }})"
@@ -127,7 +127,7 @@
 
                                     <!-- Counter Buttons (+ dan -) -->
                                     <div
-                                        class="flex items-center gap-2 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200 shadow-2xs">
+                                        class="flex items-center gap-2 bg-slate-50 px-2 sm:px-2.5 py-1 rounded-full border border-slate-200 shadow-2xs">
                                         <button type="button" onclick="changeQty({{ $item->id }}, -1)"
                                             class="w-6 h-6 bg-white hover:bg-slate-100 rounded-full border border-slate-300 text-slate-700 flex items-center justify-center font-bold text-xs shadow-2xs transition-colors cursor-pointer active:scale-95"
                                             title="Kurangi 1 botol">
