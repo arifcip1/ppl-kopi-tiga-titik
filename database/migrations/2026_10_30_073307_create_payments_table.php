@@ -12,13 +12,22 @@ return new class extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
 
+            // Satu pesanan dapat memiliki beberapa percobaan pembayaran
             $table->foreignId('order_id')
-                ->unique()
                 ->constrained('orders')
                 ->cascadeOnDelete();
 
-            $table->string('referensi_provider')->nullable();
+            // Referensi transaksi dari Midtrans
+            $table->string('referensi_provider')->nullable()->unique();
 
+            // Metode pembayaran
+            $table->enum('metode_pembayaran', [
+                'midtrans',
+                'tunai',
+                'qris'
+            ]);
+
+            // Status pembayaran
             $table->enum('status', [
                 'pending',
                 'berhasil',
@@ -31,6 +40,7 @@ return new class extends Migration
             $table->timestamp('kedaluwarsa_pada')->nullable();
             $table->timestamp('waktu_verifikasi')->nullable();
 
+            // Respons asli dari provider pembayaran
             $table->json('payload_mentah')->nullable();
 
             $table->timestamps();

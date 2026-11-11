@@ -20,12 +20,15 @@ class OrderController extends Controller
      */
     public function checkout(Request $request, CheckoutService $checkoutService): JsonResponse|RedirectResponse
     {
+        $isAmbilSendiri = $request->input('metode_pemenuhan') === 'ambil_sendiri';
+
         $validated = $request->validate([
+            'metode_pemenuhan' => ['nullable', 'string', 'in:pengiriman,ambil_sendiri'],
             'nama_penerima' => ['required', 'string', 'max:255'],
             'telepon'       => ['required', 'string', 'max:20'],
             'alamat'        => ['required', 'string'],
-            'lat'           => ['required', 'numeric', 'between:-90,90'],
-            'lng'           => ['required', 'numeric', 'between:-180,180'],
+            'lat'           => [$isAmbilSendiri ? 'nullable' : 'required', 'numeric', 'between:-90,90'],
+            'lng'           => [$isAmbilSendiri ? 'nullable' : 'required', 'numeric', 'between:-180,180'],
             'catatan'       => ['nullable', 'string', 'max:1000'],
         ], [
             'nama_penerima.required' => 'Nama penerima wajib diisi.',

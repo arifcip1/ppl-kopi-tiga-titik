@@ -10,11 +10,18 @@ class OrderStatusHistory extends Model
     protected $table = 'order_status_history';
     protected $fillable = [
         'order_id',
-        'status_sebelumnya',
         'status_baru',
-        'user_id',
+        'diubah_oleh',
+        'waktu_perubahan',
         'keterangan',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'waktu_perubahan' => 'datetime',
+        ];
+    }
 
     public function order(): BelongsTo
     {
@@ -23,6 +30,6 @@ class OrderStatusHistory extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'diubah_oleh');
     }
 }

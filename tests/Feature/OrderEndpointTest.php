@@ -97,7 +97,86 @@ class OrderEndpointTest extends TestCase
         // Status history tercatat
         $history = OrderStatusHistory::where('order_id', $order->id)->sole();
         $this->assertSame('menunggu_pembayaran', $history->status_baru);
-        $this->assertSame($this->customer->id, $history->user_id);
+        $this->assertSame($this->customer->id, $history->diubah_oleh);
+        $this->assertNotNull($history->waktu_perubahan);
+    }
+
+    public function test_authenticated_customer_can_checkout_with_ambil_sendiri_successfully(): void
+    {
+        $product = Product::factory()->create(['harga' => 16000, 'stok' => 10, 'aktif' => true]);
+        CartItem::create(['user_id' => $this->customer->id, 'product_id' => $product->id, 'jumlah' => 2]);
+
+        $payload = $this->validRecipient([
+            'metode_pemenuhan' => 'ambil_sendiri',
+            'lat' => null,
+            'lng' => null,
+        ]);
+
+        $response = $this->actingAs($this->customer)
+            ->postJson('/checkout', $payload);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.subtotal', 32000)
+            ->assertJsonPath('data.ongkir', 0)
+            ->assertJsonPath('data.total', 32000);
+
+        $order = Order::where('user_id', $this->customer->id)->sole();
+        $this->assertSame('ambil_sendiri', $order->metode_pemenuhan);
+        $this->assertNull($order->lat);
+        $this->assertNull($order->lng);
+        $this->assertSame(0, $order->ongkir);
+
+        $payment = Payment::where('order_id', $order->id)->sole();
+        $this->assertSame('midtrans', $payment->metode_pembayaran);
+        $this->assertSame(32000, $payment->jumlah);
+    }
+
+    public function test_checkout_pengiriman_without_lat_fails_validation(): void
+    {
+        $product = Product::factory()->create(['harga' => 10000, 'stok' => 5, 'aktif' => true]);
+        CartItem::create(['user_id' => $this->customer->id, 'product_id' => $product->id, 'jumlah' => 1]);
+
+        $payload = $this->validRecipient(['metode_pemenuhan' => 'pengiriman']);
+        unset($payload['lat']);
+
+        $response = $this->actingAs($this->customer)
+            ->postJson('/checkout', $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['lat']);
+    }
+
+    public function test_checkout_pengiriman_without_lng_fails_validation(): void
+    {
+        $product = Product::factory()->create(['harga' => 10000, 'stok' => 5, 'aktif' => true]);
+        CartItem::create(['user_id' => $this->customer->id, 'product_id' => $product->id, 'jumlah' => 1]);
+
+        $payload = $this->validRecipient(['metode_pemenuhan' => 'pengiriman']);
+        unset($payload['lng']);
+
+        $response = $this->actingAs($this->customer)
+            ->postJson('/checkout', $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['lng']);
+    }
+
+    public function test_checkout_pengiriman_with_invalid_coordinates_fails_validation(): void
+    {
+        $product = Product::factory()->create(['harga' => 10000, 'stok' => 5, 'aktif' => true]);
+        CartItem::create(['user_id' => $this->customer->id, 'product_id' => $product->id, 'jumlah' => 1]);
+
+        $payload = $this->validRecipient([
+            'metode_pemenuhan' => 'pengiriman',
+            'lat' => 150,
+            'lng' => 250,
+        ]);
+
+        $response = $this->actingAs($this->customer)
+            ->postJson('/checkout', $payload);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['lat', 'lng']);
     }
 
     public function test_unauthenticated_user_cannot_checkout(): void
@@ -261,11 +340,11 @@ class OrderEndpointTest extends TestCase
             $this->assertSame('dibatalkan', $order->status);
             $this->assertTrue($order->stok_dikembalikan);
 
-            // Verifikasi history dicatat dengan user_id pembeli
+            // Verifikasi history dicatat dengan diubah_oleh pembeli
             $history = OrderStatusHistory::where('order_id', $order->id)->sole();
-            $this->assertSame('menunggu_pembayaran', $history->status_sebelumnya);
             $this->assertSame('dibatalkan', $history->status_baru);
-            $this->assertSame($this->customer->id, $history->user_id);
+            $this->assertSame($this->customer->id, $history->diubah_oleh);
+            $this->assertNotNull($history->waktu_perubahan);
         } finally {
             Carbon::setTestNow(null);
         }

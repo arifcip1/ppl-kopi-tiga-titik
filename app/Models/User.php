@@ -52,6 +52,6 @@ class User extends Authenticatable
     // Riwayat perubahan status yang dilakukan pengguna
     public function orderStatusHistories(): HasMany
     {
-        return $this->hasMany(OrderStatusHistory::class);
+        return $this->hasMany(OrderStatusHistory::class, 'diubah_oleh');
     }
 }

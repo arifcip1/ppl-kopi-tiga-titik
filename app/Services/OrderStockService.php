@@ -157,9 +157,9 @@ class OrderStockService
 
             OrderStatusHistory::create([
                 'order_id' => $locked->id,
-                'status_sebelumnya' => $statusSebelumnya,
                 'status_baru' => 'dibatalkan',
-                'user_id' => $userId,
+                'diubah_oleh' => $userId,
+                'waktu_perubahan' => now(),
                 'keterangan' => $keterangan,
             ]);
 

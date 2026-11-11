@@ -60,6 +60,8 @@ class OrderHistoryTest extends TestCase
     {
         $order = Order::create([
             'kode' => $kode,
+            'sumber_transaksi' => 'online',
+            'metode_pemenuhan' => 'pengiriman',
             'user_id' => $user->id,
             'courier_id' => null,
             'status' => $status,
@@ -97,7 +99,8 @@ class OrderHistoryTest extends TestCase
 
         Payment::create([
             'order_id' => $order->id,
-            'referensi_provider' => 'QRIS-TEST-001',
+            'referensi_provider' => 'MIDTRANS-' . $order->id . '-' . uniqid(),
+            'metode_pembayaran' => 'midtrans',
             'status' => 'berhasil',
             'jumlah' => 28000,
             'kedaluwarsa_pada' => now()->addMinutes(10),
@@ -106,17 +109,17 @@ class OrderHistoryTest extends TestCase
 
         OrderStatusHistory::create([
             'order_id' => $order->id,
-            'status_sebelumnya' => null,
             'status_baru' => 'menunggu_pembayaran',
-            'user_id' => $user->id,
+            'diubah_oleh' => $user->id,
+            'waktu_perubahan' => now(),
             'keterangan' => 'Pesanan dibuat',
         ]);
 
         OrderStatusHistory::create([
             'order_id' => $order->id,
-            'status_sebelumnya' => 'menunggu_pembayaran',
             'status_baru' => $status,
-            'user_id' => null,
+            'diubah_oleh' => null,
+            'waktu_perubahan' => now(),
             'keterangan' => 'Status diubah ke ' . $status,
         ]);
 

@@ -90,16 +90,29 @@ class PaymentModelTest extends TestCase
         );
     }
 
-    public function test_one_order_can_only_have_one_payment(): void
+    public function test_one_order_can_have_multiple_payment_attempts(): void
     {
+        // 1. Buat satu pesanan
         $order = Order::factory()->create();
 
-        Payment::factory()->for($order)->create();
+        // 2. Buat percobaan pembayaran pertama (misal: gagal)
+        $payment1 = Payment::factory()->create([
+            'order_id' => $order->id,
+            'referensi_provider' => 'MID-001',
+            'status' => 'gagal'
+        ]);
 
-        $this->expectException(
-            \Illuminate\Database\QueryException::class
-        );
+        // 3. Buat percobaan pembayaran kedua (misal: pending/berhasil)
+        $payment2 = Payment::factory()->create([
+            'order_id' => $order->id,
+            'referensi_provider' => 'MID-002', // referensi_provider harus unik
+            'status' => 'pending'
+        ]);
 
-        Payment::factory()->for($order)->create();
+        // 4. Pastikan tidak ada exception dan kedua pembayaran berhasil disimpan
+        $this->assertDatabaseCount('payments', 2);
+        
+        $this->assertEquals($order->id, $payment1->order_id);
+        $this->assertEquals($order->id, $payment2->order_id);
     }
 }

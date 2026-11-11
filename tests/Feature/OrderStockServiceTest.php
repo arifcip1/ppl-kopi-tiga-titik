@@ -120,16 +120,12 @@ class OrderStockServiceTest extends TestCase
         )->sole();
 
         $this->assertSame(
-            'menunggu_pembayaran',
-            $history->status_sebelumnya
-        );
-
-        $this->assertSame(
             'dibatalkan',
             $history->status_baru
         );
 
-        $this->assertSame($actor->id, $history->user_id);
+        $this->assertSame($actor->id, $history->diubah_oleh);
+        $this->assertNotNull($history->waktu_perubahan);
         $this->assertNotNull($history->created_at);
     }
 
@@ -411,7 +407,7 @@ class OrderStockServiceTest extends TestCase
 
             $history = OrderStatusHistory::where('order_id', $order->id)->sole();
             $this->assertSame('dibatalkan', $history->status_baru);
-            $this->assertSame($user->id, $history->user_id);
+            $this->assertSame($user->id, $history->diubah_oleh);
             $this->assertSame('Dibatalkan oleh pelanggan.', $history->keterangan);
         } finally {
             Carbon::setTestNow(null);

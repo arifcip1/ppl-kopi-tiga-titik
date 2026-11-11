@@ -42,12 +42,16 @@ class CheckoutService
             throw new CheckoutException('Keranjang masih kosong.', ['keranjang' => ['Keranjang masih kosong.']]);
         }
 
-        // Dihitung sebelum transaksi: tidak menahan kunci baris selama menunggu layanan routing.
-        // Kegagalan resolver melempar exception sehingga belum ada data yang tersimpan.
-        $ongkir = $this->shippingResolver->resolve($penerima['lat'], $penerima['lng']);
+        // Ongkir dihitung sebelum transaksi sesuai metode pemenuhan:
+        // Ambil sendiri bebas ongkir (0); pengiriman dihitung melalui resolver.
+        if ($penerima['metode_pemenuhan'] === 'ambil_sendiri') {
+            $ongkir = 0;
+        } else {
+            $ongkir = $this->shippingResolver->resolve($penerima['lat'], $penerima['lng']);
 
-        if ($ongkir < 0) {
-            throw new CheckoutException('Perhitungan ongkir tidak valid.', ['ongkir' => ['Perhitungan ongkir tidak valid.']]);
+            if ($ongkir < 0) {
+                throw new CheckoutException('Perhitungan ongkir tidak valid.', ['ongkir' => ['Perhitungan ongkir tidak valid.']]);
+            }
         }
 
         $maxAttempts = 3;
@@ -105,6 +109,8 @@ class CheckoutService
 
                     $order = Order::create([
                         'kode' => Order::generateOrderCode(),
+                        'sumber_transaksi' => 'online',
+                        'metode_pemenuhan' => $penerima['metode_pemenuhan'],
                         'user_id' => $user->id,
                         'courier_id' => null,
                         'status' => 'menunggu_pembayaran',
@@ -134,6 +140,7 @@ class CheckoutService
 
                     Payment::create([
                         'order_id' => $order->id,
+                        'metode_pembayaran' => 'midtrans',
                         'status' => 'pending',
                         'jumlah' => $order->total,
                         'kedaluwarsa_pada' => now()->addMinutes(self::PAYMENT_TTL_MINUTES),
@@ -146,9 +153,9 @@ class CheckoutService
 
                     OrderStatusHistory::create([
                         'order_id' => $order->id,
-                        'status_sebelumnya' => null,
                         'status_baru' => 'menunggu_pembayaran',
-                        'user_id' => $user->id,
+                        'diubah_oleh' => $user->id,
+                        'waktu_perubahan' => now(),
                         'keterangan' => 'Pesanan dibuat, stok ditahan.',
                     ]);
 
@@ -196,7 +203,7 @@ class CheckoutService
     /**
      * Hanya field penerima yang dipercaya dari input; nilai finansial tidak pernah dibaca.
      *
-     * @return array{nama_penerima: string, telepon: string, alamat: string, lat: float, lng: float, catatan: ?string}
+     * @return array{metode_pemenuhan: string, nama_penerima: string, telepon: string, alamat: string, lat: ?float, lng: ?float, catatan: ?string}
      */
     private function validateRecipient(array $data): array
     {
@@ -208,15 +215,30 @@ class CheckoutService
             }
         }
 
+        $metodePemenuhan = isset($data['metode_pemenuhan']) && $data['metode_pemenuhan'] === 'ambil_sendiri'
+            ? 'ambil_sendiri'
+            : 'pengiriman';
+
         $lat = $data['lat'] ?? null;
         $lng = $data['lng'] ?? null;
 
-        if (! is_numeric($lat) || $lat < -90 || $lat > 90) {
-            $errors['lat'][] = 'Titik lokasi tujuan wajib diisi dan valid.';
-        }
+        if ($metodePemenuhan === 'pengiriman') {
+            if ($lat === null || $lat === '' || ! is_numeric($lat) || $lat < -90 || $lat > 90) {
+                $errors['lat'][] = 'Titik lokasi tujuan wajib diisi dan valid.';
+            }
 
-        if (! is_numeric($lng) || $lng < -180 || $lng > 180) {
-            $errors['lng'][] = 'Titik lokasi tujuan wajib diisi dan valid.';
+            if ($lng === null || $lng === '' || ! is_numeric($lng) || $lng < -180 || $lng > 180) {
+                $errors['lng'][] = 'Titik lokasi tujuan wajib diisi dan valid.';
+            }
+        } else {
+            // Untuk ambil_sendiri, koordinat bersifat opsional (boleh null), tetapi jika diisi harus valid rentangnya.
+            if ($lat !== null && $lat !== '' && (! is_numeric($lat) || $lat < -90 || $lat > 90)) {
+                $errors['lat'][] = 'Titik lokasi tujuan tidak valid.';
+            }
+
+            if ($lng !== null && $lng !== '' && (! is_numeric($lng) || $lng < -180 || $lng > 180)) {
+                $errors['lng'][] = 'Titik lokasi tujuan tidak valid.';
+            }
         }
 
         if ($errors !== []) {
@@ -228,11 +250,12 @@ class CheckoutService
             : null;
 
         return [
+            'metode_pemenuhan' => $metodePemenuhan,
             'nama_penerima' => trim($data['nama_penerima']),
             'telepon' => trim($data['telepon']),
             'alamat' => trim($data['alamat']),
-            'lat' => (float) $lat,
-            'lng' => (float) $lng,
+            'lat' => ($lat !== null && $lat !== '') ? (float) $lat : null,
+            'lng' => ($lng !== null && $lng !== '') ? (float) $lng : null,
             'catatan' => $catatan,
         ];
     }

@@ -16,6 +16,8 @@ class OrderFactory extends Factory
 
         return [
             'kode' => Order::generateOrderCode(),
+            'sumber_transaksi' => 'online',
+            'metode_pemenuhan' => 'pengiriman',
             'user_id' => User::factory(),
             'courier_id' => null,
             'status' => 'menunggu_pembayaran',
@@ -30,5 +32,27 @@ class OrderFactory extends Factory
             'catatan' => fake()->optional()->sentence(),
             'stok_dikembalikan' => false,
         ];
+    }
+
+    public function pos(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'sumber_transaksi' => 'pos',
+            'metode_pemenuhan' => null,
+            'nama_pelanggan' => fake()->name(),
+            'nama_penerima' => null,
+            'telepon' => null,
+            'alamat' => null,
+            'lat' => null,
+            'lng' => null,
+        ]);
+    }
+
+    public function online(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'sumber_transaksi' => 'online',
+            'metode_pemenuhan' => 'pengiriman',
+        ]);
     }
 }
