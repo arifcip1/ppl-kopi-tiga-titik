@@ -14,12 +14,34 @@ class PaymentFactory extends Factory
         return [
             'order_id' => Order::factory(),
             'referensi_provider' => 'TEST-' . fake()->unique()->numerify('########'),
+            'metode_pembayaran' => 'midtrans',
             'status' => 'pending',
             'jumlah' => 30000,
             'kedaluwarsa_pada' => now()->addMinutes(10),
             'waktu_verifikasi' => null,
             'payload_mentah' => null,
         ];
+    }
+
+    public function midtrans(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'metode_pembayaran' => 'midtrans',
+        ]);
+    }
+
+    public function tunai(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'metode_pembayaran' => 'tunai',
+        ]);
+    }
+
+    public function qris(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'metode_pembayaran' => 'qris',
+        ]);
     }
 
     public function configure(): static

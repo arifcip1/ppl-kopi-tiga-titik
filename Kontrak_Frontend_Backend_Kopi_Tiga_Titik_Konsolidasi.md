@@ -1,5 +1,7 @@
 # TECHNICAL IMPLEMENTATION & INTEGRATION GUIDE
 
+**Revisi konsolidasi:** 11 November 2026. Mengikuti PPL 01, PRD, WBS revisi 11 November 2026, dan PPL 19. Fitur tambahan Sprint 3–4 tetap berada pada PPL 23–42; PPL 19 adalah kontrak integrasi yang sudah dialokasikan dalam WBS Sprint 2.
+
 ## Sistem Informasi Penjualan Kopi Tiga Titik
 
 **Jenis dokumen:** Pedoman teknis bersama developer dan AI coding
@@ -259,7 +261,7 @@ Top bar mengikuti layout bersama, dengan isi yang dapat menyesuaikan role dan ha
 - Judul halaman aktif dan, bila diperlukan, deskripsi singkat halaman.
 - Area informasi akun pengguna yang sedang login; akses Profil dan Logout tetap tersedia sesuai pola navigasi yang disepakati.
 - Tombol aksi utama hanya ditampilkan jika relevan dengan halaman, misalnya **Tambah Produk** pada Kelola Produk.
-- Notifikasi bukan elemen wajib kecuali memang tersedia atau telah diputuskan dalam implementasi.
+- Notifikasi web termasuk MVP dan harus ditampilkan sesuai role/peristiwa pada PPL 27–28 serta pemicu stok menipis pada PPL 32. Notifikasi bersifat sementara/real-time, bukan tabel domain persisten.
 
 Top bar tidak boleh dipenuhi menu fitur yang seharusnya berada di sidebar. Pada halaman mobile, elemen harus disusun ulang agar tidak menutupi konten.
 
@@ -274,19 +276,19 @@ Konten utama berubah berdasarkan role dan halaman. Pola umum:
 6. State loading, empty, success, dan error sesuai jenis interaksi.
 
 Contoh adaptasi:
-- **Dashboard Admin/Owner:** ringkasan operasional dan informasi pengelolaan.
+- **Dashboard Admin/Owner:** ringkasan operasional, akses POS, pesanan, histori penjualan, prediksi, restok, pengiriman, dan pengaturan.
 - **POS Kasir:** area transaksi lebih lebar, daftar produk/keranjang, dan ringkasan pembayaran sesuai alur yang ditetapkan.
 - **Kelola Produk:** daftar produk, pencarian/filter bila diperlukan, informasi stok, dan aksi pengelolaan.
 - **Pesanan:** daftar dan detail pesanan serta aksi sesuai hak Admin/Owner.
-- **Riwayat Penjualan:** data penjualan dan ringkasan yang diperlukan.
+- **Riwayat Penjualan:** grafik histori bulanan dan rekap harian/mingguan/bulanan dari transaksi online dan POS; omzet tidak memasukkan ongkir.
 - **Prediksi Stok:** hasil Moving Average dan/atau rekomendasi Rule-Based sesuai PRD/PPL 01; keduanya tidak boleh mengubah stok otomatis.
 - **Pengiriman:** informasi pengiriman, penugasan kurir, dan lokasi/rute sesuai kewenangan.
-- **Pengaturan:** pengaturan sistem sesuai ruang lingkup, termasuk lokasi asal pengiriman.
+- **Pengaturan:** lokasi lapak aktif, jam buka/tutup, dan pengaturan sistem lain yang disetujui.
 - **Dashboard Kurir:** ringkasan tugas pengiriman milik kurir yang login.
 - **Pesanan Pengiriman:** hanya pesanan yang ditugaskan kepada kurir tersebut, dengan detail penerima/alamat dan aksi status yang diizinkan.
 - **Katalog/Beranda Pelanggan:** produk aktif yang dapat dibeli.
 - **Keranjang:** item pilihan pelanggan dan ringkasan sebelum checkout.
-- **Pesanan Saya:** pesanan milik pelanggan yang login beserta status dan informasi pembayaran/pengiriman yang relevan.
+- **Pesanan Saya:** pesanan milik pelanggan yang login beserta status, informasi pembayaran/pengiriman/pengambilan, nota digital, tombol Hubungi Penjual, dan notifikasi yang relevan.
 
 ### 5.2.4 Adaptasi berdasarkan role
 
@@ -305,22 +307,6 @@ Contoh adaptasi:
 - Menggunakan antarmuka katalog dan transaksi.
 - Menyediakan katalog, detail produk, keranjang, checkout, pembayaran, dan riwayat pesanan sesuai ruang lingkup.
 - Navigasi dan aksi berfokus pada kebutuhan pelanggan, bukan menyalin sidebar Admin/Owner.
-
-### 5.2.5 Penempatan pekerjaan dashboard pada Sprint Planning
-
-| Role | UI/halaman | Work Package UI | Work Package backend |
-|---|---|---|---|
-| Pembeli | Dashboard/beranda, navigasi katalog, keranjang, riwayat dan status pesanan sendiri | PPL 14 | API katalog/keranjang/pesanan sesuai modul terkait |
-| Owner | Dashboard operasional, ringkasan pesanan/pembayaran, daftar/detail dan filter pesanan | PPL 27 | PPL 28 |
-| Kurir | Dashboard tugas pengiriman, daftar/detail pesanan yang ditugaskan, informasi penerima/alamat dan aksi status yang diizinkan | PPL 27 | PPL 28 |
-
-Ketentuan pelaksanaan:
-1. Seluruh UI Dashboard Pembeli dikumpulkan pada PPL 14; jangan memindahkan pekerjaan UI Pembeli ke PPL 27.
-2. PPL 27 mencakup UI Dashboard Owner dan Dashboard Kurir.
-3. PPL 28 mencakup API/backend untuk daftar/detail pesanan, penugasan kurir, dan status pengiriman bagi Owner/Kurir. Endpoint dan otorisasi mengikuti PPL 01/PRD.
-4. PPL 34 menangani integrasi lintas fitur dan alur end-to-end; PPL 39 menangani penyempurnaan responsif ketiga dashboard.
-5. Dashboard adalah halaman antarmuka, bukan izin akses baru. Otorisasi tetap dilakukan di backend.
-6. Dashboard Owner hanya menampilkan ringkasan operasional yang telah disetujui. Jangan membuat dashboard analitik terpisah atau menambahkan metrik yang belum ditetapkan.
 
 ### 5.3 Komponen yang disarankan
 
@@ -475,13 +461,6 @@ Detail urutan proses harus mengikuti PRD/PPL 01 dan implementasi yang
 disetujui. Hindari mengimplementasikan perubahan stok atau pembayaran
 hanya di frontend.
 
-### 5.2.6 Kontrak perilaku dashboard
-
-- **Pembeli:** hanya melihat katalog, keranjang, dan pesanan miliknya sendiri. Riwayat/status pesanan di Dashboard Pembeli memakai endpoint pesanan pelanggan yang sudah ditetapkan; jangan mengandalkan ID pengguna yang dikirim bebas dari browser.
-- **Owner:** dapat melihat seluruh pesanan sesuai kewenangan, status pembayaran secara read-only, dan menugaskan kurir. Status pembayaran hanya diubah oleh verifikasi backend.
-- **Kurir:** hanya melihat pesanan yang ditugaskan kepadanya. Kurir hanya dapat menandai pesanan `selesai` jika status sebelumnya `dikirim` dan pesanan memang ditugaskan kepadanya.
-- **Respons UI:** setiap halaman dashboard menangani loading, empty, success, dan error state. Data ringkasan harus berasal dari backend dan mengikuti filter otorisasi yang sama dengan halaman detail.
-
 ## 9. Integrasi Antar-Modul
 
 Modul dikelompokkan mengikuti fitur PRD dan PPL 01. Nama controller,
@@ -535,7 +514,7 @@ nama class atau file.
 
 ## 10. Autentikasi dan Otorisasi
 
-Role aplikasi: - `admin` - `kurir` - `pelanggan`
+Role aplikasi: `admin` (Admin/Owner), `kurir`, dan `pelanggan`. Owner menggunakan role `admin`; jangan menambah role `owner`. Maksimal dua akun Kurir aktif dan backend wajib memvalidasi batas tersebut.
 
 Pedoman: 1. Semua halaman privat memerlukan autentikasi. 2. Backend
 wajib memeriksa role pada route atau middleware yang sesuai. 3.
@@ -564,7 +543,9 @@ code aktual.
     pembayaran berhasil.
 -   Terapkan verifikasi autentikasi/signature sesuai dokumentasi
     Midtrans dan konfigurasi aktual.
--   Batas kedaluwarsa pembayaran mengikuti PRD/PPL 01: 10 menit.
+-   Batas kedaluwarsa pembayaran online mengikuti PRD/PPL 01: 10 menit.
+-   Setiap percobaan pembayaran Midtrans untuk pesanan yang sama disimpan sebagai baris `payments` tersendiri; jangan menimpa percobaan sebelumnya.
+-   Ketentuan Midtrans hanya berlaku untuk checkout online. POS menggunakan tunai/QRIS langsung dan konfirmasi Owner, tanpa Midtrans/webhook.
 -   Penanganan callback berulang harus idempotent agar tidak
     menggandakan perubahan status atau pengembalian stok.
 
@@ -586,12 +567,9 @@ integrasi Midtrans aktual.
     menganggap hasil routing dari browser sebagai nilai final yang
     tepercaya.
 
-Aturan ongkir yang menjadi acuan: - Jarak sampai dengan 5,5 km:
-gratis. - Jarak lebih dari 5,5 km: `Rp2.000 × (floor(d - 5,5) + 1)`. -
-Area layanan: Mojokerto Kota, sesuai batasan PRD/PPL 01.
+Aturan ongkir yang menjadi acuan: jarak `d <= 5,5 km` gratis; jika `d > 5,5 km`, ongkir `Rp2.000 × (floor(d - 5,5) + 1)`. Area layanan pengiriman hanya Kota Mojokerto, bukan Kabupaten Mojokerto. Pickup tidak memanggil routing dan ongkirnya Rp0.
 
-Nama layanan routing, batas penggunaan, format koordinat, dan strategi
-fallback perlu dikonfirmasi dari implementasi aktual.
+Owner dapat mengelola lokasi aktif dan jam buka/tutup. Jam operasional hanya membatasi checkout online baru. Pesanan yang telah berhasil dibuat mempertahankan snapshot lokasi. Nama layanan routing, batas penggunaan, format koordinat, dan strategi fallback tetap harus diverifikasi dari implementasi aktual.
 
 ## 12. Aturan Bisnis Komputasi
 
@@ -601,14 +579,12 @@ Acuan perhitungan: - Menggunakan 21 hari kalender sebelum tanggal
 prediksi. - Dibagi menjadi tiga periode berurutan, masing-masing 7
 hari. - Nilai prediksi adalah rata-rata total penjualan dari ketiga
 periode 7 hari: `(P1 + P2 + P3) / 3`. - Hari tanpa penjualan dihitung
-nol. - Data transaksi nyata yang memenuhi ketentuan verifikasi menjadi
-sumber produksi. - Data simulasi hanya untuk pengujian dan tidak boleh
+nol. - Penjualan online yang pembayaran Midtrans-nya terverifikasi dan transaksi POS yang dikonfirmasi Owner menjadi sumber produksi. - Data simulasi hanya untuk pengujian dan tidak boleh
 masuk ke hasil produksi. - Jika data transaksi nyata belum mencukupi 21
 hari, tampilkan kondisi data belum cukup. - Hasil Moving Average adalah
 rekomendasi; keputusan akhir tetap pada Owner.
 
-Implementasi wajib merujuk aturan lengkap pada PRD dan PPL 01, termasuk
-definisi transaksi yang dianggap sah.
+Implementasi wajib merujuk aturan lengkap pada PRD dan PPL 01. Dashboard histori dan ekspor Excel menggabungkan online+POS, dengan ongkir dikecualikan dari omzet.
 
 ### 12.2 Rule-Based
 
@@ -817,7 +793,167 @@ dengan menyertakan sumber file atau keputusan tim.
 
 **Catatan status:** Dokumen ini merupakan pedoman teknis awal yang
 disusun dari keputusan teknologi dan aturan proyek yang telah tersedia.
-Source code frontend belum diperiksa dalam penyusunan versi ini; karena
-itu struktur folder, design tokens, endpoint, dan detail implementasi
-aktual tetap harus diverifikasi sebelum ditetapkan sebagai standar
-final.
+Dokumen ini menetapkan kontrak perilaku dan data lintas modul. Nama file/class, route aktual, design tokens yang belum tersedia, dan detail library tetap wajib dicocokkan dengan repository. Jika route contoh belum ada, implementasikan mengikuti pola repository; jangan menggandakan route yang sudah tersedia.
+
+
+## 19. Konsolidasi Work Package PPL 23–42
+
+Pembagian fitur tambahan yang menjadi acuan integrasi:
+
+| WP | Frontend/backend dan tanggung jawab |
+|---|---|
+| PPL 23–24 | Backend pembayaran Midtrans, status dan percobaan pembayaran; backend/UI ambil sendiri 24 jam, nota digital, Hubungi Penjual |
+| PPL 25–26 | UI/backend lokasi aktif, jam operasional, titik tujuan dan ongkir OSM; checkout online di luar jam ditolak |
+| PPL 27–28 | UI/backend Dashboard Owner/Kurir, daftar/detail/filter pesanan, akun/penugasan kurir, status pengiriman, notifikasi web |
+| PPL 29–30 | UI/backend Moving Average, dashboard histori penjualan online+POS, rekap periode, pendapatan tanpa ongkir, ekspor Excel |
+| PPL 31–32 | UI/backend Rule-Based restok dan POS offline; konfirmasi pembayaran tunai/QRIS, pengurangan stok, histori, notifikasi stok |
+| PPL 33–42 | QE, integrasi end-to-end, dokumentasi, regresi, perbaikan bug, penyempurnaan UI, uji pembayaran dan QE akhir |
+
+Jumlah Work Package tetap 42. Sprint 1–2 tidak diubah. Tidak boleh membuat WP baru di luar PPL 01–42. Perubahan implementasi harus mengikuti migration dan model aktual; jangan membuat ulang kolom yang sudah tersedia.
+
+---
+
+# 20. Kontrak Modul Lengkap dan Matriks Pemakaian Database
+
+## 20.1 Batas kontrak dan prioritas
+
+- PPL 01/PRD menetapkan apa yang harus dilakukan sistem dan aturan bisnisnya.
+- WBS menetapkan PIC, jadwal, dan WP; total tetap 42.
+- PPL 02/migration/model aktual menetapkan nama tabel, kolom, tipe, nullable, unique, foreign key, dan relasi.
+- Dokumen ini menetapkan pembagian tanggung jawab UI/backend, request/response, akses, dan pola integrasi.
+- PPL 19 menetapkan detail khusus Midtrans, webhook, routing, dan tarif. PPL 19 tidak boleh mengubah aturan bisnis PPL 01.
+
+## 20.2 Kontrak fitur tambahan sesuai PPL 23–42
+
+| WP | Modul | Frontend | Backend | Database utama |
+|---|---|---|---|---|
+| PPL 23–24 | Pembayaran online, pickup, nota, kontak | Halaman pembayaran, countdown 10 menit, status backend, pilihan pickup, detail nota, tombol kontak | Membuat percobaan Midtrans, verifikasi webhook, update payment/order, pickup deadline 24 jam, scheduler, data nota | `orders`, `order_items`, `payments`, `order_status_history`, `shipping_locations`, `settings` |
+| PPL 25–26 | Tujuan, ongkir, lokasi aktif, jam operasional | Peta Leaflet, pin tujuan, rincian ongkir, CRUD lokasi, pilih lokasi aktif, form jam buka/tutup | Validasi koordinat, geofence Kota Mojokerto, routing ORS, formula ongkir, snapshot lokasi, blokir checkout di luar jam | `orders`, `settings`, `shipping_locations` |
+| PPL 27–28 | Dashboard Owner/Kurir, pesanan, akun/assignment, notifikasi | Dashboard per role, daftar/detail/filter pesanan, form assignment, notifikasi | Query ringkasan dan pesanan, batas 2 akun kurir, assignment, otorisasi, event notification sementara | `users`, `orders`, `order_status_history`, `products`, `payments` |
+| PPL 29–30 | Moving Average, histori, rekap, Excel | Grafik bulanan, tabel rekap, filter periode, unduh Excel | Agregasi online+POS, hitung omzet tanpa ongkir, MA 21 hari, ekspor | `sales_history`, `products`, `orders`, `order_items`, `payments` |
+| PPL 31–32 | Rule-Based dan POS | UI stok rendah, saran produksi, POS pilih item/qty, total, metode, konfirmasi | Validasi stok, transaksi atomik, konfirmasi Owner, kurangi stok sekali, catat penjualan dan pemicu notifikasi | `products`, `orders`, `order_items`, `payments`, `sales_history`, `settings` |
+| PPL 33–42 | QE, integrasi, regresi, dokumentasi, bug fix, final QE | Retest dan perbaikan tampilan sesuai modul | Integrasi end-to-end, idempotensi, perbaikan, audit akses, data consistency | Seluruh 10 tabel sesuai fitur |
+
+## 20.3 Kontrak endpoint tambahan
+
+Path di bawah adalah nama kontrak logis yang mengikuti PPL 01. Sebelum implementasi, cocokkan dengan `routes/web.php`, `routes/api.php` (jika aktif), dan route list Laravel. Jika path sudah ada dengan fungsi sama, gunakan yang ada; jangan membuat duplikat.
+
+| Operasi | Method/path kontrak | Akses | Tabel utama |
+|---|---|---|---|
+| Buat quote ongkir | `POST /api/shipping/quote` | Pelanggan login | `settings`, `shipping_locations` |
+| Simpan lokasi asal | `POST /api/admin/shipping-locations` | Admin | `shipping_locations` |
+| Ubah lokasi asal | `PUT /api/admin/shipping-locations/{id}` | Admin | `shipping_locations` |
+| Pilih lokasi aktif | `PATCH /api/admin/shipping-locations/{id}/select` | Admin | `shipping_locations`, `settings` |
+| Atur jam operasional | `PUT /api/admin/operating-hours` | Admin | `settings` |
+| Buat checkout | `POST /api/checkout` | Pelanggan login | `cart_items`, `products`, `orders`, `order_items`, `payments` |
+| Terima webhook | `POST /api/payments/webhook` | Midtrans server-to-server | `payments`, `orders`, `order_status_history`, `sales_history`, `products` |
+| Lihat status bayar | `GET /api/orders/{id}/payment` | Pemilik pesanan/Admin | `payments`, `orders` |
+| Daftar pesanan Owner | `GET /api/admin/orders` | Admin | `orders`, `payments`, `users` |
+| Assignment Kurir | `PATCH /api/admin/orders/{id}/courier` | Admin | `orders`, `users` |
+| Status oleh Kurir | `PATCH /api/courier/orders/{id}/status` | Kurir yang ditugaskan | `orders`, `order_status_history` |
+| POS transaksi | `POST /api/admin/pos/transactions` | Admin | `orders`, `order_items`, `payments`, `products`, `sales_history` |
+| Histori penjualan | `GET /api/admin/sales-history` | Admin | `sales_history`, `products` |
+| Ekspor | `GET /api/admin/sales-history/export` | Admin | `sales_history`, `products` |
+| Prediksi MA | `GET /api/admin/forecast` | Admin | `sales_history`, `products` |
+| Restok | `GET /api/admin/low-stock` | Admin | `products`, `settings` |
+
+## 20.4 Kontrak payload minimum frontend-backend
+
+### Quote pengiriman
+
+Request:
+```json
+{
+  "latitude_tujuan": -7.0,
+  "longitude_tujuan": 112.0,
+  "metode_pemenuhan": "pengiriman"
+}
+```
+
+Response sukses:
+```json
+{
+  "success": true,
+  "data": {
+    "metode_pemenuhan": "pengiriman",
+    "jarak_km": 5.6,
+    "ongkir": 2000,
+    "mata_uang": "IDR"
+  }
+}
+```
+
+Nilai koordinat di atas hanya contoh format, bukan koordinat operasional. Backend mengambil lokasi asal aktif dari database, menghitung rute, memvalidasi wilayah, dan menghitung ongkir sendiri. Frontend tidak mengirim ongkir sebagai nilai tepercaya.
+
+### Checkout pickup
+
+Request harus mengirim `metode_pemenuhan="ambil_sendiri"`; koordinat tujuan boleh tidak ada. Backend menetapkan ongkir Rp0 dan menyimpan snapshot lokasi pengambilan. Frontend tidak boleh memaksa input koordinat tujuan untuk pickup.
+
+### Checkout pengiriman
+
+Request mengirim `metode_pemenuhan="pengiriman"`, data penerima, alamat, `latitude_tujuan`, `longitude_tujuan`, dan catatan opsional. Backend memvalidasi geofence, lokasi asal aktif, rute, dan ongkir; kemudian menghitung ulang subtotal/total dan membuat snapshot order.
+
+### POS
+
+Request berisi daftar `product_id` dan `jumlah`, `metode_pembayaran` (`tunai` atau `qris`), serta konfirmasi eksplisit Owner. Browser tidak boleh mengirim harga, subtotal, total, atau status `berhasil` sebagai sumber kebenaran. Backend membaca harga produk dan stok dari database. Setelah konfirmasi dan penyerahan barang, order POS diselesaikan.
+
+### Respons standar
+
+```json
+{
+  "success": true,
+  "message": "Berhasil diproses.",
+  "data": {}
+}
+```
+
+```json
+{
+  "success": false,
+  "message": "Permintaan tidak dapat diproses.",
+  "errors": {}
+}
+```
+
+Contoh adalah kontrak bentuk respons; sesuaikan wrapper dengan pola JSON/redirect yang sudah dipakai repository secara konsisten.
+
+## 20.5 Matriks database dan ownership modul
+
+| Tabel | Owner modul utama | Modul pembaca lain | Aturan penggunaan |
+|---|---|---|---|
+| `users` | Auth/Account | Orders, assignment, dashboard | Role `admin`, `kurir`, `pelanggan`; maksimal dua akun Kurir aktif; jangan menambah role Owner. |
+| `products` | Product Management | Catalog, Cart, POS, Rule-Based, MA | Nonaktifkan via `aktif=false`; jangan hard delete produk yang direferensikan transaksi. |
+| `cart_items` | Cart | Checkout | Keranjang tidak reservasi stok. Checkout memvalidasi ulang. |
+| `orders` | Checkout/Order | Payment, shipping, pickup, POS, dashboard, courier | `sumber_transaksi` wajib diisi `online`/`pos`; POS `metode_pemenuhan=NULL`, `user_id` nullable; online pilih fulfillment. Snapshot lokasi dan item tidak diubah. |
+| `order_items` | Checkout/POS | Nota, dashboard, histori | Simpan snapshot nama/rasa/harga/jumlah/subtotal. |
+| `payments` | Payment/POS | Order, nota, dashboard | `order_id` tidak unik; banyak percobaan Midtrans per order. `referensi_provider` unique nullable. Metode `midtrans`, `tunai`, `qris`; status `pending`, `berhasil`, `gagal`, `kedaluwarsa`. |
+| `order_status_history` | Order lifecycle | Dashboard, tracking, audit | Kolom `order_id`, `status_baru`, `diubah_oleh` nullable, `waktu_perubahan`, `keterangan`; jangan gunakan `status_sebelumnya`/`user_id`. |
+| `sales_history` | SalesHistory | MA, dashboard, export | Rekap per produk/tanggal/sumber; transaksi nyata `transaksi`, uji `simulasi`. Idempotensi aplikasi tetap wajib. |
+| `settings` | Settings | Shipping, hours, Rule-Based | Kolom `key`, `value`, `description`; key `lokasi_pengiriman_aktif_id`, `jam_buka`, `jam_tutup`, `batas_stok_minimum`, `stok_harian_standar`. |
+| `shipping_locations` | Shipping Location | Shipping quote, pickup | Banyak lokasi dapat tersimpan; hanya `aktif=true` dapat dipilih. `settings.value` menyimpan ID lokasi aktif. |
+
+**Larangan perubahan schema:** tidak membuat tabel `pos_transactions`, `sales_reports`, `notifications`, `payment_events`, `stock_movements`, atau tabel domain lain tanpa persetujuan PO. Jangan `migrate:fresh`, `db:wipe`, menghapus data, atau mengubah schema melalui phpMyAdmin. Semua perubahan schema harus melalui migration yang disetujui setelah audit dampak.
+
+## 20.6 Kepemilikan data dan transaksi atomik
+
+- Harga produk, ongkir, total, status pembayaran, role, dan status pesanan ditetapkan backend.
+- Operasi multi-tabel yang saling bergantung menggunakan DB transaction.
+- Lock/validasi stok dilakukan saat checkout dan POS agar tidak terjadi overselling.
+- Callback Midtrans dan request ulang POS harus idempotent.
+- `sales_history` hanya bertambah satu kali untuk setiap transaksi nyata per produk/tanggal/sumber sesuai desain agregasi.
+- `orders.stok_dikembalikan` mencegah pengembalian stok ganda.
+- Perubahan `orders.status` dan penambahan `order_status_history` dilakukan dalam transaksi yang sama.
+- Notifikasi tidak menjadi sumber status dan tidak disimpan ke tabel domain baru; mekanisme teknis sementara harus dipilih dan didokumentasikan tanpa mengubah 10 tabel domain.
+
+## 20.7 Koreksi redaksional User Story yang perlu dicerminkan pada WBS
+
+US-21 “hapus” berarti soft deactivate; US-18 tidak mengubah snapshot pesanan lama; US-32 kewenangan status `dikirim` ada pada Owner dan `selesai` pada Kurir yang ditugaskan; US-12/13 koordinat tujuan kondisional; US-31 maksimal dua akun Kurir. Dokumen ini mengunci interpretasi tersebut, tetapi sheet WBS tetap perlu diperbarui redaksinya agar tidak menjadi sumber instruksi yang berbeda.
+
+## 20.8 QE lintas modul
+
+Gunakan seluruh skenario PPL 01/PRD: auth/role; CRUD dan nonaktif produk; katalog/stok; keranjang; checkout pengiriman/pickup; geofence; quote ongkir; lokasi aktif dan snapshot; jam operasional; Midtrans pending/berhasil/gagal/kedaluwarsa/terlambat; webhook duplikat; stok ditahan/dikembalikan satu kali; POS tunai/QRIS; status order; assignment dan akses Kurir; pickup auto-complete; nota/kontak; notifikasi per role; sales history; export; MA; Rule-Based; dashboard; error eksternal; regression.
+
+
+## 20.9 Tindak lanjut konsistensi WBS
+
+WBS terbaru sudah memuat 36 US, 26 backlog, dan 42 WP; seluruh US-1–US-36 telah terhubung dengan backlog. Namun sebelum workbook dipakai sebagai versi final berikutnya, perbarui redaksi US-18 dan US-32 serta ringkasan tujuan Sprint 3 sesuai PPL 01 Bagian 13.4–13.5. Tambahkan kolom ID PPL pada `DAFTAR BACKLOG` bila diperlukan untuk memudahkan pembagian kerja. Jangan mengubah PIC, poin, durasi, atau tanggal dalam proses perapian tersebut.

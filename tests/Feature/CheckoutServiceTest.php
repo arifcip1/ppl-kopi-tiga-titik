@@ -103,9 +103,9 @@ class CheckoutServiceTest extends TestCase
         $this->assertCount(2, $order->orderItems);
 
         $history = OrderStatusHistory::where('order_id', $order->id)->sole();
-        $this->assertNull($history->status_sebelumnya);
         $this->assertSame('menunggu_pembayaran', $history->status_baru);
-        $this->assertSame($this->user->id, $history->user_id);
+        $this->assertSame($this->user->id, $history->diubah_oleh);
+        $this->assertNotNull($history->waktu_perubahan);
     }
 
     public function test_empty_cart_is_rejected(): void
@@ -538,5 +538,90 @@ class CheckoutServiceTest extends TestCase
         } finally {
             Order::flushEventListeners();
         }
+    }
+
+    public function test_checkout_with_ambil_sendiri_has_zero_shipping_and_correct_fulfillment_method(): void
+    {
+        $product = Product::factory()->create(['harga' => 15000, 'stok' => 10, 'aktif' => true]);
+        $this->addToCart($product, 2);
+
+        $neverCalledResolver = new class implements ShippingCostResolver {
+            public function resolve(float $lat, float $lng): int
+            {
+                throw new \RuntimeException('Shipping resolver tidak boleh dipanggil untuk ambil_sendiri.');
+            }
+        };
+
+        $service = new CheckoutService($neverCalledResolver);
+
+        $order = $service->createFromCart($this->user, $this->recipient([
+            'metode_pemenuhan' => 'ambil_sendiri',
+            'lat' => null,
+            'lng' => null,
+        ]));
+
+        $this->assertSame('online', $order->sumber_transaksi);
+        $this->assertSame('ambil_sendiri', $order->metode_pemenuhan);
+        $this->assertNull($order->lat);
+        $this->assertNull($order->lng);
+        $this->assertSame(30000, $order->subtotal);
+        $this->assertSame(0, $order->ongkir);
+        $this->assertSame(30000, $order->total);
+
+        $payment = Payment::where('order_id', $order->id)->sole();
+        $this->assertSame('midtrans', $payment->metode_pembayaran);
+        $this->assertSame(30000, $payment->jumlah);
+    }
+
+    public function test_checkout_pengiriman_without_lat_is_rejected(): void
+    {
+        $product = Product::factory()->create(['harga' => 10000, 'stok' => 5, 'aktif' => true]);
+        $this->addToCart($product, 1);
+
+        $this->expectException(CheckoutException::class);
+        $this->expectExceptionMessage('Data pengiriman tidak valid.');
+
+        $data = $this->recipient(['lat' => null, 'metode_pemenuhan' => 'pengiriman']);
+        $this->service()->createFromCart($this->user, $data);
+    }
+
+    public function test_checkout_pengiriman_without_lng_is_rejected(): void
+    {
+        $product = Product::factory()->create(['harga' => 10000, 'stok' => 5, 'aktif' => true]);
+        $this->addToCart($product, 1);
+
+        $this->expectException(CheckoutException::class);
+        $this->expectExceptionMessage('Data pengiriman tidak valid.');
+
+        $data = $this->recipient(['lng' => null, 'metode_pemenuhan' => 'pengiriman']);
+        $this->service()->createFromCart($this->user, $data);
+    }
+
+    public function test_checkout_pengiriman_with_invalid_coordinates_is_rejected(): void
+    {
+        $product = Product::factory()->create(['harga' => 10000, 'stok' => 5, 'aktif' => true]);
+        $this->addToCart($product, 1);
+
+        $this->expectException(CheckoutException::class);
+        $this->expectExceptionMessage('Data pengiriman tidak valid.');
+
+        $data = $this->recipient(['lat' => 100, 'lng' => 200, 'metode_pemenuhan' => 'pengiriman']);
+        $this->service()->createFromCart($this->user, $data);
+    }
+
+    public function test_payment_factory_supports_online_and_pos_payment_methods(): void
+    {
+        $onlinePayment = Payment::factory()->midtrans()->create();
+        $this->assertSame('midtrans', $onlinePayment->metode_pembayaran);
+
+        $posTunai = Payment::factory()->tunai()->create();
+        $this->assertSame('tunai', $posTunai->metode_pembayaran);
+
+        $posQris = Payment::factory()->qris()->create();
+        $this->assertSame('qris', $posQris->metode_pembayaran);
+
+        $posOrder = Order::factory()->pos()->create();
+        $this->assertSame('pos', $posOrder->sumber_transaksi);
+        $this->assertNull($posOrder->metode_pemenuhan);
     }
 }
