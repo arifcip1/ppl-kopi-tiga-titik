@@ -351,4 +351,27 @@ class CatalogTest extends TestCase
         $responseWithCart->assertSee('id="sidebar-cart-badge" class="flex', false);
         $responseWithCart->assertSee('2');
     }
+
+    /**
+     * Test 11: Halaman katalog menyertakan toast notifikasi PPL-24 saat menambah item ke keranjang (TC-01).
+     */
+    public function test_catalog_page_renders_toast_feedback_on_add_to_cart(): void
+    {
+        Product::create([
+            'nama' => 'Titik Temu Toast',
+            'rasa' => 'Kopi Susu Aren',
+            'harga' => 10000,
+            'stok' => 10,
+            'komposisi' => 'Kopi',
+            'deskripsi' => 'Kopi',
+            'keawetan' => '5-7 hari',
+            'aktif' => true,
+        ]);
+
+        $response = $this->get('/katalog');
+
+        $response->assertStatus(200);
+        $response->assertSee('id="global-toast-container"', false);
+        $response->assertSee('showAppToast(`Menu ${safeVariantName} berhasil ditambahkan ke keranjang!`, \'success\', \'Berhasil\')', false);
+    }
 }

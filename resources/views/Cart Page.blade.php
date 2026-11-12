@@ -79,7 +79,7 @@
                             @endphp
                             <div id="cart-item-{{ $item->id }}"
                                 class="cart-item-row p-3.5 sm:p-4 md:p-5 bg-white rounded-2xl shadow-xs border border-slate-200/90 hover:border-blue-900/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4 group"
-                                data-id="{{ $item->id }}" data-price="{{ $hargaSatuan }}" data-stock="{{ $stokTersedia }}">
+                                data-id="{{ $item->id }}" data-name="{{ $prod->nama ?? 'Produk Kopi' }}" data-price="{{ $hargaSatuan }}" data-stock="{{ $stokTersedia }}">
                                 
                                 <!-- Info Kiri: Foto Botol & Info Produk -->
                                 <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
@@ -118,7 +118,7 @@
                                             class="text-blue-900 font-extrabold text-sm sm:text-base md:text-lg font-['Plus_Jakarta_Sans']">
                                             Rp {{ number_format($subtotalItem, 0, ',', '.') }}
                                         </span>
-                                        <button type="button" onclick="deleteCartItem({{ $item->id }})"
+                                        <button type="button" onclick="openDeleteCartModal({{ $item->id }})"
                                             class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                                             title="Hapus produk dari keranjang">
                                             <span class="material-symbols-outlined text-lg">delete</span>
@@ -228,6 +228,33 @@
         </div>
     </div>
 
+    <!-- Modal Konfirmasi Hapus Item Keranjang (TC-04) -->
+    <div id="modal-delete-cart-confirm"
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200"
+        onclick="if (event.target === this) closeDeleteCartModal()">
+        <div
+            class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 text-center flex flex-col items-center">
+            <div class="w-14 h-14 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center mb-3">
+                <span class="material-symbols-outlined text-3xl">delete_forever</span>
+            </div>
+            <h3 class="font-bold text-slate-900 text-base font-['Plus_Jakarta_Sans']">Hapus Item dari Keranjang?</h3>
+            <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                Apakah kamu yakin ingin menghapus varian <strong id="delete-cart-item-name" class="text-slate-900">kopi ini</strong> dari keranjang belanja?
+            </p>
+
+            <div class="mt-5 w-full grid grid-cols-2 gap-2.5">
+                <button type="button" onclick="closeDeleteCartModal()"
+                    class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer">
+                    Batal
+                </button>
+                <button type="button" id="btn-confirm-delete-cart" onclick="confirmDeleteCartItem()"
+                    class="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs cursor-pointer">
+                    Ya, Hapus
+                </button>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @push('scripts')
@@ -294,9 +321,7 @@
             const newQty = currentQty + delta;
 
             if (newQty < 1) {
-                if (confirm('Hapus produk ini dari keranjang belanja?')) {
-                    deleteCartItem(cartItemId);
-                }
+                openDeleteCartModal(cartItemId);
                 return;
             }
 
@@ -377,6 +402,43 @@
                 });
         }
 
+        let pendingDeleteCartItemId = null;
 
+        function openDeleteCartModal(cartItemId) {
+            const cardEl = document.getElementById(`cart-item-${cartItemId}`);
+            const itemName = cardEl?.getAttribute('data-name') || 'kopi ini';
+            const nameEl = document.getElementById('delete-cart-item-name');
+            if (nameEl) {
+                nameEl.textContent = itemName;
+            }
+
+            pendingDeleteCartItemId = cartItemId;
+
+            const modal = document.getElementById('modal-delete-cart-confirm');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+
+        function closeDeleteCartModal() {
+            pendingDeleteCartItemId = null;
+            const modal = document.getElementById('modal-delete-cart-confirm');
+            if (!modal) return;
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        }
+
+        function confirmDeleteCartItem() {
+            if (!pendingDeleteCartItemId) return;
+            const targetId = pendingDeleteCartItemId;
+            closeDeleteCartModal();
+            deleteCartItem(targetId);
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && pendingDeleteCartItemId !== null) {
+                closeDeleteCartModal();
+            }
+        });
     </script>
 @endpush

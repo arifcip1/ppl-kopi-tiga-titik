@@ -404,6 +404,12 @@
     // Sinkronisasi badge saat halaman dimuat
     updateCartUI();
 
+    function escapeToastText(text) {
+        const div = document.createElement('div');
+        div.textContent = text ?? '';
+        return div.innerHTML;
+    }
+
     function addToCart(btn, variantName, price, productId = 0) {
         @guest
             window.location.href = "{{ route('login') }}";
@@ -434,6 +440,10 @@
                 totalCartQty = data.cart_count;
                 updateCartUI();
             }
+
+            // Tampilkan toast alert sukses sesuai komponen template PPL-24 (TC-01)
+            const safeVariantName = escapeToastText(variantName || 'Kopi');
+            showAppToast(`Menu ${safeVariantName} berhasil ditambahkan ke keranjang!`, 'success', 'Berhasil');
 
             // Tampilkan feedback sukses pada tombol
             const parent = btn.parentElement;
@@ -490,7 +500,8 @@
                 totalCartQty = data.cart_count;
                 updateCartUI();
             }
-            showAppToast('Produk berhasil ditambahkan ke keranjang!', 'success', 'Berhasil');
+            const safeVariantName = escapeToastText(currentVariantName || 'Kopi');
+            showAppToast(`Menu ${safeVariantName} berhasil ditambahkan ke keranjang!`, 'success', 'Berhasil');
         }).catch(err => {
             showAppToast(err.message, 'error', 'Perhatian');
             updateCartUI();

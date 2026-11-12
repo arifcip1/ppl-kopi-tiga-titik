@@ -398,4 +398,25 @@ class CartTest extends TestCase
             'jumlah'     => 2,
         ]);
     }
+
+    /**
+     * Test 16: Halaman keranjang menampilkan modal konfirmasi sebelum menghapus item (TC-04).
+     */
+    public function test_cart_page_renders_delete_confirmation_modal_for_cart_items(): void
+    {
+        $item = CartItem::create([
+            'user_id'    => $this->customer->id,
+            'product_id' => $this->activeProduct->id,
+            'jumlah'     => 2,
+        ]);
+
+        $response = $this->actingAs($this->customer)->get('/cart');
+
+        $response->assertStatus(200);
+        $response->assertSee('id="modal-delete-cart-confirm"', false);
+        $response->assertSee('Hapus Item dari Keranjang?', false);
+        $response->assertSee('onclick="openDeleteCartModal(' . $item->id . ')"', false);
+        $response->assertDontSee('onclick="deleteCartItem(' . $item->id . ')"', false);
+        $response->assertSee('data-name="Titik Temu"', false);
+    }
 }
