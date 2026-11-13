@@ -44,14 +44,14 @@
             <!-- Identitas Akun Kurir -->
             <div class="mx-3 my-2 p-2 bg-blue-50/70 rounded-xl border border-blue-100/80 flex items-center gap-2.5">
                 <div class="w-7 h-7 rounded-lg bg-blue-900 text-white font-extrabold text-xs flex items-center justify-center shadow-xs shrink-0">
-                    I
+                    {{ strtoupper(substr(auth()->user()->name ?? 'K', 0, 1)) }}
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-1">
-                        <span class="text-xs font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans']">Ilham</span>
+                        <span class="text-xs font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans']">{{ auth()->user()->name ?? 'Kurir' }}</span>
                         <span class="px-1 py-0.2 bg-emerald-100 text-emerald-800 text-[8px] font-extrabold rounded">KURIR</span>
                     </div>
-                    <p class="text-[9px] text-slate-500 truncate leading-tight">kurir1ilham@gmail.com</p>
+                    <p class="text-[9px] text-slate-500 truncate leading-tight">{{ auth()->user()->email ?? 'kurir@kopitigatitik.com' }}</p>
                 </div>
             </div>
         </div>
