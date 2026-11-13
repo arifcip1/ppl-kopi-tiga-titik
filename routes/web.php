@@ -7,6 +7,7 @@ use App\Http\Controllers\CourierDashboardController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ShippingController;
 use Illuminate\Support\Facades\Route;
 
 // Halaman login
@@ -81,6 +82,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/orders', [OrderController::class, 'index'])->name('api.orders.index');
     Route::get('/api/orders/{kode}', [OrderController::class, 'show'])->name('api.orders.show');
 
+    // Endpoint API Quote Ongkos Kirim (PPL 19 & PPL 25)
+    Route::post('/api/shipping/quote', [ShippingController::class, 'quote'])->name('api.shipping.quote');
+
     // Transaksi & Checkout Pelanggan (PPL 16 / PPL-20)
     Route::middleware(['role:pelanggan'])->group(function () {
         Route::get('/checkout', [OrderController::class, 'showCheckout'])->name('checkout');
@@ -123,8 +127,11 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/owner/orders/{order}/detail', [OwnerDashboardController::class, 'show'])->name('owner.orders.detail');
     Route::post('/owner/orders/{order}/assign-courier', [OwnerDashboardController::class, 'assignCourier'])->name('owner.orders.assign-courier');
     Route::post('/owner/orders/{order}/complete-pickup', [OwnerDashboardController::class, 'completePickup'])->name('owner.orders.complete-pickup');
-    Route::get('/owner/update-lokasi', fn() => view('Pop Up Update Lokasi Lapak Page'));
-    
+    // Pengaturan Lokasi & Jam Operasional Lapak (PPL-25)
+    Route::get('/owner/update-lokasi', [ShippingController::class, 'showLocationSettings'])->name('owner.update-lokasi');
+    Route::post('/owner/update-lokasi', [ShippingController::class, 'updateLocationSettings'])->name('owner.update-lokasi.save');
+    Route::patch('/owner/lokasi/{location}/select', [ShippingController::class, 'selectLocation'])->name('owner.lokasi.select');
+
     // PPL-29: Prediksi Penjualan (Moving Average 3 Minggu)
     Route::get('/owner/prediksi', function (\Illuminate\Http\Request $request) {
         // Mendukung testing query ?empty=1 untuk melihat state data belum cukup
@@ -229,7 +236,6 @@ Route::middleware(['role:admin'])->group(function () {
 
         return view('owner.riwayat-penjualan', compact('periode', 'summary', 'chartLabels', 'chartData', 'sales'));
     })->name('owner.riwayat-penjualan');
-
     Route::get('/owner/profil', fn() => view('Profil Owner Page'));
     Route::get('/profil-owner', fn() => view('Profil Owner Page'));
 });

@@ -42,7 +42,33 @@ class AppServiceProvider extends ServiceProvider
                 $cartCount = is_countable($cart) ? count($cart) : 0;
             }
 
-            $view->with('cartCount', $cartCount);
+            // Data Lokasi Lapak Aktif & Jam Operasional Terkini (PPL-25)
+            $lokasiAktif = null;
+            $jamBuka = '15:00';
+            $jamTutup = '18:00';
+            $statusLapak = 'buka';
+
+            if (Schema::hasTable('shipping_locations') && Schema::hasTable('settings')) {
+                $activeLocId = \App\Models\Setting::where('key', 'lokasi_pengiriman_aktif_id')->value('value');
+                if ($activeLocId) {
+                    $lokasiAktif = \App\Models\ShippingLocation::find($activeLocId);
+                }
+                if (! $lokasiAktif) {
+                    $lokasiAktif = \App\Models\ShippingLocation::where('aktif', true)->first();
+                }
+
+                $jamBuka = \App\Models\Setting::where('key', 'jam_buka')->value('value') ?? '15:00';
+                $jamTutup = \App\Models\Setting::where('key', 'jam_tutup')->value('value') ?? '18:00';
+                $statusLapak = \App\Models\Setting::where('key', 'status_lapak')->value('value') ?? 'buka';
+            }
+
+            $view->with([
+                'cartCount'   => $cartCount,
+                'lokasiAktif' => $lokasiAktif,
+                'jamBuka'     => $jamBuka,
+                'jamTutup'    => $jamTutup,
+                'statusLapak' => $statusLapak,
+            ]);
         });
     }
 }

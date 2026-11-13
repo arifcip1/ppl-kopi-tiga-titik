@@ -10,18 +10,39 @@
 
     <!-- 1. Lapak Status & Service Selector (Delivery vs Self Pickup) -->
     <div class="p-3.5 md:p-4 bg-white rounded-2xl shadow-xs border border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div class="flex items-center gap-3 flex-wrap">
-            <span class="relative flex h-3 w-3">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-            </span>
-            <div class="flex items-center gap-1.5">
+        <div class="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+            @if(($statusLapak ?? 'buka') === 'buka')
+                <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </span>
+            @else
+                <span class="relative flex h-3 w-3">
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                </span>
+            @endif
+
+            <div class="flex items-center gap-1.5 flex-wrap">
                 <span class="material-symbols-outlined text-rose-500 text-lg">location_on</span>
-                <span class="text-xs md:text-sm font-bold text-slate-800">Lapak Aktif: Jl. Kuwung, Mergelo, Kota Mojokerto</span>
+                <span class="text-xs md:text-sm font-bold text-slate-800">
+                    Lapak: {{ $lokasiAktif->nama_lokasi ?? 'Lapak Jl. Kuwung' }} ({{ $lokasiAktif->alamat ?? 'Mergelo, Kota Mojokerto' }})
+                </span>
+                @if(($statusLapak ?? 'buka') === 'buka')
+                    <span class="px-2 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded-full">Buka</span>
+                @else
+                    <span class="px-2 py-0.2 bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold rounded-full">Tutup</span>
+                @endif
             </div>
+
             <span class="px-2.5 py-0.5 bg-slate-100 rounded-full border border-slate-200/60 text-[11px] font-medium text-slate-600">
-                ⏰ 15.00 - 18.00 WIB
+                ⏰ {{ $jamBuka ?? '15:00' }} - {{ $jamTutup ?? '18:00' }} WIB
             </span>
+
+            @if(($statusLapak ?? 'buka') !== 'buka')
+                <span class="text-[11px] text-rose-600 font-semibold italic">
+                    • Saat ini lapak tutup
+                </span>
+            @endif
         </div>
 
         <!-- Delivery / Pickup Switcher (Interaktif) -->
