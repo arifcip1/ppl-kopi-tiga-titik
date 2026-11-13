@@ -50,14 +50,14 @@
             <!-- Identitas Akun Login di Sidebar -->
             <div class="mx-3 my-2 p-2 bg-blue-50/70 rounded-xl border border-blue-100/80 flex items-center gap-2.5">
                 <div class="w-7 h-7 rounded-lg bg-blue-900 text-white font-extrabold text-xs flex items-center justify-center shadow-xs shrink-0">
-                    F
+                    {{ strtoupper(substr(auth()->user()->name ?? 'O', 0, 1)) }}
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-1">
-                        <span class="text-xs font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans']">Farrel</span>
+                        <span class="text-xs font-bold text-slate-900 truncate font-['Plus_Jakarta_Sans']">{{ auth()->user()->name ?? 'Owner' }}</span>
                         <span class="px-1 py-0.2 bg-blue-200/70 text-blue-900 text-[8px] font-extrabold rounded">OWNER</span>
                     </div>
-                    <p class="text-[9px] text-slate-500 truncate leading-tight">owner1@gmail.com</p>
+                    <p class="text-[9px] text-slate-500 truncate leading-tight">{{ auth()->user()->email ?? 'owner@kopitigatitik.com' }}</p>
                 </div>
             </div>
         </div>
@@ -95,7 +95,7 @@
             </a>
 
             <!-- 5. Riwayat Penjualan -->
-            <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors {{ $activeMenu === 'riwayat-penjualan' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
+            <a href="{{ url('/owner/riwayat-penjualan') }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors {{ $activeMenu === 'riwayat-penjualan' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
                 <span class="material-symbols-outlined text-lg {{ $activeMenu === 'riwayat-penjualan' ? 'text-white' : 'text-slate-500' }}">receipt_long</span>
                 <span>Riwayat Penjualan</span>
             </a>

@@ -3,7 +3,9 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\CourierDashboardController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShippingController;
 use Illuminate\Support\Facades\Route;
@@ -97,11 +99,12 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // =========================================================================
-// 3. FITUR KHUSUS KURIR (FR-1.5 - Terproteksi Role Kurir)
+// 3. FITUR KHUSUS KURIR (FR-1.5, FR-8.7, FR-8.9 - PPL 27/28)
 // =========================================================================
 Route::middleware(['role:kurir'])->group(function () {
-    Route::get('/kurir/tugas-baru', fn() => view('Dashboard Kurir Tab Tugas Baru Page'));
-    Route::get('/kurir/selesai', fn() => view('Dashboard Kurir Tab Selesai Page'));
+    Route::get('/kurir/tugas-baru', [CourierDashboardController::class, 'tugasBaru'])->name('kurir.tugas-baru');
+    Route::get('/kurir/selesai', [CourierDashboardController::class, 'selesai'])->name('kurir.selesai');
+    Route::post('/kurir/orders/{order}/complete', [CourierDashboardController::class, 'markComplete'])->name('kurir.orders.complete');
     Route::get('/kurir/profil', fn() => view('Profil Kurir Page'));
     Route::get('/profil-kurir', fn() => view('Profil Kurir Page'));
 });
@@ -120,11 +123,119 @@ Route::prefix('owner/produk')->middleware(['role:admin'])->name('owner.produk.')
 });
 
 Route::middleware(['role:admin'])->group(function () {
-    Route::get('/owner/dashboard', fn() => view('Owner Dashboard & Mini POS Page'));
+    Route::get('/owner/dashboard', [OwnerDashboardController::class, 'index'])->name('owner.dashboard');
+    Route::get('/owner/orders/{order}/detail', [OwnerDashboardController::class, 'show'])->name('owner.orders.detail');
+    Route::post('/owner/orders/{order}/assign-courier', [OwnerDashboardController::class, 'assignCourier'])->name('owner.orders.assign-courier');
+    Route::post('/owner/orders/{order}/complete-pickup', [OwnerDashboardController::class, 'completePickup'])->name('owner.orders.complete-pickup');
+    // Pengaturan Lokasi & Jam Operasional Lapak (PPL-25)
     Route::get('/owner/update-lokasi', [ShippingController::class, 'showLocationSettings'])->name('owner.update-lokasi');
     Route::post('/owner/update-lokasi', [ShippingController::class, 'updateLocationSettings'])->name('owner.update-lokasi.save');
     Route::patch('/owner/lokasi/{location}/select', [ShippingController::class, 'selectLocation'])->name('owner.lokasi.select');
-    Route::get('/owner/prediksi', fn() => view('Prediksi Moving Average Page'));
+
+    // PPL-29: Prediksi Penjualan (Moving Average 3 Minggu)
+    Route::get('/owner/prediksi', function (\Illuminate\Http\Request $request) {
+        // Mendukung testing query ?empty=1 untuk melihat state data belum cukup
+        $isDataSufficient = !$request->has('empty');
+
+        $predictions = $isDataSufficient ? [
+            [
+                'nama' => 'Titik Temu',
+                'rasa' => 'Kopi Susu Gula Aren',
+                'stok' => 8,
+                'minggu_1' => 52,
+                'minggu_2' => 58,
+                'minggu_3' => 64,
+                'estimasi' => 58.0,
+                'saran_produksi' => 2,
+            ],
+            [
+                'nama' => 'Titik Hitam',
+                'rasa' => 'Americano',
+                'stok' => 12,
+                'minggu_1' => 30,
+                'minggu_2' => 32,
+                'minggu_3' => 31,
+                'estimasi' => 31.0,
+                'saran_produksi' => 0,
+            ],
+            [
+                'nama' => 'Titik Manja',
+                'rasa' => 'Kopi Karamel',
+                'stok' => 4,
+                'minggu_1' => 45,
+                'minggu_2' => 48,
+                'minggu_3' => 50,
+                'estimasi' => 47.7,
+                'saran_produksi' => 6,
+            ],
+            [
+                'nama' => 'Titik Jenuh',
+                'rasa' => 'Coklat Susu',
+                'stok' => 2,
+                'minggu_1' => 20,
+                'minggu_2' => 24,
+                'minggu_3' => 25,
+                'estimasi' => 23.0,
+                'saran_produksi' => 8,
+            ],
+        ] : [];
+
+        return view('owner.prediksi', compact('isDataSufficient', 'predictions'));
+    })->name('owner.prediksi');
+
+    // PPL-29: Riwayat Penjualan & Ekspor Excel
+    Route::get('/owner/riwayat-penjualan', function (\Illuminate\Http\Request $request) {
+        $periode = $request->query('periode', 'bulanan');
+
+        $summary = [
+            'total_botol' => 358,
+            'total_omzet' => 3740000,
+            'varian_terlaris' => 'Titik Temu',
+        ];
+
+        $chartLabels = ['1 Nov', '3 Nov', '5 Nov', '7 Nov', '9 Nov', '11 Nov', '13 Nov'];
+        $chartData = [42, 55, 38, 65, 50, 48, 60];
+
+        $sales = [
+            [
+                'tanggal' => '2026-11-13',
+                'varian' => 'Titik Temu',
+                'sumber' => 'Online',
+                'jumlah' => 24,
+                'total_omzet' => 240000,
+            ],
+            [
+                'tanggal' => '2026-11-13',
+                'varian' => 'Titik Hitam',
+                'sumber' => 'POS Lapak',
+                'jumlah' => 15,
+                'total_omzet' => 120000,
+            ],
+            [
+                'tanggal' => '2026-11-12',
+                'varian' => 'Titik Manja',
+                'sumber' => 'Online',
+                'jumlah' => 18,
+                'total_omzet' => 180000,
+            ],
+            [
+                'tanggal' => '2026-11-12',
+                'varian' => 'Titik Jenuh',
+                'sumber' => 'POS Lapak',
+                'jumlah' => 10,
+                'total_omzet' => 120000,
+            ],
+            [
+                'tanggal' => '2026-11-11',
+                'varian' => 'Titik Temu',
+                'sumber' => 'Online',
+                'jumlah' => 30,
+                'total_omzet' => 300000,
+            ],
+        ];
+
+        return view('owner.riwayat-penjualan', compact('periode', 'summary', 'chartLabels', 'chartData', 'sales'));
+    })->name('owner.riwayat-penjualan');
     Route::get('/owner/profil', fn() => view('Profil Owner Page'));
     Route::get('/profil-owner', fn() => view('Profil Owner Page'));
 });
