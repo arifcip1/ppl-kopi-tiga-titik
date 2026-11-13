@@ -5,6 +5,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ShippingController;
 use Illuminate\Support\Facades\Route;
 
 // Halaman login
@@ -79,6 +80,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/orders', [OrderController::class, 'index'])->name('api.orders.index');
     Route::get('/api/orders/{kode}', [OrderController::class, 'show'])->name('api.orders.show');
 
+    // Endpoint API Quote Ongkos Kirim (PPL 19 & PPL 25)
+    Route::post('/api/shipping/quote', [ShippingController::class, 'quote'])->name('api.shipping.quote');
+
     // Transaksi & Checkout Pelanggan (PPL 16 / PPL-20)
     Route::middleware(['role:pelanggan'])->group(function () {
         Route::get('/checkout', [OrderController::class, 'showCheckout'])->name('checkout');
@@ -117,7 +121,9 @@ Route::prefix('owner/produk')->middleware(['role:admin'])->name('owner.produk.')
 
 Route::middleware(['role:admin'])->group(function () {
     Route::get('/owner/dashboard', fn() => view('Owner Dashboard & Mini POS Page'));
-    Route::get('/owner/update-lokasi', fn() => view('Pop Up Update Lokasi Lapak Page'));
+    Route::get('/owner/update-lokasi', [ShippingController::class, 'showLocationSettings'])->name('owner.update-lokasi');
+    Route::post('/owner/update-lokasi', [ShippingController::class, 'updateLocationSettings'])->name('owner.update-lokasi.save');
+    Route::patch('/owner/lokasi/{location}/select', [ShippingController::class, 'selectLocation'])->name('owner.lokasi.select');
     Route::get('/owner/prediksi', fn() => view('Prediksi Moving Average Page'));
     Route::get('/owner/profil', fn() => view('Profil Owner Page'));
     Route::get('/profil-owner', fn() => view('Profil Owner Page'));

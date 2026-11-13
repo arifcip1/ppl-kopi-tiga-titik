@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\Setting;
+use App\Models\ShippingLocation;
 use App\Services\CheckoutException;
 use App\Services\CheckoutService;
 use App\Services\OrderStockService;
@@ -40,11 +42,32 @@ class OrderController extends Controller
             $totalJumlah += $item->jumlah;
         }
 
-        // Ongkos kirim sementara Rp 0 (sesuai FR-5.8 sampai F7 aktif)
+        // Ongkos kirim default awal (akan dihitung dinamis via Leaflet peta / quote)
         $ongkir = 0;
         $total = $subtotal + $ongkir;
 
-        return view('Deskop Cart & Checkout Page', compact('cartItems', 'subtotal', 'totalJumlah', 'ongkir', 'total'));
+        // Data Lokasi Lapak Aktif & Jam Operasional (FR-11.4, FR-11.6, PPL-25)
+        $activeLocationId = Setting::where('key', 'lokasi_pengiriman_aktif_id')->value('value');
+        $lokasiAktif = $activeLocationId ? ShippingLocation::find($activeLocationId) : null;
+        if (! $lokasiAktif) {
+            $lokasiAktif = ShippingLocation::where('aktif', true)->first();
+        }
+
+        $jamBuka = Setting::where('key', 'jam_buka')->value('value') ?? '15:00';
+        $jamTutup = Setting::where('key', 'jam_tutup')->value('value') ?? '18:00';
+        $statusLapak = Setting::where('key', 'status_lapak')->value('value') ?? 'buka';
+
+        return view('Deskop Cart & Checkout Page', compact(
+            'cartItems',
+            'subtotal',
+            'totalJumlah',
+            'ongkir',
+            'total',
+            'lokasiAktif',
+            'jamBuka',
+            'jamTutup',
+            'statusLapak'
+        ));
     }
 
     /**

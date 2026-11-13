@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Update Lokasi Lapak - Kopi Tiga Titik</title>
+    <title>Pengaturan Lokasi Lapak & Jam Operasional - Kopi Tiga Titik</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,127 +11,370 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 
+    <!-- Leaflet CSS via CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
     <!-- Tailwind CSS via Vite -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        #map-lapak {
+            width: 100%;
+            height: 240px;
+            z-index: 10;
+        }
+        @media (min-width: 640px) {
+            #map-lapak {
+                height: 280px;
+            }
+        }
+
+        .leaflet-container {
+            font-family: 'Inter', sans-serif !important;
+        }
+
+        .custom-lapak-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: visible !important;
+        }
+
+        .pin-radar-owner {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(30, 58, 138, 0.25);
+            animation: pinPulseOwner 2s ease-out infinite;
+            pointer-events: none;
+            top: -4px;
+            left: -4px;
+        }
+
+        @keyframes pinPulseOwner {
+            0% {
+                transform: scale(0.6);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1.6);
+                opacity: 0;
+            }
+        }
+    </style>
 </head>
 <body class="bg-slate-800/60 min-h-screen flex justify-center items-end sm:items-center py-0 sm:py-6 antialiased font-sans backdrop-blur-xs">
-<div class="w-full max-w-96 bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl relative flex flex-col justify-start p-5 border border-slate-100 animate-in fade-in slide-in-from-bottom duration-300">
 
-    <!-- Modal Grab Handle -->
-    <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-3"></div>
+<div class="w-full max-w-xl bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl relative flex flex-col justify-start p-5 sm:p-6 border border-slate-100 animate-in fade-in slide-in-from-bottom duration-300 max-h-[92vh] overflow-y-auto">
+
+    <!-- Modal Grab Handle di Layar Mobile -->
+    <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-3 sm:hidden"></div>
 
     <!-- Header -->
-    <div class="flex justify-between items-start mb-4">
-        <div>
-            <h2 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Update Lokasi Lapak Hari Ini</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Atur titik mangkal street coffee untuk pelanggan ambil di tempat</p>
+    <div class="flex justify-between items-start mb-4 pb-3 border-b border-slate-100">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-900 border border-blue-100 flex items-center justify-center shrink-0 shadow-2xs">
+                <span class="material-symbols-outlined text-xl">storefront</span>
+            </div>
+            <div>
+                <h2 class="text-base sm:text-lg font-bold text-slate-900 font-['Plus_Jakarta_Sans'] leading-tight">Pengaturan Lokasi & Jam Lapak</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Kelola titik mangkal street coffee dan jam operasional lapak hari ini</p>
+            </div>
         </div>
-        <a href="{{ url('/owner/dashboard') }}" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors">
+        <a href="{{ url('/owner/dashboard') }}" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors cursor-pointer" title="Kembali ke Dashboard">
             <span class="material-symbols-outlined text-base">close</span>
         </a>
     </div>
 
-    <!-- Form Content -->
-    <div class="flex flex-col gap-3.5">
+    <!-- Flash Message Notifikasi -->
+    <x-flash-message />
 
-        <!-- Status Lapak Saat Ini -->
-        <div>
-            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">STATUS LAPAK SAAT INI</label>
-            <div class="flex items-center gap-2">
-                <button class="px-4 py-2 bg-emerald-50 text-emerald-700 border-2 border-emerald-500 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs">
+    <!-- Form Update Lokasi & Jam Operasional (FR-11.1 s/d FR-11.7) -->
+    <form id="formUpdateLokasi" action="{{ route('owner.update-lokasi.save') }}" method="POST" class="flex flex-col gap-4">
+        @csrf
+
+        <input type="hidden" name="shipping_location_id" id="shipping_location_id" value="{{ old('shipping_location_id', $lokasiAktif->id ?? '') }}">
+
+        <!-- 1. STATUS OPERASIONAL LAPAK HARI INI -->
+        <div class="bg-slate-50 p-3 sm:p-3.5 rounded-2xl border border-slate-200/80">
+            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">STATUS OPERASIONAL LAPAK</label>
+            <div class="grid grid-cols-2 gap-2.5">
+                <label id="btn-status-buka" class="flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 cursor-pointer transition-all {{ old('status_lapak', $statusLapak ?? 'buka') === 'buka' ? 'bg-emerald-50 text-emerald-800 border-emerald-500 shadow-2xs font-bold' : 'bg-white text-slate-600 border-slate-200 font-medium' }}">
+                    <input type="radio" name="status_lapak" value="buka" {{ old('status_lapak', $statusLapak ?? 'buka') === 'buka' ? 'checked' : '' }} onchange="updateStatusLapakUI('buka')" class="sr-only">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Buka</span>
-                </button>
-                <button class="px-4 py-2 bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-colors">
+                    <span class="text-xs">Lapak Buka (Aktif)</span>
+                </label>
+
+                <label id="btn-status-tutup" class="flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 cursor-pointer transition-all {{ old('status_lapak', $statusLapak ?? 'buka') === 'tutup' ? 'bg-rose-50 text-rose-800 border-rose-500 shadow-2xs font-bold' : 'bg-white text-slate-600 border-slate-200 font-medium' }}">
+                    <input type="radio" name="status_lapak" value="tutup" {{ old('status_lapak', $statusLapak ?? 'buka') === 'tutup' ? 'checked' : '' }} onchange="updateStatusLapakUI('tutup')" class="sr-only">
                     <span class="w-2 h-2 rounded-full bg-slate-400"></span>
-                    <span>Tutup</span>
-                </button>
+                    <span class="text-xs">Lapak Tutup</span>
+                </label>
             </div>
+            <p class="text-[10px] text-slate-500 mt-2">Jika lapak tutup, pelanggan online baru akan diberi tahu jam operasional lapak.</p>
         </div>
 
-        <!-- Nama Tempat / Patokan Mangkal -->
+        <!-- 2. NAMA TEMPAT & PATOKAN MANGKAL -->
         <div>
-            <label class="text-[11px] font-semibold text-slate-700 block mb-1 flex items-center gap-1">
-                <span class="material-symbols-outlined text-xs text-blue-900">location_on</span>
-                <span>Nama Tempat / Patokan Mangkal</span>
+            <label for="nama_lokasi" class="text-xs font-bold text-slate-700 block mb-1.5 flex items-center justify-between">
+                <span class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm text-blue-900">place</span>
+                    <span>Nama Tempat / Patokan Mangkal</span>
+                    <span class="text-rose-500">*</span>
+                </span>
+                <span class="text-[10px] text-slate-400 font-normal">Contoh: Lapak Jl. Kuwung</span>
             </label>
-            <div class="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
-                <input type="text" value="Jl. Benteng Pancasila (Depan Taman)" class="bg-transparent text-xs text-slate-900 font-medium flex-1 focus:outline-none" />
-                <span class="material-symbols-outlined text-slate-400 text-sm">edit</span>
+            <div class="flex items-center bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 focus-within:bg-white focus-within:border-blue-900 focus-within:ring-4 focus-within:ring-blue-900/10 transition-all">
+                <input type="text" 
+                       id="nama_lokasi" 
+                       name="nama_lokasi" 
+                       required
+                       value="{{ old('nama_lokasi', $lokasiAktif->nama_lokasi ?? 'Lapak Jl. Kuwung') }}" 
+                       placeholder="Contoh: Jl. Benteng Pancasila (Depan Taman Sentanan)" 
+                       class="w-full bg-transparent border-0 outline-none text-xs text-slate-900 font-medium placeholder:text-slate-400 focus:ring-0" />
             </div>
+            <x-input-error for="nama_lokasi" class="mt-1" />
         </div>
 
-        <!-- Preview Pin Koordinat -->
+        <!-- 3. ALAMAT LENGKAP LAPAK -->
         <div>
-            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">PREVIEW PIN KOORDINAT</label>
-            <div class="w-full h-36 bg-slate-100 rounded-2xl border border-slate-200 relative overflow-hidden flex items-center justify-center">
-                <!-- Map Background -->
-                <div class="absolute inset-0 bg-[linear-gradient(to_right,#cbd5e1_1px,transparent_1px),linear-gradient(to_bottom,#cbd5e1_1px,transparent_1px)] bg-[size:24px_24px] opacity-50"></div>
-                
-                <!-- Geser Pin Button -->
-                <button class="absolute top-2 right-2 px-2.5 py-1 bg-white/95 text-slate-800 text-[10px] font-bold rounded-lg shadow-sm border border-slate-200 flex items-center gap-1 hover:bg-slate-50">
-                    <span class="material-symbols-outlined text-xs">open_with</span>
-                    <span>Geser Pin Lokasi</span>
-                </button>
-
-                <!-- Road Label -->
-                <div class="absolute bottom-6 left-3 text-[9px] font-bold text-slate-500 uppercase tracking-wider">
-                    JL. BENTENG PANCASILA
-                </div>
-
-                <!-- Pin Marker -->
-                <div class="relative z-10 flex flex-col items-center">
-                    <div class="w-7 h-7 rounded-full bg-blue-900 text-white flex items-center justify-center shadow-lg border-2 border-white ring-4 ring-blue-300/50">
-                        <span class="w-2.5 h-2.5 bg-white rounded-full"></span>
-                    </div>
-                    <div class="mt-1 px-2 py-0.5 bg-slate-900/90 text-white text-[10px] font-bold rounded-full shadow-md flex items-center gap-1 whitespace-nowrap">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                        <span>Lapak Kopi Tiga Titik</span>
-                    </div>
-                </div>
-            </div>
+            <label for="alamat" class="text-xs font-bold text-slate-700 block mb-1.5 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm text-blue-900">home</span>
+                <span>Alamat Lengkap Lapak di Mojokerto</span>
+                <span class="text-rose-500">*</span>
+            </label>
+            <textarea id="alamat" 
+                      name="alamat" 
+                      rows="2" 
+                      required
+                      placeholder="Tuliskan nama jalan, kelurahan, dan patokan booth (Contoh: Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto)"
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10 transition-all leading-relaxed placeholder:text-slate-400">{{ old('alamat', $lokasiAktif->alamat ?? 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto') }}</textarea>
+            <x-input-error for="alamat" class="mt-1" />
         </div>
 
-        <!-- Jam Operasional Lapak -->
+        <!-- 4. PETA KOORDINAT LAPAK LEAFLET (DRAGGABLE PIN) -->
         <div>
-            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">JAM OPERASIONAL LAPAK</label>
-            <div class="grid grid-cols-2 gap-2">
+            <div class="flex items-center justify-between mb-1.5">
+                <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm text-blue-900">pin_drop</span>
+                    <span>Tentukan Titik Koordinat Lapak di Peta</span>
+                    <span class="text-rose-500">*</span>
+                </label>
+                <span class="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md font-mono" id="display-coords-owner">
+                    {{ old('latitude', $lokasiAktif->latitude ?? -7.472600) }}, {{ old('longitude', $lokasiAktif->longitude ?? 112.438500) }}
+                </span>
+            </div>
+
+            <!-- Leaflet Container -->
+            <div class="relative rounded-2xl border border-slate-300 overflow-hidden shadow-2xs">
+                <div id="map-lapak"></div>
+                <div class="absolute bottom-2 left-2 z-20 bg-white/95 backdrop-blur-xs px-2.5 py-1 rounded-lg border border-slate-200 text-[10px] text-slate-700 font-medium flex items-center gap-1 shadow-2xs">
+                    <span class="material-symbols-outlined text-xs text-blue-900">touch_app</span>
+                    <span>Geser pin kopi untuk menyesuaikan titik lapak</span>
+                </div>
+            </div>
+
+            <input type="hidden" name="latitude" id="input_latitude" value="{{ old('latitude', $lokasiAktif->latitude ?? -7.472600) }}">
+            <input type="hidden" name="longitude" id="input_longitude" value="{{ old('longitude', $lokasiAktif->longitude ?? 112.438500) }}">
+            <x-input-error for="latitude" class="mt-1" />
+            <x-input-error for="longitude" class="mt-1" />
+        </div>
+
+        <!-- 5. JAM OPERASIONAL LAPAK (FR-11.6) -->
+        <div>
+            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">JAM OPERASIONAL LAPAK</label>
+            <div class="grid grid-cols-2 gap-3">
+                <!-- Jam Buka -->
                 <div>
-                    <span class="text-[10px] text-slate-500 flex items-center gap-1 mb-1">
-                        <span class="material-symbols-outlined text-xs">schedule</span>
+                    <span class="text-xs font-semibold text-slate-700 flex items-center gap-1 mb-1">
+                        <span class="material-symbols-outlined text-xs text-blue-900">schedule</span>
                         <span>Jam Buka</span>
                     </span>
-                    <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex justify-between items-center text-xs font-bold text-slate-800 cursor-pointer">
-                        <span>15:00 WIB</span>
-                        <span class="material-symbols-outlined text-slate-400 text-xs">expand_more</span>
+                    <div class="flex items-center bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 focus-within:bg-white focus-within:border-blue-900">
+                        <input type="time" 
+                               id="jam_buka" 
+                               name="jam_buka" 
+                               required
+                               value="{{ old('jam_buka', $jamBuka ?? '15:00') }}" 
+                               class="w-full bg-transparent border-0 outline-none text-xs font-bold text-slate-900 focus:ring-0" />
                     </div>
+                    <x-input-error for="jam_buka" class="mt-1" />
                 </div>
+
+                <!-- Jam Tutup -->
                 <div>
-                    <span class="text-[10px] text-slate-500 flex items-center gap-1 mb-1">
-                        <span class="material-symbols-outlined text-xs">schedule</span>
+                    <span class="text-xs font-semibold text-slate-700 flex items-center gap-1 mb-1">
+                        <span class="material-symbols-outlined text-xs text-blue-900">schedule</span>
                         <span>Jam Tutup</span>
                     </span>
-                    <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex justify-between items-center text-xs font-bold text-slate-800 cursor-pointer">
-                        <span>18:00 WIB</span>
-                        <span class="material-symbols-outlined text-slate-400 text-xs">expand_more</span>
+                    <div class="flex items-center bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 focus-within:bg-white focus-within:border-blue-900">
+                        <input type="time" 
+                               id="jam_tutup" 
+                               name="jam_tutup" 
+                               required
+                               value="{{ old('jam_tutup', $jamTutup ?? '18:00') }}" 
+                               class="w-full bg-transparent border-0 outline-none text-xs font-bold text-slate-900 focus:ring-0" />
                     </div>
+                    <x-input-error for="jam_tutup" class="mt-1" />
                 </div>
             </div>
+            <p class="text-[10px] text-slate-400 mt-1.5">Jam operasional digunakan sebagai panduan jam kurir siaga dan batas waktu checkout online pelanggan.</p>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="flex flex-col gap-2 pt-2">
-            <a href="{{ url('/owner/dashboard') }}" class="w-full py-3 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-bold text-xs flex justify-center items-center gap-1.5 shadow-md transition-colors">
+        <!-- 6. DAFTAR LOKASI TERSIMPAN (FR-11.1 s/d FR-11.4) -->
+        @if(isset($locations) && $locations->count() > 1)
+            <div class="pt-2 border-t border-slate-100">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">PILIH DARI LOKASI TERSIMPAN</span>
+                <div class="flex flex-col gap-2 max-h-36 overflow-y-auto pr-1">
+                    @foreach($locations as $loc)
+                        <div class="p-2.5 rounded-xl border {{ ($lokasiAktif && $lokasiAktif->id === $loc->id) ? 'border-blue-900 bg-blue-50/50' : 'border-slate-200 bg-white hover:bg-slate-50' }} flex items-center justify-between gap-2 transition-all">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs font-bold text-slate-900 truncate">{{ $loc->nama_lokasi }}</span>
+                                    @if($lokasiAktif && $lokasiAktif->id === $loc->id)
+                                        <span class="px-1.5 py-0.2 bg-blue-900 text-white text-[9px] font-extrabold rounded-full uppercase">Lapak Aktif</span>
+                                    @endif
+                                </div>
+                                <p class="text-[10px] text-slate-500 truncate">{{ $loc->alamat }}</p>
+                            </div>
+                            <button type="button" 
+                                    onclick="loadSavedLocation({{ $loc->id }}, '{{ addslashes($loc->nama_lokasi) }}', '{{ addslashes($loc->alamat) }}', {{ $loc->latitude }}, {{ $loc->longitude }})" 
+                                    class="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-slate-300 bg-white hover:bg-blue-900 hover:text-white transition-colors cursor-pointer shrink-0">
+                                Gunakan
+                            </button>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        <!-- 7. TOMBOL AKSI SIMPAN -->
+        <div class="flex flex-col gap-2 pt-3 border-t border-slate-100">
+            <button type="submit" class="w-full py-3 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-bold text-xs flex justify-center items-center gap-1.5 shadow-md transition-all active:scale-98 cursor-pointer">
                 <span class="material-symbols-outlined text-base">check_circle</span>
-                <span>Simpan</span>
-            </a>
+                <span>Simpan Pengaturan Lapak Hari Ini</span>
+            </button>
             <a href="{{ url('/owner/dashboard') }}" class="w-full py-2 text-center text-xs text-slate-500 hover:text-slate-800 font-semibold transition-colors">
-                Batalkan
+                Kembali ke Dashboard
             </a>
         </div>
-
-    </div>
-
+    </form>
 </div>
+
+<!-- Leaflet JS via CDN -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+    const DEFAULT_LAPAK_LAT = {{ (float) old('latitude', $lokasiAktif->latitude ?? -7.472600) }};
+    const DEFAULT_LAPAK_LNG = {{ (float) old('longitude', $lokasiAktif->longitude ?? 112.438500) }};
+
+    let mapLapak = null;
+    let markerLapak = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        initLapakMap();
+    });
+
+    function initLapakMap() {
+        const container = document.getElementById('map-lapak');
+        if (!container) return;
+
+        mapLapak = L.map('map-lapak', {
+            center: [DEFAULT_LAPAK_LAT, DEFAULT_LAPAK_LNG],
+            zoom: 16,
+            scrollWheelZoom: false,
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'
+        }).addTo(mapLapak);
+
+        const lapakIcon = L.divIcon({
+            className: 'custom-lapak-marker',
+            html: `
+                <div style="position: relative; display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 6px 8px rgba(15, 23, 42, 0.3));">
+                    <div class="pin-radar-owner"></div>
+                    <div style="width: 38px; height: 38px; background: #1e3a8a; border: 2.5px solid #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; position: relative; z-index: 2;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; line-height: 1;">storefront</span>
+                    </div>
+                    <div style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 9px solid #1e3a8a; margin-top: -1px; position: relative; z-index: 2;"></div>
+                </div>
+            `,
+            iconSize: [38, 46],
+            iconAnchor: [19, 46],
+            popupAnchor: [0, -46]
+        });
+
+        markerLapak = L.marker([DEFAULT_LAPAK_LAT, DEFAULT_LAPAK_LNG], {
+            draggable: true,
+            icon: lapakIcon
+        }).addTo(mapLapak);
+
+        markerLapak.bindPopup("<b>Titik Mangkal Lapak Kopi</b><br>Geser ke lokasi mangkal hari ini.").openPopup();
+
+        markerLapak.on('dragend', function () {
+            const pos = markerLapak.getLatLng();
+            updateLapakCoords(pos.lat, pos.lng);
+        });
+
+        mapLapak.on('click', function (e) {
+            markerLapak.setLatLng(e.latlng);
+            updateLapakCoords(e.latlng.lat, e.latlng.lng);
+        });
+
+        setTimeout(() => {
+            mapLapak.invalidateSize();
+        }, 350);
+    }
+
+    function updateLapakCoords(lat, lng) {
+        const formattedLat = Number(lat).toFixed(6);
+        const formattedLng = Number(lng).toFixed(6);
+
+        document.getElementById('input_latitude').value = formattedLat;
+        document.getElementById('input_longitude').value = formattedLng;
+        document.getElementById('display-coords-owner').innerText = `${formattedLat}, ${formattedLng}`;
+
+        if (markerLapak) {
+            markerLapak.setPopupContent(`<b>Titik Lapak:</b><br>${formattedLat}, ${formattedLng}`);
+        }
+    }
+
+    function loadSavedLocation(id, nama, alamat, lat, lng) {
+        document.getElementById('shipping_location_id').value = id;
+        document.getElementById('nama_lokasi').value = nama;
+        document.getElementById('alamat').value = alamat;
+
+        updateLapakCoords(lat, lng);
+        if (mapLapak && markerLapak) {
+            mapLapak.setView([lat, lng], 16);
+            markerLapak.setLatLng([lat, lng]);
+            markerLapak.openPopup();
+        }
+    }
+
+    function updateStatusLapakUI(status) {
+        const btnBuka = document.getElementById('btn-status-buka');
+        const btnTutup = document.getElementById('btn-status-tutup');
+
+        if (status === 'buka') {
+            btnBuka.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 cursor-pointer transition-all bg-emerald-50 text-emerald-800 border-emerald-500 shadow-2xs font-bold';
+            btnTutup.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 cursor-pointer transition-all bg-white text-slate-600 border-slate-200 font-medium';
+        } else {
+            btnTutup.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 cursor-pointer transition-all bg-rose-50 text-rose-800 border-rose-500 shadow-2xs font-bold';
+            btnBuka.className = 'flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 cursor-pointer transition-all bg-white text-slate-600 border-slate-200 font-medium';
+        }
+    }
+</script>
 </body>
 </html>
