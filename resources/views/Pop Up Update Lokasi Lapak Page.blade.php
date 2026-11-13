@@ -232,24 +232,27 @@
         </div>
 
         <!-- 6. DAFTAR LOKASI TERSIMPAN (FR-11.1 s/d FR-11.4) -->
-        @if(isset($locations) && $locations->count() > 1)
+        @if(isset($locations) && $locations->isNotEmpty())
             <div class="pt-2 border-t border-slate-100">
                 <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">PILIH DARI LOKASI TERSIMPAN</span>
                 <div class="flex flex-col gap-2 max-h-36 overflow-y-auto pr-1">
                     @foreach($locations as $loc)
-                        <div class="p-2.5 rounded-xl border {{ ($lokasiAktif && $lokasiAktif->id === $loc->id) ? 'border-blue-900 bg-blue-50/50' : 'border-slate-200 bg-white hover:bg-slate-50' }} flex items-center justify-between gap-2 transition-all">
+                        @php
+                            $isActive = ($lokasiAktif && $lokasiAktif->id === $loc->id);
+                        @endphp
+                        <div id="card-saved-loc-{{ $loc->id }}" class="card-saved-location p-2.5 rounded-xl border {{ $isActive ? 'border-blue-900 bg-blue-50/50' : 'border-slate-200 bg-white hover:bg-slate-50' }} flex items-center justify-between gap-2 transition-all">
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-1.5">
                                     <span class="text-xs font-bold text-slate-900 truncate">{{ $loc->nama_lokasi }}</span>
-                                    @if($lokasiAktif && $lokasiAktif->id === $loc->id)
-                                        <span class="px-1.5 py-0.2 bg-blue-900 text-white text-[9px] font-extrabold rounded-full uppercase">Lapak Aktif</span>
-                                    @endif
+                                    <span id="badge-active-{{ $loc->id }}" class="badge-active-location px-1.5 py-0.2 bg-blue-900 text-white text-[9px] font-extrabold rounded-full uppercase {{ $isActive ? '' : 'hidden' }}">Lapak Aktif</span>
                                 </div>
                                 <p class="text-[10px] text-slate-500 truncate">{{ $loc->alamat }}</p>
                             </div>
                             <button type="button" 
+                                    id="btn-use-loc-{{ $loc->id }}"
+                                    data-loc-id="{{ $loc->id }}"
                                     onclick="loadSavedLocation({{ $loc->id }}, '{{ addslashes($loc->nama_lokasi) }}', '{{ addslashes($loc->alamat) }}', {{ $loc->latitude }}, {{ $loc->longitude }})" 
-                                    class="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-slate-300 bg-white hover:bg-blue-900 hover:text-white transition-colors cursor-pointer shrink-0">
+                                    class="btn-use-location px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer shrink-0 {{ $isActive ? 'bg-blue-900 text-white border-blue-900 shadow-2xs' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100' }}">
                                 Gunakan
                             </button>
                         </div>
@@ -360,6 +363,39 @@
             mapLapak.setView([lat, lng], 16);
             markerLapak.setLatLng([lat, lng]);
             markerLapak.openPopup();
+        }
+
+        // 1. Reset seluruh kartu lokasi ke tampilan standar (putih/abu)
+        document.querySelectorAll('.card-saved-location').forEach(card => {
+            card.classList.remove('border-blue-900', 'bg-blue-50/50');
+            card.classList.add('border-slate-200', 'bg-white');
+        });
+
+        // 2. Sembunyikan semua badge Lapak Aktif
+        document.querySelectorAll('.badge-active-location').forEach(badge => {
+            badge.classList.add('hidden');
+        });
+
+        // 3. Reset seluruh tombol Gunakan menjadi abu/putih
+        document.querySelectorAll('.btn-use-location').forEach(btn => {
+            btn.className = 'btn-use-location px-2.5 py-1 text-[11px] font-bold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition-all cursor-pointer shrink-0';
+        });
+
+        // 4. Aktifkan kartu dan tombol lokasi terpilih menjadi biru solid
+        const selectedCard = document.getElementById('card-saved-loc-' + id);
+        if (selectedCard) {
+            selectedCard.classList.add('border-blue-900', 'bg-blue-50/50');
+            selectedCard.classList.remove('border-slate-200', 'bg-white');
+        }
+
+        const selectedBadge = document.getElementById('badge-active-' + id);
+        if (selectedBadge) {
+            selectedBadge.classList.remove('hidden');
+        }
+
+        const selectedBtn = document.getElementById('btn-use-loc-' + id);
+        if (selectedBtn) {
+            selectedBtn.className = 'btn-use-location px-2.5 py-1 text-[11px] font-bold rounded-lg border border-blue-900 bg-blue-900 text-white shadow-2xs transition-all cursor-pointer shrink-0';
         }
     }
 
