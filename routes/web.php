@@ -3,7 +3,9 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\CourierDashboardController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
@@ -93,11 +95,12 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // =========================================================================
-// 3. FITUR KHUSUS KURIR (FR-1.5 - Terproteksi Role Kurir)
+// 3. FITUR KHUSUS KURIR (FR-1.5, FR-8.7, FR-8.9 - PPL 27/28)
 // =========================================================================
 Route::middleware(['role:kurir'])->group(function () {
-    Route::get('/kurir/tugas-baru', fn() => view('Dashboard Kurir Tab Tugas Baru Page'));
-    Route::get('/kurir/selesai', fn() => view('Dashboard Kurir Tab Selesai Page'));
+    Route::get('/kurir/tugas-baru', [CourierDashboardController::class, 'tugasBaru'])->name('kurir.tugas-baru');
+    Route::get('/kurir/selesai', [CourierDashboardController::class, 'selesai'])->name('kurir.selesai');
+    Route::post('/kurir/orders/{order}/complete', [CourierDashboardController::class, 'markComplete'])->name('kurir.orders.complete');
     Route::get('/kurir/profil', fn() => view('Profil Kurir Page'));
     Route::get('/profil-kurir', fn() => view('Profil Kurir Page'));
 });
@@ -116,7 +119,10 @@ Route::prefix('owner/produk')->middleware(['role:admin'])->name('owner.produk.')
 });
 
 Route::middleware(['role:admin'])->group(function () {
-    Route::get('/owner/dashboard', fn() => view('Owner Dashboard & Mini POS Page'));
+    Route::get('/owner/dashboard', [OwnerDashboardController::class, 'index'])->name('owner.dashboard');
+    Route::get('/owner/orders/{order}/detail', [OwnerDashboardController::class, 'show'])->name('owner.orders.detail');
+    Route::post('/owner/orders/{order}/assign-courier', [OwnerDashboardController::class, 'assignCourier'])->name('owner.orders.assign-courier');
+    Route::post('/owner/orders/{order}/complete-pickup', [OwnerDashboardController::class, 'completePickup'])->name('owner.orders.complete-pickup');
     Route::get('/owner/update-lokasi', fn() => view('Pop Up Update Lokasi Lapak Page'));
     Route::get('/owner/prediksi', fn() => view('Prediksi Moving Average Page'));
     Route::get('/owner/profil', fn() => view('Profil Owner Page'));
