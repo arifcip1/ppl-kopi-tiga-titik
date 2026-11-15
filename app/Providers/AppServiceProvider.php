@@ -16,10 +16,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // PPL-18: sampai PPL 26 (ongkir rute OSM) tersedia, checkout ditolak.
+        // PPL-26: Resolver ongkir berbasis rute jalan OpenStreetMap / OpenRouteService
         $this->app->bind(
             \App\Services\Shipping\ShippingCostResolver::class,
-            \App\Services\Shipping\UnavailableShippingCostResolver::class
+            \App\Services\Shipping\OsmRouteShippingCostResolver::class
         );
     }
 
