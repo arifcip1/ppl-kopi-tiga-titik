@@ -8,6 +8,8 @@ use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\Setting;
+use App\Models\ShippingLocation;
 use App\Models\User;
 use App\Services\Shipping\ShippingCostResolver;
 use Illuminate\Database\QueryException;
@@ -38,16 +40,40 @@ class CheckoutService
     {
         $penerima = $this->validateRecipient($dataPenerima);
 
+        // 1. Validasi Status Lapak Tutup (FR-11.6, PPL-26)
+        $statusLapak = Setting::where('key', 'status_lapak')->value('value') ?? 'buka';
+        if ($statusLapak === 'tutup') {
+            throw new CheckoutException('Lapak Kopi Tiga Titik saat ini sedang tutup. Pemesanan online baru dapat dilakukan saat lapak buka kembali.', [
+                'lapak' => ['Lapak saat ini sedang tutup.'],
+            ]);
+        }
+
         if (! CartItem::query()->where('user_id', $user->id)->exists()) {
             throw new CheckoutException('Keranjang masih kosong.', ['keranjang' => ['Keranjang masih kosong.']]);
         }
 
+        // Ambil lokasi lapak aktif untuk snapshot pada Order (FR-11.7, FR-7.7, BL-19, PPL-26)
+        $activeLocationId = Setting::where('key', 'lokasi_pengiriman_aktif_id')->value('value');
+        $lokasiAktif = $activeLocationId ? ShippingLocation::find($activeLocationId) : null;
+        if (! $lokasiAktif) {
+            $lokasiAktif = ShippingLocation::where('aktif', true)->first();
+        }
+
         // Ongkir dihitung sebelum transaksi sesuai metode pemenuhan:
         // Ambil sendiri bebas ongkir (0); pengiriman dihitung melalui resolver.
+        $jarakPengiriman = null;
+
         if ($penerima['metode_pemenuhan'] === 'ambil_sendiri') {
             $ongkir = 0;
+            $jarakPengiriman = 0.0;
         } else {
-            $ongkir = $this->shippingResolver->resolve($penerima['lat'], $penerima['lng']);
+            if (method_exists($this->shippingResolver, 'calculateQuote')) {
+                $quote = $this->shippingResolver->calculateQuote($penerima['lat'], $penerima['lng'], 'pengiriman');
+                $ongkir = $quote['ongkir'];
+                $jarakPengiriman = $quote['jarak_km'] ?? null;
+            } else {
+                $ongkir = $this->shippingResolver->resolve($penerima['lat'], $penerima['lng']);
+            }
 
             if ($ongkir < 0) {
                 throw new CheckoutException('Perhitungan ongkir tidak valid.', ['ongkir' => ['Perhitungan ongkir tidak valid.']]);
@@ -61,7 +87,7 @@ class CheckoutService
             $attempt++;
 
             try {
-                return DB::transaction(function () use ($user, $penerima, $ongkir) {
+                return DB::transaction(function () use ($user, $penerima, $ongkir, $lokasiAktif, $jarakPengiriman) {
                     $cartItems = CartItem::query()
                         ->where('user_id', $user->id)
                         ->orderBy('product_id')
@@ -122,6 +148,12 @@ class CheckoutService
                         'alamat' => $penerima['alamat'],
                         'lat' => $penerima['lat'],
                         'lng' => $penerima['lng'],
+                        'nama_lokasi_asal' => $lokasiAktif?->nama_lokasi,
+                        'alamat_lokasi_asal' => $lokasiAktif?->alamat,
+                        'latitude_lokasi_asal' => $lokasiAktif?->latitude,
+                        'longitude_lokasi_asal' => $lokasiAktif?->longitude,
+                        'jarak_pengiriman' => $jarakPengiriman,
+                        'batas_pengambilan' => $penerima['metode_pemenuhan'] === 'ambil_sendiri' ? now()->addHours(24) : null,
                         'catatan' => $penerima['catatan'],
                         'stok_dikembalikan' => false,
                     ]);

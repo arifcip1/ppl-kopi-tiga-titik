@@ -584,7 +584,7 @@
                                         </div>
                                         <p class="text-[10px] text-slate-500 truncate">{{ $item->product?->deskripsi ?? 'Kopi Botol 250ml' }}</p>
                                         <div class="flex items-center justify-between text-[10px] text-slate-600 mt-1 font-semibold">
-                                            <span>{{ $item->jumlah }} botol @ Rp {{ number_format($item->product?->harga ?? 10000, 0, ',', '.') }}</span>
+                                            <span>{{ $item->jumlah }} botol Rp {{ number_format($item->product?->harga ?? 10000, 0, ',', '.') }}</span>
                                             <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Botol Segar</span>
                                         </div>
                                     </div>
@@ -603,7 +603,7 @@
                                     </div>
                                     <p class="text-[10px] text-slate-500">Kopi Susu Gula Aren 250ml</p>
                                     <div class="flex items-center justify-between text-[10px] text-slate-600 mt-1 font-semibold">
-                                        <span>2 botol @ Rp 10.000</span>
+                                        <span>2 botol Rp 10.000</span>
                                         <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Botol Segar</span>
                                     </div>
                                 </div>

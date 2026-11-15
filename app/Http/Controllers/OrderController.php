@@ -8,6 +8,7 @@ use App\Models\ShippingLocation;
 use App\Services\CheckoutException;
 use App\Services\CheckoutService;
 use App\Services\OrderStockService;
+use App\Services\Shipping\ShippingCostUnavailableException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -131,6 +132,17 @@ class OrderController extends Controller
             }
 
             return back()->withInput()->withErrors($e->errors())->with('error', $e->getMessage());
+        } catch (ShippingCostUnavailableException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'errors'  => [
+                        'lokasi_tujuan' => [$e->getMessage()],
+                    ],
+                ], 422);
+            }
+
+            return back()->withInput()->withErrors(['lokasi_tujuan' => $e->getMessage()])->with('error', $e->getMessage());
         } catch (\Throwable $e) {
             report($e);
 
