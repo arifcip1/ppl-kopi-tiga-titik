@@ -38,7 +38,7 @@
         <div class="flex items-center gap-2 shrink-0">
             <div class="px-3.5 py-2 bg-slate-50 rounded-xl border border-slate-200 text-center">
                 <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Formula SMA</span>
-                <span class="text-xs font-bold text-blue-900 font-mono">(P₁ + P₂ + P₃) ÷ 3</span>
+                <span class="text-xs font-bold text-blue-900 font-mono">Total 21 Hari ÷ 21</span>
             </div>
             <div class="px-3.5 py-2 bg-slate-50 rounded-xl border border-slate-200 text-center">
                 <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Standar Harian</span>
@@ -87,8 +87,8 @@
                             <th class="py-3 px-4 text-center bg-slate-100/50">Minggu 1<br><span class="font-normal text-[9px] text-slate-400 normal-case">(H-21 s.d. H-15)</span></th>
                             <th class="py-3 px-4 text-center bg-slate-100/50">Minggu 2<br><span class="font-normal text-[9px] text-slate-400 normal-case">(H-14 s.d. H-8)</span></th>
                             <th class="py-3 px-4 text-center bg-slate-100/50">Minggu 3<br><span class="font-normal text-[9px] text-slate-400 normal-case">(H-7 s.d. H-1)</span></th>
-                            <th class="py-3 px-4 text-center bg-blue-50/50 text-blue-900 font-extrabold">Estimasi Penjualan<br><span class="font-normal text-[9px] text-blue-700 normal-case">(Minggu Depan)</span></th>
-                            <th class="py-3 px-4 text-center bg-emerald-50/60 text-emerald-900 font-extrabold">Saran Produksi<br><span class="font-normal text-[9px] text-emerald-700 normal-case">(Dibulatkan)</span></th>
+                            <th class="py-3 px-4 text-center bg-blue-50/50 text-blue-900 font-extrabold">Estimasi Penjualan<br><span class="font-normal text-[9px] text-blue-700 normal-case">(Harian)</span></th>
+                            <th class="py-3 px-4 text-center bg-emerald-50/60 text-emerald-900 font-extrabold">Saran Produksi<br><span class="font-normal text-[9px] text-emerald-700 normal-case">(Hari Ini)</span></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -137,7 +137,7 @@
                                     <span class="text-xs font-extrabold text-blue-900">
                                         {{ number_format($item['estimasi'], 1) }}
                                     </span>
-                                    <span class="text-[10px] text-blue-700 font-semibold block">Botol/Minggu</span>
+                                    <span class="text-[10px] text-blue-700 font-semibold block">Botol/Hari</span>
                                 </td>
 
                                 <!-- Saran Produksi (Dibulatkan ke atas / integer) -->

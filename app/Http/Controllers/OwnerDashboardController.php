@@ -12,9 +12,34 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use App\Services\ForecastService;
+use App\Services\SalesReportService;
 
 class OwnerDashboardController extends Controller
 {
+    /**
+     * Prediksi kebutuhan stok Moving Average 3 minggu (PPL-30).
+     * Endpoint: GET /owner/prediksi
+     */
+    public function prediksi(ForecastService $forecast): View
+    {
+        $result = $forecast->getForecast();
+
+        return view('owner.prediksi', [
+            'isDataSufficient' => $result['isDataSufficient'],
+            'predictions' => $result['predictions'],
+        ]);
+    }
+
+    /**
+     * Riwayat penjualan riil + grafik (PPL-30).
+     * Endpoint: GET /owner/riwayat-penjualan
+     */
+    public function riwayatPenjualan(Request $request, SalesReportService $report): View
+    {
+        return view('owner.riwayat-penjualan', $report->getReport($request->query('periode')));
+    }
+
     /**
      * Menampilkan antarmuka Dashboard Owner & Manajemen Antrean Pesanan (FR-8.1, FR-8.8).
      * Endpoint: GET /owner/dashboard
