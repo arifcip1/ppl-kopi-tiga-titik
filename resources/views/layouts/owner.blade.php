@@ -106,10 +106,10 @@
                 <span>Prediksi Stok</span>
             </a>
 
-            <!-- 7. Pengiriman -->
-            <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors {{ $activeMenu === 'pengiriman' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
+            <!-- 7. Pengiriman / Kelola Kurir -->
+            <a href="{{ route('owner.dashboard', ['modal' => 'couriers']) }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors {{ $activeMenu === 'pengiriman' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
                 <span class="material-symbols-outlined text-lg {{ $activeMenu === 'pengiriman' ? 'text-white' : 'text-slate-500' }}">local_shipping</span>
-                <span>Pengiriman</span>
+                <span>Kelola Kurir</span>
             </a>
 
             <!-- 8. Pengaturan -->
@@ -141,19 +141,19 @@
     <div id="contentWrapper" class="flex-1 w-full min-h-screen flex flex-col md:pl-64 transition-all duration-300 ease-in-out">
 
         <!-- Top Sticky Header -->
-        <header class="bg-white px-4 md:px-8 py-3.5 border-b border-slate-200/90 shadow-xs flex items-center justify-between sticky top-0 z-30">
-            <div class="flex items-center gap-3">
+        <header class="bg-white px-3 sm:px-4 md:px-8 py-3.5 border-b border-slate-200/90 shadow-xs flex items-center justify-between sticky top-0 z-30 gap-2">
+            <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
                 <!-- Tombol Garis Tiga (Hamburger Menu) Buka/Tutup Sidebar -->
-                <button onclick="toggleSidebar()" class="w-9 h-9 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-blue-900 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95" title="Buka/Tutup Menu Sidebar">
+                <button onclick="toggleSidebar()" class="w-9 h-9 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-blue-900 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95 shrink-0" title="Buka/Tutup Menu Sidebar">
                     <span class="material-symbols-outlined text-2xl font-bold">menu</span>
                 </button>
 
-                <div class="flex items-center gap-2">
-                    <img class="w-8 h-8 rounded-lg object-contain shadow-xs" src="{{ asset('images/logo.png') }}" alt="Logo" onerror="this.src='https://placehold.co/100x100/1e3a8a/ffffff?text=KTT'" />
-                    <div>
-                        <div class="flex items-center gap-1.5">
-                            <span class="font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] text-sm md:text-base tracking-tight">@yield('page_title', 'Kelola Produk')</span>
-                            <span class="px-1.5 py-0.2 bg-blue-100 text-blue-900 font-bold text-[9px] rounded uppercase tracking-wider">@yield('role_badge', 'OWNER')</span>
+                <div class="flex items-center gap-2 min-w-0">
+                    <img class="w-8 h-8 rounded-lg object-contain shadow-xs shrink-0" src="{{ asset('images/logo.png') }}" alt="Logo" onerror="this.src='https://placehold.co/100x100/1e3a8a/ffffff?text=KTT'" />
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5 flex-nowrap">
+                            <span class="font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] text-xs sm:text-sm md:text-base tracking-tight truncate">@yield('page_title', 'Kelola Produk')</span>
+                            <span class="px-1.5 py-0.2 bg-blue-100 text-blue-900 font-bold text-[9px] rounded uppercase tracking-wider shrink-0">@yield('role_badge', 'OWNER')</span>
                         </div>
                         <p class="text-[11px] text-slate-500 hidden md:block">@yield('page_subtitle', 'Atur katalog menu, harga jual, stok harian, dan informasi keawetan')</p>
                     </div>
@@ -161,7 +161,7 @@
             </div>
 
             <!-- Tombol Aksi Kanan Header (Slot Khusus Per Halaman) -->
-            <div class="flex items-center gap-2.5">
+            <div class="flex items-center gap-2 shrink-0">
                 @yield('header_actions')
             </div>
         </header>

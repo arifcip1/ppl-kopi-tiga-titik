@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
+use App\Services\OrderStatusService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,10 @@ use Illuminate\View\View;
 
 class CourierDashboardController extends Controller
 {
+    public function __construct(
+        protected OrderStatusService $statusService
+    ) {}
+
     /**
      * Menampilkan tab Tugas Baru untuk Kurir yang sedang login (FR-8.7, FR-8.9).
      * Endpoint: GET /kurir/tugas-baru
@@ -36,6 +41,39 @@ class CourierDashboardController extends Controller
         $stats = $this->getCourierStats($courier->id);
 
         return view('Dashboard Kurir Tab Tugas Baru Page', compact('tasks', 'stats', 'courier'));
+    }
+
+    /**
+     * API Tugas Pengantaran Aktif Kurir yang Login (FR-8.7 & FR-8.9).
+     * Endpoint: GET /api/kurir/tasks
+     */
+    public function apiTasks(Request $request): JsonResponse
+    {
+        $courier = Auth::user();
+
+        $tasks = Order::where('courier_id', $courier->id)
+            ->where('status', 'dikirim')
+            ->with(['orderItems.product', 'payment', 'user', 'statusHistories'])
+            ->latest()
+            ->get();
+
+        $tasks->transform(function ($task) {
+            $this->formatTaskDisplay($task);
+            return $task;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data'    => $tasks,
+            'meta'    => [
+                'total_tasks' => $tasks->count(),
+                'courier'     => [
+                    'id'    => $courier->id,
+                    'name'  => $courier->name,
+                    'email' => $courier->email,
+                ],
+            ],
+        ]);
     }
 
     /**
@@ -85,33 +123,35 @@ class CourierDashboardController extends Controller
             return back()->with('error', $msg);
         }
 
-        $order->status = 'selesai';
-        $order->save();
+        try {
+            $updatedOrder = $this->statusService->transition(
+                $order,
+                'selesai',
+                Auth::user(),
+                'Pesanan telah berhasil diantar dan diterima oleh pelanggan melalui Kurir: ' . Auth::user()->name
+            );
 
-        // 3. Rekam jejak status ke tabel order_status_history (FR-8.5)
-        OrderStatusHistory::create([
-            'order_id'        => $order->id,
-            'status_baru'     => 'selesai',
-            'diubah_oleh'     => Auth::id(),
-            'waktu_perubahan' => now(),
-            'keterangan'      => 'Pesanan telah berhasil diantar dan diterima oleh pelanggan melalui Kurir: ' . Auth::user()->name,
-        ]);
+            $successMsg = 'Pesanan ' . $updatedOrder->kode . ' berhasil diselesaikan! Antaran Anda telah tercatat.';
 
-        $successMsg = 'Pesanan ' . $order->kode . ' berhasil diselesaikan! Antaran Anda telah tercatat.';
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $successMsg,
+                    'data'    => $updatedOrder,
+                ]);
+            }
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => $successMsg,
-                'data'    => $order,
-            ]);
+            return redirect()->route('kurir.tugas-baru')->with('success', $successMsg);
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+            return back()->with('error', $e->getMessage());
         }
-
-        return redirect()->route('kurir.tugas-baru')->with('success', $successMsg);
     }
 
     /**
-     * Hitung ringkasan statistik antaran kurir.
+     * Mengambil statistik performa kurir hari ini.
      */
     private function getCourierStats(int $courierId): array
     {
@@ -124,13 +164,19 @@ class CourierDashboardController extends Controller
             ->whereDate('updated_at', today())
             ->count();
 
-        $totalBottlesDelivered = OrderItem::whereHas('order', function ($q) use ($courierId) {
-            $q->where('courier_id', $courierId)->where('status', 'selesai');
-        })->sum('jumlah');
+        $completedOrders = Order::where('courier_id', $courierId)
+            ->where('status', 'selesai')
+            ->with('orderItems')
+            ->get();
+
+        $totalBottlesDelivered = $completedOrders->sum(function ($order) {
+            return $order->orderItems ? $order->orderItems->sum('jumlah') : 0;
+        });
 
         return [
             'active_tasks'            => $activeCount,
             'completed_today'         => $completedTodayCount,
+            'total_completed'         => $completedOrders->count(),
             'total_bottles_delivered' => $totalBottlesDelivered,
         ];
     }
@@ -140,6 +186,11 @@ class CourierDashboardController extends Controller
      */
     private function formatTaskDisplay(Order $order): void
     {
+        // Waktu penugasan kurir (dari status history 'dikirim')
+        $assignedHistory = $order->statusHistories ? $order->statusHistories->where('status_baru', 'dikirim')->last() : null;
+        $assignedTime = $assignedHistory?->created_at ?? $order->updated_at ?? $order->created_at;
+        $order->ditugaskan_waktu_formatted = $assignedTime ? $assignedTime->isoFormat('HH:mm') . ' WIB' : '-';
+
         $order->subtotal_formatted = 'Rp ' . number_format($order->subtotal, 0, ',', '.');
         $order->ongkir_formatted = $order->ongkir > 0
             ? 'Rp ' . number_format($order->ongkir, 0, ',', '.')
@@ -173,4 +224,3 @@ class CourierDashboardController extends Controller
         }
     }
 }
-
