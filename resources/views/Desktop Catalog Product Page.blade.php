@@ -6,53 +6,115 @@
 @section('role_badge', strtoupper(Auth::check() && in_array(Auth::user()->role, ['admin', 'owner']) ? 'OWNER' : (Auth::user()->role ?? 'PELANGGAN')))
 @section('page_subtitle', 'Pilih varian kopi botol 250 ml favoritmu langsung dari lapak resmi Kopi Tiga Titik')
 
+@push('styles')
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<style>
+    #map-catalog-lapak {
+        width: 100%;
+        height: 280px;
+        z-index: 10;
+    }
+    .pin-radar-catalog {
+        position: absolute;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(30, 58, 138, 0.25);
+        animation: pinPulseCat 2s ease-out infinite;
+        pointer-events: none;
+        top: -3px;
+        left: -3px;
+    }
+    @keyframes pinPulseCat {
+        0% { transform: scale(0.6); opacity: 1; }
+        100% { transform: scale(1.65); opacity: 0; }
+    }
+</style>
+@endpush
+
 @section('content')
 
-    <!-- 1. Lapak Status & Service Selector (Delivery vs Self Pickup) -->
-    <div class="p-3.5 md:p-4 bg-white rounded-2xl shadow-xs border border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-        <div class="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-            @if(($statusLapak ?? 'buka') === 'buka')
-                <span class="relative flex h-3 w-3">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                </span>
-            @else
-                <span class="relative flex h-3 w-3">
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
-                </span>
-            @endif
+    @php
+        $lapakNama = $lokasiAktif->nama_lokasi ?? 'Lapak Jl. Kuwung';
+        $lapakAlamat = $lokasiAktif->alamat ?? 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto';
+        $lapakLat = (float) ($lokasiAktif->latitude ?? -7.472600);
+        $lapakLng = (float) ($lokasiAktif->longitude ?? 112.438500);
+        $lapakCoordsFormatted = number_format($lapakLat, 6, '.', '') . ', ' . number_format($lapakLng, 6, '.', '');
+        $isLapakOpen = ($statusLapak ?? 'buka') === 'buka';
+    @endphp
 
-            <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="material-symbols-outlined text-rose-500 text-lg">location_on</span>
-                <span class="text-xs md:text-sm font-bold text-slate-800">
-                    Lapak: {{ $lokasiAktif->nama_lokasi ?? 'Lapak Jl. Kuwung' }} ({{ $lokasiAktif->alamat ?? 'Mergelo, Kota Mojokerto' }})
-                </span>
-                @if(($statusLapak ?? 'buka') === 'buka')
-                    <span class="px-2 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded-full">Buka</span>
-                @else
-                    <span class="px-2 py-0.2 bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold rounded-full">Tutup</span>
-                @endif
+    <!-- 1. Kartu Informasi Titik Lapak Hari Ini & Pemilih Layanan (Rapi & Terstruktur) -->
+    <div class="p-4 md:p-5 bg-white rounded-2xl shadow-xs border border-slate-200/90 flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-4">
+        <!-- Kiri: Identitas Lapak, Alamat, Koordinat & Tombol Peta -->
+        <div class="flex items-start gap-3.5 min-w-0 flex-1">
+            <!-- Ikon Lapak -->
+            <div class="w-11 h-11 rounded-2xl {{ $isLapakOpen ? 'bg-blue-50 text-blue-900 border-blue-100' : 'bg-rose-50 text-rose-700 border-rose-100' }} border flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+                <span class="material-symbols-outlined text-2xl">storefront</span>
             </div>
 
-            <span class="px-2.5 py-0.5 bg-slate-100 rounded-full border border-slate-200/60 text-[11px] font-medium text-slate-600">
-                ⏰ {{ $jamBuka ?? '15:00' }} - {{ $jamTutup ?? '18:00' }} WIB
-            </span>
+            <!-- Rincian Lokasi Lapak -->
+            <div class="min-w-0 flex-1 flex flex-col gap-1.5">
+                <!-- Baris 1: Nama Lapak + Status + Jam Operasional -->
+                <div class="flex items-center flex-wrap gap-2">
+                    <h2 class="text-xs sm:text-sm md:text-base font-extrabold text-slate-900 font-['Plus_Jakarta_Sans'] leading-snug">
+                        Lapak: {{ $lapakNama }}
+                    </h2>
 
-            @if(($statusLapak ?? 'buka') !== 'buka')
-                <span class="text-[11px] text-rose-600 font-semibold italic">
-                    • Saat ini lapak tutup
-                </span>
-            @endif
+                    @if($isLapakOpen)
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-extrabold rounded-full">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span>Buka</span>
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-extrabold rounded-full">
+                            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                            <span>Tutup</span>
+                        </span>
+                    @endif
+
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-100 rounded-full border border-slate-200/80 text-[10px] font-bold text-slate-600">
+                        <span class="material-symbols-outlined text-[13px] text-blue-900">schedule</span>
+                        <span>{{ $jamBuka ?? '15:00' }} - {{ $jamTutup ?? '18:00' }} WIB</span>
+                    </span>
+                </div>
+
+                <!-- Baris 2: Alamat Lengkap -->
+                <p class="text-xs text-slate-600 leading-relaxed flex items-start gap-1">
+                    <span class="material-symbols-outlined text-sm text-rose-500 shrink-0 mt-0.5">location_on</span>
+                    <span>{{ $lapakAlamat }}</span>
+                </p>
+
+                <!-- Baris 3: Titik Koordinat Pasti & Tombol Lihat Peta -->
+                <div class="flex items-center flex-wrap gap-2 pt-0.5">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-50 border border-slate-200/90 rounded-lg text-[10px] font-mono font-semibold text-slate-600" title="Koordinat GPS Titik Lapak">
+                        <span class="material-symbols-outlined text-[13px] text-blue-900">my_location</span>
+                        <span>{{ $lapakCoordsFormatted }}</span>
+                    </span>
+
+                    <button type="button" onclick="openLapakMapModal()" class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 hover:bg-blue-900 text-blue-900 hover:text-white border border-blue-200 hover:border-blue-900 rounded-lg text-[11px] font-bold transition-all cursor-pointer shadow-2xs">
+                        <span class="material-symbols-outlined text-[14px]">map</span>
+                        <span>Lihat Titik Peta Lapak</span>
+                    </button>
+
+                    <a href="https://www.google.com/maps/search/?api=1&query={{ $lapakLat }},{{ $lapakLng }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-600 hover:text-blue-900 border border-slate-200 rounded-lg text-[11px] font-semibold transition-colors">
+                        <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+                        <span>Google Maps</span>
+                    </a>
+                </div>
+            </div>
         </div>
 
-        <!-- Delivery / Pickup Switcher (Interaktif) -->
-        <div class="p-1 bg-slate-100 rounded-xl border border-slate-200/60 flex items-center gap-1 self-stretch sm:self-auto justify-center">
-            <button id="btn-delivery" onclick="setServiceType('delivery')" class="px-3.5 py-1.5 bg-blue-900 text-white rounded-lg shadow-xs text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer">
-                <span class="material-symbols-outlined text-sm">moped</span>
+        <!-- Kanan: Delivery / Self Pickup Switcher (Proporsional & Tidak Terjepit) -->
+        <div class="p-1 bg-slate-100 rounded-xl border border-slate-200/80 flex items-center gap-1 shrink-0 self-start lg:self-center w-full sm:w-auto justify-center">
+            <button id="btn-delivery" type="button" onclick="setServiceType('delivery')" class="flex-1 sm:flex-initial px-4 py-2 bg-blue-900 text-white rounded-lg shadow-xs text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap">
+                <span class="material-symbols-outlined text-base">moped</span>
                 <span>Delivery</span>
             </button>
-            <button id="btn-pickup" onclick="setServiceType('pickup')" class="px-3.5 py-1.5 text-slate-600 hover:text-slate-900 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer">
-                <span class="material-symbols-outlined text-sm">storefront</span>
+            <button id="btn-pickup" type="button" onclick="setServiceType('pickup')" class="flex-1 sm:flex-initial px-4 py-2 text-slate-600 hover:text-slate-900 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap">
+                <span class="material-symbols-outlined text-base">storefront</span>
                 <span>Self Pickup</span>
             </button>
         </div>
@@ -294,9 +356,76 @@
         </div>
     </div>
 
+    <!-- 5. MODAL PETA TITIK PASTI LAPAK HARI INI -->
+    <div id="lapak-map-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <!-- Header Modal Peta -->
+            <div class="px-5 py-4 bg-slate-50 border-b border-slate-200/80 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-blue-900 text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <span class="material-symbols-outlined text-lg">pin_drop</span>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-extrabold text-slate-900 font-['Plus_Jakarta_Sans'] truncate">Titik Pasti Lokasi Lapak</h3>
+                        <p class="text-[11px] text-slate-500 truncate">{{ $lapakNama }} • {{ $jamBuka ?? '15:00' }} - {{ $jamTutup ?? '18:00' }} WIB</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeLapakMapModal()" class="w-8 h-8 rounded-full bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 transition-colors cursor-pointer shrink-0">
+                    <span class="material-symbols-outlined text-base">close</span>
+                </button>
+            </div>
+
+            <!-- Interactive Map Canvas -->
+            <div class="relative w-full h-[280px] bg-slate-100 border-b border-slate-200">
+                <div id="map-catalog-lapak"></div>
+                <div class="absolute top-3 left-3 z-[400] px-2.5 py-1 bg-white/95 backdrop-blur-xs rounded-lg shadow-xs border border-slate-200/80 flex items-center gap-1.5 text-[10px] font-bold text-slate-700 pointer-events-none">
+                    <span class="w-2 h-2 rounded-full {{ $isLapakOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500' }}"></span>
+                    <span>{{ $isLapakOpen ? 'Lapak Sedang Buka' : 'Lapak Sedang Tutup' }}</span>
+                </div>
+            </div>
+
+            <!-- Rincian Alamat & Koordinat Pasti -->
+            <div class="p-5 flex flex-col gap-3.5">
+                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col gap-2">
+                    <div class="flex items-start gap-2">
+                        <span class="material-symbols-outlined text-base text-rose-500 shrink-0 mt-0.5">location_on</span>
+                        <div class="min-w-0 flex-1">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Alamat Titik Lapak</span>
+                            <p class="text-xs font-semibold text-slate-800 leading-relaxed">{{ $lapakAlamat }}</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-200/70 flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-sm text-blue-900">my_location</span>
+                            <span class="text-[11px] text-slate-500 font-medium">Koordinat GPS:</span>
+                            <code id="catalog-lapak-coords" class="px-2 py-0.5 bg-white border border-slate-200 rounded-md text-[11px] font-mono font-bold text-blue-950">{{ $lapakCoordsFormatted }}</code>
+                        </div>
+                        <button type="button" onclick="copyLapakCoords()" class="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-900 border border-slate-200 rounded-lg text-[10px] font-bold transition-colors cursor-pointer">
+                            <span class="material-symbols-outlined text-[13px]">content_copy</span>
+                            <span id="copy-coords-label">Salin Koordinat</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tombol Aksi Navigasi -->
+                <div class="flex items-center justify-end gap-2.5">
+                    <button type="button" onclick="closeLapakMapModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer">
+                        Tutup
+                    </button>
+                    <a href="https://www.google.com/maps/dir/?api=1&destination={{ $lapakLat }},{{ $lapakLng }}" target="_blank" rel="noopener noreferrer" class="flex-1 sm:flex-initial px-4 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl shadow-xs text-xs font-bold flex items-center justify-center gap-1.5 transition-colors">
+                        <span class="material-symbols-outlined text-base">directions</span>
+                        <span>Buka Rute di Google Maps</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
 @endsection
 
 @push('scripts')
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
     let currentVariantPrice = 10000;
     let currentModalQty = 1;
@@ -535,11 +664,89 @@
         const btnPickup = document.getElementById('btn-pickup');
         
         if (type === 'delivery') {
-            btnDelivery.className = 'px-3.5 py-1.5 bg-blue-900 text-white rounded-lg shadow-xs text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer';
-            btnPickup.className = 'px-3.5 py-1.5 text-slate-600 hover:text-slate-900 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer';
+            btnDelivery.className = 'flex-1 sm:flex-initial px-4 py-2 bg-blue-900 text-white rounded-lg shadow-xs text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap';
+            btnPickup.className = 'flex-1 sm:flex-initial px-4 py-2 text-slate-600 hover:text-slate-900 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap';
         } else {
-            btnPickup.className = 'px-3.5 py-1.5 bg-blue-900 text-white rounded-lg shadow-xs text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer';
-            btnDelivery.className = 'px-3.5 py-1.5 text-slate-600 hover:text-slate-900 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer';
+            btnPickup.className = 'flex-1 sm:flex-initial px-4 py-2 bg-blue-900 text-white rounded-lg shadow-xs text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap';
+            btnDelivery.className = 'flex-1 sm:flex-initial px-4 py-2 text-slate-600 hover:text-slate-900 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap';
+        }
+    }
+
+    // Modal Peta Titik Pasti Lapak (Leaflet + OpenStreetMap)
+    let catalogLapakMap = null;
+
+    function openLapakMapModal() {
+        const modal = document.getElementById('lapak-map-modal');
+        if (!modal) return;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        const lapakLat = {{ $lapakLat }};
+        const lapakLng = {{ $lapakLng }};
+        const lapakNama = @json($lapakNama);
+        const lapakAlamat = @json($lapakAlamat);
+
+        setTimeout(() => {
+            if (!catalogLapakMap && typeof L !== 'undefined') {
+                catalogLapakMap = L.map('map-catalog-lapak', {
+                    zoomControl: true,
+                    scrollWheelZoom: true
+                }).setView([lapakLat, lapakLng], 17);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; OpenStreetMap'
+                }).addTo(catalogLapakMap);
+
+                const customIcon = L.divIcon({
+                    className: 'custom-lapak-pin',
+                    html: `
+                        <div class="relative flex items-center justify-center">
+                            <div class="pin-radar-catalog"></div>
+                            <div class="w-9 h-9 rounded-full bg-blue-900 text-white border-2 border-white shadow-lg flex items-center justify-center relative z-10">
+                                <span class="material-symbols-outlined text-lg">storefront</span>
+                            </div>
+                        </div>
+                    `,
+                    iconSize: [38, 38],
+                    iconAnchor: [19, 19],
+                    popupAnchor: [0, -20]
+                });
+
+                const marker = L.marker([lapakLat, lapakLng], { icon: customIcon }).addTo(catalogLapakMap);
+                marker.bindPopup(`
+                    <div style="font-family: 'Plus Jakarta Sans', sans-serif; min-width: 190px;">
+                        <div style="font-weight: 800; font-size: 12px; color: #0f172a; margin-bottom: 2px;">${escapeToastText(lapakNama)}</div>
+                        <div style="font-size: 11px; color: #475569; line-height: 1.35;">${escapeToastText(lapakAlamat)}</div>
+                        <div style="font-size: 10px; font-family: monospace; color: #1e3a8a; margin-top: 4px; font-weight: 700;">${lapakLat.toFixed(6)}, ${lapakLng.toFixed(6)}</div>
+                    </div>
+                `).openPopup();
+            } else if (catalogLapakMap) {
+                catalogLapakMap.invalidateSize();
+                catalogLapakMap.setView([lapakLat, lapakLng], 17);
+            }
+        }, 120);
+    }
+
+    function closeLapakMapModal() {
+        const modal = document.getElementById('lapak-map-modal');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function copyLapakCoords() {
+        const coordsText = '{{ $lapakCoordsFormatted }}';
+        const labelEl = document.getElementById('copy-coords-label');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(coordsText).then(() => {
+                if (labelEl) labelEl.textContent = 'Tersalin!';
+                showAppToast('Koordinat titik lapak (' + coordsText + ') berhasil disalin!', 'success', 'Berhasil');
+                setTimeout(() => {
+                    if (labelEl) labelEl.textContent = 'Salin Koordinat';
+                }, 2000);
+            });
         }
     }
 
@@ -606,6 +813,7 @@
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
             closeProductDetail();
+            closeLapakMapModal();
         }
     });
 </script>
