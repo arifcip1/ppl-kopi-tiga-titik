@@ -113,9 +113,9 @@
             </a>
 
             <!-- 8. Pengaturan -->
-            <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors {{ $activeMenu === 'pengaturan' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
+            <a href="{{ url('/owner/update-lokasi') }}" class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors {{ $activeMenu === 'pengaturan' ? 'font-bold text-white bg-blue-900 shadow-xs' : 'text-slate-600 hover:text-blue-900 hover:bg-slate-100' }}">
                 <span class="material-symbols-outlined text-lg {{ $activeMenu === 'pengaturan' ? 'text-white' : 'text-slate-500' }}">settings</span>
-                <span>Pengaturan</span>
+                <span>Pengaturan Lapak</span>
             </a>
         </div>
 

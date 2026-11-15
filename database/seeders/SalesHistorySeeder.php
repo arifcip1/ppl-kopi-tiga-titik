@@ -2,10 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\SalesHistory;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class SalesHistorySeeder extends Seeder
 {
@@ -17,44 +20,81 @@ class SalesHistorySeeder extends Seeder
         $startDate = Carbon::today()->subMonths(2);
         $endDate = Carbon::today();
 
-        // Pola penjualan untuk masing-masing produk
+        // Pola penjualan
         $salesPatterns = [
-            // Produk 1: Penjualan meningkat
             [5, 6, 7, 8, 6, 9, 10, 8, 11, 12, 10, 13, 14, 12],
-
-            // Produk 2: Penjualan menurun
             [18, 17, 16, 15, 17, 14, 13, 12, 14, 11, 10, 9, 11, 8],
-
-            // Produk 3: Penjualan stabil
             [10, 11, 9, 10, 12, 10, 9, 11, 10, 12, 10, 9, 11, 10],
-
-            // Produk 4: Penjualan fluktuatif
             [4, 15, 7, 18, 5, 13, 8, 20, 6, 16, 9, 19, 5, 14],
         ];
 
-        foreach ($products as $index => $product) {
-            $date = $startDate->copy();
-            $pattern = $salesPatterns[$index];
+        $date = $startDate->copy();
+        $day = 0;
 
-            $day = 0;
+        while ($date->lte($endDate)) {
+            // Acak sumber transaksi untuk hari ini (50% Online, 50% POS)
+            $sumberTransaksi = rand(0, 1) ? 'online' : 'pos';
 
-            while ($date->lte($endDate)) {
+            // 1. Buat Nota Utama (Orders)
+            $order = Order::create([
+                'kode' => 'KTT-' . $date->format('Ymd') . '-' . str_pad($day, 4, '0', STR_PAD_LEFT),
+                'sumber_transaksi' => $sumberTransaksi,
+                'metode_pemenuhan' => $sumberTransaksi === 'online' ? 'pengiriman' : 'ambil_sendiri',
+                'status' => 'selesai',
+                'subtotal' => 0,
+                'ongkir' => $sumberTransaksi === 'online' ? 10000 : 0,
+                'total' => 0,
+                'nama_pelanggan' => 'Pelanggan Simulasi',
+                'created_at' => $date->copy()->setHour(10),
+                'updated_at' => $date->copy()->setHour(10),
+            ]);
+
+            $subtotalOrder = 0;
+
+            foreach ($products as $index => $product) {
+                $pattern = $salesPatterns[$index];
                 $jumlahTerjual = $pattern[$day % count($pattern)];
 
-                SalesHistory::updateOrCreate(
-                    [
+                if ($jumlahTerjual > 0) {
+                    $hargaItem = $product->harga ?? 15000;
+                    $subtotalItem = $jumlahTerjual * $hargaItem;
+                    
+                    // 2. Masukkan rincian botol ke Order Items (Ditambah nama_produk)
+                    OrderItem::create([
+                        'order_id' => $order->id,
                         'product_id' => $product->id,
-                        'tanggal' => $date->toDateString(),
-                        'sumber' => 'simulasi',
-                    ],
-                    [
-                        'jumlah_terjual' => $jumlahTerjual,
-                    ]
-                );
+                        'nama_produk' => $product->nama, // <--- Perbaikan di sini
+                        'jumlah' => $jumlahTerjual,
+                        'harga_satuan' => $hargaItem,
+                        'subtotal' => $subtotalItem,
+                        'created_at' => $date->copy()->setHour(10),
+                        'updated_at' => $date->copy()->setHour(10),
+                    ]);
 
-                $date->addDay();
-                $day++;
+                    $subtotalOrder += $subtotalItem;
+
+                    // 3. Catat di tabel agregasi Sales History
+                    SalesHistory::updateOrCreate(
+                        [
+                            'product_id' => $product->id,
+                            'tanggal' => $date->toDateString(),
+                            'sumber' => 'transaksi', 
+                        ],
+                        [
+                            'jumlah_terjual' => $jumlahTerjual,
+                        ]
+                    );
+                }
             }
+
+            // 4. Update nominal harga total di Nota Order
+            $order->update([
+                'subtotal' => $subtotalOrder,
+                'total' => $subtotalOrder + $order->ongkir,
+            ]);
+
+            $date->addDay();
+            $day++;
         }
     }
 }

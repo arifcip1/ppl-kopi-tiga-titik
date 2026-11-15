@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | OpenRouteService (ORS) - Routing Rute Jalan OSM (PPL-26 / F7)
+    |--------------------------------------------------------------------------
+    */
+    'openrouteservice' => [
+        'api_key'  => env('OPENROUTESERVICE_API_KEY'),
+        'base_url' => env('OPENROUTESERVICE_BASE_URL', 'https://api.openrouteservice.org'),
+        'timeout'  => (int) env('OPENROUTESERVICE_TIMEOUT', 5),
+        'profile'  => env('OPENROUTESERVICE_PROFILE', 'driving-car'),
+    ],
+
 ];

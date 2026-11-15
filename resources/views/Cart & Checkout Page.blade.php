@@ -4,7 +4,7 @@
 @section('active_menu', 'keranjang')
 @section('page_title', 'Checkout & Pengiriman')
 @section('role_badge', 'PELANGGAN')
-@section('page_subtitle', 'Lengkapi detail penerima, tentukan titik lokasi pengantaran di peta, dan selesaikan pembayaran QRIS')
+@section('page_subtitle', 'Lengkapi detail penerima, tentukan titik lokasi tujuan atau pilih ambil di lapak, dan bayar via QRIS')
 
 @push('styles')
     <!-- Leaflet CSS via CDN -->
@@ -23,17 +23,17 @@
         /* Container Peta Leaflet Responsif */
         #map {
             width: 100%;
-            height: 260px;
+            height: 280px;
             z-index: 10;
         }
         @media (min-width: 640px) {
             #map {
-                height: 320px;
+                height: 330px;
             }
         }
         @media (min-width: 768px) {
             #map {
-                height: 360px;
+                height: 370px;
             }
         }
         .leaflet-container {
@@ -80,6 +80,13 @@
                 opacity: 0;
             }
         }
+
+        /* Marker Khusus Lapak Aktif */
+        .custom-lapak-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 @endpush
 
@@ -94,7 +101,7 @@
 @section('content')
 
     <!-- ========================================================================= -->
-    <!-- 1. STEP PROGRESS INDICATOR & LAPAK BANNER (RESPONSIF MOBILE & DESKTOP) -->
+    <!-- 1. STEP PROGRESS INDICATOR & LAPAK BANNER (FR-11.4 & FR-11.6) -->
     <!-- ========================================================================= -->
     <div class="grid grid-cols-1 md:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
         
@@ -114,14 +121,14 @@
             <!-- Divider 1 -> 2 -->
             <div class="flex-1 h-0.5 bg-emerald-300 mx-2 sm:mx-3 rounded-full min-w-4"></div>
 
-            <!-- Step 2: Pengiriman (Aktif) -->
+            <!-- Step 2: Lokasi & Pengiriman (Aktif) -->
             <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
                 <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-blue-900 text-white flex items-center justify-center font-bold text-xs shrink-0 ring-4 ring-blue-100 shadow-xs">
                     2
                 </div>
                 <div>
                     <span class="text-xs font-bold text-blue-900 block leading-tight">Pengiriman</span>
-                    <span class="text-[10px] text-blue-700 font-semibold hidden md:block">Alamat & Peta</span>
+                    <span class="text-[10px] text-blue-700 font-semibold hidden md:block">Lokasi & Ongkir</span>
                 </div>
             </div>
 
@@ -140,7 +147,7 @@
             </div>
         </div>
 
-        <!-- Lapak Info Banner Mojokerto -->
+        <!-- Lapak Info Banner Mojokerto (FR-11.4 & FR-11.6) -->
         <div class="md:col-span-5 bg-white p-3.5 sm:p-4 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between gap-3">
             <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
                 <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
@@ -148,16 +155,20 @@
                 </div>
                 <div class="min-w-0">
                     <div class="flex items-center gap-1.5 flex-wrap">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
-                        <span class="text-xs font-bold font-['Plus_Jakarta_Sans'] text-slate-900 truncate">Lapak Jl. Kuwung</span>
-                        <span class="px-1.5 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold rounded-full">Buka</span>
+                        <span class="w-2 h-2 rounded-full {{ ($statusLapak ?? 'buka') === 'buka' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400' }} shrink-0"></span>
+                        <span class="text-xs font-bold font-['Plus_Jakarta_Sans'] text-slate-900 truncate">{{ $lokasiAktif->nama_lokasi ?? 'Lapak Jl. Kuwung' }}</span>
+                        @if(($statusLapak ?? 'buka') === 'buka')
+                            <span class="px-1.5 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold rounded-full">Buka</span>
+                        @else
+                            <span class="px-1.5 py-0.2 bg-rose-50 text-rose-700 border border-rose-200 text-[9px] font-bold rounded-full">Tutup</span>
+                        @endif
                     </div>
-                    <p class="text-[10px] sm:text-[11px] text-slate-500 mt-0.5 truncate">15.00 - 18.00 WIB • Kurir Siaga</p>
+                    <p class="text-[10px] sm:text-[11px] text-slate-500 mt-0.5 truncate">{{ $jamBuka ?? '15:00' }} - {{ $jamTutup ?? '18:00' }} WIB • {{ ($statusLapak ?? 'buka') === 'buka' ? 'Kurir Siaga' : 'Lapak Tutup' }}</p>
                 </div>
             </div>
-            <span class="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-blue-50 text-blue-900 border border-blue-200 rounded-xl text-[11px] sm:text-xs font-bold tracking-tight shrink-0 flex items-center gap-1 shadow-2xs">
-                <span class="material-symbols-outlined text-sm">two_wheeler</span>
-                <span>Delivery</span>
+            <span id="badge-metode-pemenuhan" class="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-blue-50 text-blue-900 border border-blue-200 rounded-xl text-[11px] sm:text-xs font-bold tracking-tight shrink-0 flex items-center gap-1 shadow-2xs">
+                <span class="material-symbols-outlined text-sm" id="badge-metode-icon">two_wheeler</span>
+                <span id="badge-metode-text">Delivery</span>
             </span>
         </div>
     </div>
@@ -165,13 +176,13 @@
     <!-- ========================================================================= -->
     <!-- 2. FORM CHECKOUT & PETA LOKASI DENGAN LAYOUT RESPONSIVE 2-KOLOM -->
     <!-- ========================================================================= -->
-    <form id="formCheckout" action="{{ route('checkout.process') }}" method="POST" onsubmit="handleCheckoutSubmit(event)">
+    <form id="formCheckout" action="{{ route('checkout.process') }}" method="POST" onsubmit="return handleCheckoutSubmit(event)">
         @csrf
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start mt-1">
             
             <!-- ================================================================= -->
-            <!-- KOLOM KIRI (7 SPAN): DATA PENERIMA, PETA LEAFLET & METODE BAYAR -->
+            <!-- KOLOM KIRI (7 SPAN): DATA PENERIMA, METODE PEMENUHAN & PETA LEAFLET -->
             <!-- ================================================================= -->
             <div class="lg:col-span-7 flex flex-col gap-4">
 
@@ -184,7 +195,7 @@
                             </span>
                             <div class="min-w-0">
                                 <h2 class="text-xs sm:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans'] truncate">1. Informasi Penerima</h2>
-                                <p class="text-[10px] sm:text-[11px] text-slate-500 truncate">Kontak aktif kurir Kopi Tiga Titik</p>
+                                <p class="text-[10px] sm:text-[11px] text-slate-500 truncate">Kontak aktif kurir atau konfirmasi pengambilan</p>
                             </div>
                         </div>
                         <span class="px-2 sm:px-2.5 py-0.5 sm:py-1 bg-blue-50 text-blue-900 border border-blue-200 text-[10px] font-bold rounded-full shrink-0">Wajib Diisi</span>
@@ -231,20 +242,83 @@
                     </div>
                 </div>
 
-                <!-- CARD 2: TITIK PENGANTARAN KURIR & PETA INTERAKTIF LEAFLET (FR-5.2 & FR-7.1) -->
-                <div class="bg-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col gap-4">
+                <!-- CARD 2: PILIHAN METODE PEMENUHAN PESANAN (DELIVERY vs AMBIL SENDIRI - BR-41 & FR-14) -->
+                <div class="bg-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col gap-3.5">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
+                        <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                            <span class="w-9 h-9 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
+                                <span class="material-symbols-outlined text-lg">local_shipping</span>
+                            </span>
+                            <div class="min-w-0">
+                                <h2 class="text-xs sm:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans'] truncate">2. Metode Pemenuhan Pesanan</h2>
+                                <p class="text-[10px] sm:text-[11px] text-slate-500 truncate">Pilih diantar oleh kurir atau ambil langsung di lapak</p>
+                            </div>
+                        </div>
+                        <span class="px-2 sm:px-2.5 py-0.5 sm:py-1 bg-blue-50 text-blue-900 border border-blue-200 text-[10px] font-bold rounded-full shrink-0">Wajib Dipilih</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <!-- Opsi 1: Diantar Kurir (Delivery) -->
+                        <label class="relative flex items-start gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all border-blue-900 bg-blue-50/40" id="card-option-pengiriman">
+                            <input type="radio" 
+                                   name="metode_pemenuhan" 
+                                   id="radio-pengiriman"
+                                   value="pengiriman" 
+                                   checked 
+                                   onchange="handleFulfillmentChange('pengiriman')"
+                                   class="mt-1 w-4 h-4 text-blue-900 border-slate-300 focus:ring-blue-900 cursor-pointer">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between gap-1 mb-1">
+                                    <div class="flex items-center gap-1.5 font-bold text-xs text-slate-900 font-['Plus_Jakarta_Sans']">
+                                        <span class="material-symbols-outlined text-base text-blue-900">two_wheeler</span>
+                                        <span>Diantar Kurir</span>
+                                    </div>
+                                    <span class="px-1.5 py-0.2 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-bold rounded-full">Gratis s/d 5,5 km</span>
+                                </div>
+                                <p class="text-[11px] text-slate-600 leading-relaxed">
+                                    Kurir mengantar langsung ke titik koordinat tujuan di wilayah Kota Mojokerto.
+                                </p>
+                            </div>
+                        </label>
+
+                        <!-- Opsi 2: Ambil Sendiri di Lapak (Pickup) -->
+                        <label class="relative flex items-start gap-3 p-3.5 rounded-xl border-2 cursor-pointer transition-all border-slate-200 bg-white hover:border-slate-300" id="card-option-ambil">
+                            <input type="radio" 
+                                   name="metode_pemenuhan" 
+                                   id="radio-ambil"
+                                   value="ambil_sendiri" 
+                                   onchange="handleFulfillmentChange('ambil_sendiri')"
+                                   class="mt-1 w-4 h-4 text-blue-900 border-slate-300 focus:ring-blue-900 cursor-pointer">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between gap-1 mb-1">
+                                    <div class="flex items-center gap-1.5 font-bold text-xs text-slate-900 font-['Plus_Jakarta_Sans']">
+                                        <span class="material-symbols-outlined text-base text-amber-600">storefront</span>
+                                        <span>Ambil Sendiri</span>
+                                    </div>
+                                    <span class="px-1.5 py-0.2 bg-blue-50 text-blue-900 border border-blue-200 text-[9px] font-bold rounded-full">Bebas Ongkir (Rp 0)</span>
+                                </div>
+                                <p class="text-[11px] text-slate-600 leading-relaxed">
+                                    Ambil pesanan langsung di {{ $lokasiAktif->nama_lokasi ?? 'Lapak Jl. Kuwung' }} (Batas waktu 24 jam).
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- SECTION A: PENGIRIMAN DELIVERY - TITIK PENGANTARAN KURIR & PETA LEAFLET (FR-5.2, FR-7.1, FR-7.3) -->
+                <div id="section-delivery-details" class="bg-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col gap-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                         <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
                             <span class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-100 shadow-2xs">
                                 <span class="material-symbols-outlined text-lg">pin_drop</span>
                             </span>
                             <div class="min-w-0">
-                                <h2 class="text-xs sm:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans'] truncate">2. Titik Pengantaran Kurir</h2>
-                                <p class="text-[10px] sm:text-[11px] text-slate-500 truncate">Geser pin di peta agar kurir sampai tepat lokasi</p>
+                                <h2 class="text-xs sm:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans'] truncate">3. Titik Lokasi Pengantaran Kurir</h2>
+                                <p class="text-[10px] sm:text-[11px] text-slate-500 truncate">Geser pin di peta untuk hitung jarak dan ongkos kirim real-time</p>
                             </div>
                         </div>
 
-                        <!-- Tombol Geolocation HTML5 (Full width di Mobile) -->
+                        <!-- Tombol Geolocation HTML5 -->
                         <button type="button" 
                                 id="btn-use-location" 
                                 onclick="getCurrentLocation()" 
@@ -258,9 +332,9 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 text-xs">
                         <div class="flex items-center gap-1.5 text-slate-700 font-medium min-w-0 flex-wrap">
                             <span class="material-symbols-outlined text-base text-emerald-600 shrink-0">location_searching</span>
-                            <span class="text-[11px] sm:text-xs shrink-0">Koordinat:</span>
+                            <span class="text-[11px] sm:text-xs shrink-0">Koordinat Tujuan:</span>
                             <span class="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded-md border border-slate-200 text-[11px] shadow-2xs truncate" id="display-coords">
-                                {{ old('lat', '-7.472600') }}, {{ old('lng', '112.438500') }}
+                                {{ old('lat', $lokasiAktif ? $lokasiAktif->latitude : '-7.472600') }}, {{ old('lng', $lokasiAktif ? $lokasiAktif->longitude : '112.438500') }}
                             </span>
                         </div>
                         <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full inline-flex items-center gap-1.5 border border-emerald-200 self-start sm:self-auto shrink-0">
@@ -269,19 +343,53 @@
                         </span>
                     </div>
 
-                    <!-- Leaflet Map Container -->
-                    <div class="relative overflow-hidden rounded-2xl border border-slate-300 shadow-2xs">
-                        <div id="map"></div>
-                        <!-- Petunjuk Floating di Peta (Responsif) -->
-                        <div class="absolute bottom-2.5 left-2.5 right-2.5 sm:right-auto z-20 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm text-[10px] sm:text-[11px] text-slate-700 font-medium flex items-center gap-1.5">
-                            <span class="material-symbols-outlined text-sm text-blue-900 shrink-0">touch_app</span>
-                            <span class="truncate">Klik atau geser pin kopi untuk atur titik</span>
+                    <!-- Live Quote & Jarak Badges (FR-7.1, FR-7.2, FR-7.3) -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col justify-center">
+                            <span class="text-[10px] text-slate-500 font-medium flex items-center gap-1">
+                                <span class="material-symbols-outlined text-xs text-blue-900">route</span>
+                                Estimasi Jarak Rute
+                            </span>
+                            <span class="font-bold text-slate-900 font-['Plus_Jakarta_Sans'] text-xs sm:text-sm mt-0.5" id="display-jarak">0.0 km</span>
+                        </div>
+                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col justify-center">
+                            <span class="text-[10px] text-slate-500 font-medium flex items-center gap-1">
+                                <span class="material-symbols-outlined text-xs text-emerald-700">payments</span>
+                                Tarif Ongkir
+                            </span>
+                            <span class="font-bold text-emerald-700 font-['Plus_Jakarta_Sans'] text-xs sm:text-sm mt-0.5" id="display-ongkir">Rp 0 (Promo)</span>
+                        </div>
+                        <div class="col-span-2 sm:col-span-1 p-2.5 bg-blue-50/70 rounded-xl border border-blue-100 flex flex-col justify-center">
+                            <span class="text-[10px] text-blue-800 font-bold flex items-center gap-1">
+                                <span class="material-symbols-outlined text-xs text-blue-900">local_offer</span>
+                                Ketentuan Tarif:
+                            </span>
+                            <span class="text-[10px] text-blue-900 mt-0.5 leading-snug" id="display-formula-ket">Gratis ongkir untuk jarak &le; 5,5 km</span>
                         </div>
                     </div>
 
-                    <!-- Hidden Inputs Koordinat (Untuk Payload Backend Form Submission) -->
-                    <input type="hidden" name="lat" id="input_lat" value="{{ old('lat', '-7.472600') }}">
-                    <input type="hidden" name="lng" id="input_lng" value="{{ old('lng', '112.438500') }}">
+                    <!-- Alert Peringatan Geofence di Luar Kota Mojokerto (Hidden by Default) -->
+                    <div id="alert-geofence" class="hidden p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-rose-900">
+                        <span class="material-symbols-outlined text-rose-600 text-lg shrink-0 mt-0.5">error</span>
+                        <div class="text-xs leading-relaxed">
+                            <strong class="font-bold block text-rose-950 mb-0.5">Titik Lokasi di Luar Wilayah Layanan Kota Mojokerto</strong>
+                            <span id="geofence-error-text">Layanan pengantaran kurir Kopi Tiga Titik saat ini hanya menjangkau area Kota Mojokerto. Silakan geser pin ke dalam wilayah Kota Mojokerto atau pilih opsi "Ambil Sendiri di Lapak".</span>
+                        </div>
+                    </div>
+
+                    <!-- Leaflet Map Container -->
+                    <div class="relative overflow-hidden rounded-2xl border border-slate-300 shadow-2xs">
+                        <div id="map"></div>
+                        <!-- Petunjuk Floating di Peta -->
+                        <div class="absolute bottom-2.5 left-2.5 right-2.5 sm:right-auto z-20 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm text-[10px] sm:text-[11px] text-slate-700 font-medium flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-sm text-blue-900 shrink-0">touch_app</span>
+                            <span class="truncate">Klik peta atau seret pin biru untuk menentukan titik antar</span>
+                        </div>
+                    </div>
+
+                    <!-- Hidden Inputs Koordinat -->
+                    <input type="hidden" name="lat" id="input_lat" value="{{ old('lat', $lokasiAktif ? $lokasiAktif->latitude : '-7.472600') }}">
+                    <input type="hidden" name="lng" id="input_lng" value="{{ old('lng', $lokasiAktif ? $lokasiAktif->longitude : '112.438500') }}">
                     <x-input-error for="lat" class="mt-1" />
                     <x-input-error for="lng" class="mt-1" />
 
@@ -317,7 +425,64 @@
                     </div>
                 </div>
 
-                <!-- CARD 3: PILIHAN METODE PEMBAYARAN (FR-6.3 - QRIS Dinamis) -->
+                <!-- SECTION B: AMBIL SENDIRI - LOKASI LAPAK & BATAS PENGAMBILAN 24 JAM (BR-41 & FR-14) -->
+                <div id="section-pickup-details" class="hidden bg-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col gap-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
+                        <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                            <span class="w-9 h-9 rounded-xl bg-amber-50 text-amber-800 flex items-center justify-center shrink-0 border border-amber-100 shadow-2xs">
+                                <span class="material-symbols-outlined text-lg">store</span>
+                            </span>
+                            <div class="min-w-0">
+                                <h2 class="text-xs sm:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans'] truncate">3. Titik Lapak Pengambilan</h2>
+                                <p class="text-[10px] sm:text-[11px] text-slate-500 truncate">Datang langsung ke lapak saat pesanan sudah siap diracik</p>
+                            </div>
+                        </div>
+                        <span class="px-2 sm:px-2.5 py-0.5 sm:py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold rounded-full shrink-0">Bebas Ongkir Rp 0</span>
+                    </div>
+
+                    <!-- Info Detail Lapak Aktif (FR-11.4) -->
+                    <div class="p-3.5 sm:p-4 bg-gradient-to-br from-amber-50/40 via-white to-slate-50 rounded-xl border border-amber-200/80 flex flex-col gap-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs shrink-0 mt-0.5">
+                                    <span class="material-symbols-outlined text-xl">storefront</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs sm:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">{{ $lokasiAktif->nama_lokasi ?? 'Lapak Jl. Kuwung' }}</h4>
+                                    <p class="text-[11px] text-slate-600 mt-0.5 leading-relaxed">{{ $lokasiAktif->alamat ?? 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto' }}</p>
+                                </div>
+                            </div>
+                            <a href="https://www.google.com/maps/search/?api=1&query={{ $lokasiAktif->latitude ?? -7.4726 }},{{ $lokasiAktif->longitude ?? 112.4385 }}" 
+                               target="_blank" 
+                               class="px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-bold rounded-lg border border-slate-200 shadow-2xs inline-flex items-center gap-1 shrink-0 transition-colors">
+                                <span class="material-symbols-outlined text-sm text-blue-900">map</span>
+                                <span class="hidden sm:inline">Petunjuk Arah</span>
+                            </a>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-amber-100 text-xs">
+                            <div class="flex items-center gap-2 text-slate-700">
+                                <span class="material-symbols-outlined text-amber-600 text-base">schedule</span>
+                                <span>Jam Operasional: <strong>{{ $jamBuka ?? '15:00' }} - {{ $jamTutup ?? '18:00' }} WIB</strong></span>
+                            </div>
+                            <div class="flex items-center gap-2 text-slate-700">
+                                <span class="material-symbols-outlined text-emerald-600 text-base">verified</span>
+                                <span>Status Lapak: <strong class="text-emerald-700">{{ ($statusLapak ?? 'buka') === 'buka' ? 'Buka Siaga' : 'Tutup Sementara' }}</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alert Batas Pengambilan 24 Jam (BR-41 & FR-14) -->
+                    <div class="p-3.5 bg-blue-50/80 rounded-xl border border-blue-200 flex items-start gap-2.5 text-blue-950">
+                        <span class="material-symbols-outlined text-blue-900 text-lg shrink-0 mt-0.5">timer</span>
+                        <div class="text-[11px] leading-relaxed">
+                            <strong class="font-bold block text-blue-950 mb-0.5">Ketentuan Batas Pengambilan 24 Jam:</strong>
+                            Setelah barista selesai meracik kopi dan status pesanan berubah menjadi <em>Siap Diambil</em>, Anda memiliki batas waktu maksimal <strong>24 jam</strong> untuk mengambil pesanan di lapak. Demi menjamin mutu dan kesegaran rasa kopi, pesanan yang tidak diambil dalam 24 jam akan ditutup otomatis.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CARD 4: PILIHAN METODE PEMBAYARAN (FR-6.3 - QRIS Dinamis) -->
                 <div class="bg-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col gap-4">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
                         <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
@@ -325,7 +490,7 @@
                                 <span class="material-symbols-outlined text-lg">payments</span>
                             </span>
                             <div class="min-w-0">
-                                <h2 class="text-xs sm:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans'] truncate">3. Metode Pembayaran</h2>
+                                <h2 class="text-xs sm:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans'] truncate">4. Metode Pembayaran</h2>
                                 <p class="text-[10px] sm:text-[11px] text-slate-500 truncate">Verifikasi otomatis tanpa upload bukti transfer</p>
                             </div>
                         </div>
@@ -383,7 +548,7 @@
             <!-- ================================================================= -->
             <div class="lg:col-span-5 flex flex-col gap-4 lg:sticky lg:top-20">
 
-                <!-- CARD 4: DAFTAR ITEM PESANAN (FR-5.6) -->
+                <!-- CARD 5: DAFTAR ITEM PESANAN (FR-5.6) -->
                 <div class="bg-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col gap-3.5">
                     <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                         <div class="flex items-center gap-2.5 sm:gap-3">
@@ -426,7 +591,7 @@
                                 </div>
                             @endforeach
                         @else
-                            <!-- Fallback Sample Snapshot jika dibuka langsung tanpa sesi keranjang -->
+                            <!-- Fallback Snapshot -->
                             <div class="p-2 sm:p-2.5 bg-slate-50/80 rounded-xl border border-slate-200/70 flex items-center gap-2.5 sm:gap-3">
                                 <div class="w-12 h-14 sm:w-13 sm:h-14 bg-white rounded-xl p-1.5 border border-slate-200 flex items-center justify-center shrink-0 shadow-2xs">
                                     <img src="{{ asset('products/Titik Temu.png') }}" alt="Titik Temu" class="w-full h-full object-contain" />
@@ -456,7 +621,7 @@
                     </div>
                 </div>
 
-                <!-- CARD 5: RINCIAN BIAYA & TOTAL PEMBAYARAN (FR-5.6 & FR-5.8) -->
+                <!-- CARD 6: RINCIAN BIAYA & TOTAL PEMBAYARAN (FR-5.6, FR-5.8, FR-7.3, FR-14) -->
                 <div class="bg-white p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex flex-col gap-3.5">
                     <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Rincian Pembayaran</h3>
 
@@ -466,16 +631,21 @@
                             <span class="font-bold text-slate-900">Rp {{ isset($subtotal) ? number_format($subtotal, 0, ',', '.') : '28.000' }}</span>
                         </div>
 
-                        <!-- Ongkir Sementara Rp 0 Sesuai FR-5.8 -->
+                        <!-- Ongkir Dinamis Sesuai PPL-25, FR-7.3, FR-14 -->
                         <div class="flex justify-between items-center">
                             <span class="inline-flex items-center gap-1">
                                 Ongkos Kirim Kurir
-                                <span class="material-symbols-outlined text-xs text-slate-400" title="Gratis ongkir promo lokal Mojokerto">help</span>
+                                <span class="material-symbols-outlined text-xs text-slate-400" title="Gratis ongkir promo jarak <= 5,5 km di Kota Mojokerto">help</span>
                             </span>
-                            <div class="flex items-center gap-1.5">
+                            <div class="flex items-center gap-1.5" id="summary-ongkir">
                                 <span class="text-[10px] line-through text-slate-400">Rp 5.000</span>
-                                <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">Rp {{ isset($ongkir) ? number_format($ongkir, 0, ',', '.') : '0' }} (Promo)</span>
+                                <span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">Rp 0 (Promo)</span>
                             </div>
+                        </div>
+
+                        <div class="flex justify-between items-center text-[11px] text-slate-500" id="summary-distance-row">
+                            <span>Estimasi Jarak Antar</span>
+                            <span class="font-medium font-mono" id="summary-distance-note">0.0 km</span>
                         </div>
 
                         <div class="flex justify-between items-center">
@@ -492,10 +662,10 @@
                     <div class="flex justify-between items-baseline">
                         <div>
                             <span class="text-xs font-bold text-slate-500 block uppercase tracking-wider">Total Tagihan</span>
-                            <span class="text-[10px] text-slate-400 font-medium">Termasuk PPN & Jasa Pengantaran</span>
+                            <span class="text-[10px] text-slate-400 font-medium" id="summary-total-subtitle">Termasuk PPN & Jasa Pengantaran</span>
                         </div>
                         <div class="text-right">
-                            <span class="text-xl sm:text-2xl md:text-3xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] block leading-none">Rp {{ isset($total) ? number_format($total, 0, ',', '.') : '28.000' }}</span>
+                            <span class="text-xl sm:text-2xl md:text-3xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] block leading-none" id="summary-total">Rp {{ isset($total) ? number_format($total, 0, ',', '.') : '28.000' }}</span>
                         </div>
                     </div>
 
@@ -537,40 +707,67 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <script>
-        // Koordinat Default Lapak Kopi Tiga Titik Mojokerto (Jl. Kuwung, Mergelo, Mojokerto)
-        const DEFAULT_LAT = -7.4726;
-        const DEFAULT_LNG = 112.4385;
+        // Koordinat Default Lapak Kopi Tiga Titik Mojokerto
+        const DEFAULT_LAT = {{ $lokasiAktif ? (float)$lokasiAktif->latitude : -7.472600 }};
+        const DEFAULT_LNG = {{ $lokasiAktif ? (float)$lokasiAktif->longitude : 112.438500 }};
+        const LAPAK_NAME = "{{ addslashes($lokasiAktif->nama_lokasi ?? 'Lapak Jl. Kuwung') }}";
+        const LAPAK_ADDRESS = "{{ addslashes($lokasiAktif->alamat ?? 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto') }}";
+        const BASE_SUBTOTAL = {{ (int) ($subtotal ?? 28000) }};
 
         let map;
-        let marker;
+        let customerMarker;
+        let lapakMarker;
+        let currentOngkir = 0;
+        let isOutsideMojokerto = false;
 
-        // Inisialisasi Peta Leaflet saat DOM siap
+        // Inisialisasi saat DOM siap
         document.addEventListener('DOMContentLoaded', function () {
             initLeafletMap();
+            // Jalankan perhitungan awal ongkir untuk lokasi default
+            fetchShippingQuote(DEFAULT_LAT, DEFAULT_LNG);
         });
 
         function initLeafletMap() {
             const mapContainer = document.getElementById('map');
             if (!mapContainer) return;
 
-            // 1. Buat instance Leaflet Map
+            // 1. Inisialisasi instance Leaflet Map
             map = L.map('map', {
                 center: [DEFAULT_LAT, DEFAULT_LNG],
-                zoom: 16,
-                scrollWheelZoom: false, // Hindari scroll halaman terganggu
+                zoom: 15,
+                scrollWheelZoom: false,
             });
 
-            // 2. Pasang Tile Layer OpenStreetMap
+            // 2. Tile Layer OpenStreetMap
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors'
             }).addTo(map);
 
-            // 3. Custom Marker Icon (Pin Kopi Tiga Titik dengan Efek Gelombang Radar)
+            // 3. Marker Lapak Aktif (Ikon Toko Hijau)
+            const lapakIcon = L.divIcon({
+                className: 'custom-lapak-marker',
+                html: `
+                    <div style="position: relative; display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));">
+                        <div style="width: 32px; height: 32px; background: #059669; border: 2.5px solid #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">
+                            <span class="material-symbols-outlined" style="font-size: 18px; line-height: 1;">storefront</span>
+                        </div>
+                        <div style="width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid #059669; margin-top: -1px;"></div>
+                    </div>
+                `,
+                iconSize: [32, 38],
+                iconAnchor: [16, 38],
+                popupAnchor: [0, -38]
+            });
+
+            lapakMarker = L.marker([DEFAULT_LAT, DEFAULT_LNG], { icon: lapakIcon }).addTo(map);
+            lapakMarker.bindPopup(`<b>${LAPAK_NAME} (Lapak Asal)</b><br>${LAPAK_ADDRESS}`);
+
+            // 4. Custom Marker Pin Pelanggan (Draggable Biru dengan Pulse Radar)
             const pinIcon = L.divIcon({
                 className: 'custom-pin-marker',
                 html: `
-                    <div style="position: relative; display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 6px 8px rgba(15, 23, 42, 0.3));">
+                    <div style="position: relative; display: flex; flex-direction: column; align-items: center; filter: drop-shadow(0 6px 8px rgba(15, 23, 42, 0.35));">
                         <div class="pin-radar"></div>
                         <div style="width: 38px; height: 38px; background: #1e3a8a; border: 2.5px solid #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; position: relative; z-index: 2;">
                             <span class="material-symbols-outlined" style="font-size: 20px; line-height: 1;">local_cafe</span>
@@ -583,35 +780,42 @@
                 popupAnchor: [0, -46]
             });
 
-            // 4. Tambahkan Marker Draggable
-            marker = L.marker([DEFAULT_LAT, DEFAULT_LNG], {
+            // 5. Tambahkan Marker Draggable Pelanggan
+            customerMarker = L.marker([DEFAULT_LAT, DEFAULT_LNG], {
                 draggable: true,
                 icon: pinIcon
             }).addTo(map);
 
-            marker.bindPopup("<b>Titik Pengantaran Anda</b><br>Geser pin ke lokasi rumah / kantor Anda.").openPopup();
+            customerMarker.bindPopup("<b>Titik Pengantaran Anda</b><br>Geser pin ke lokasi rumah / kantor Anda.").openPopup();
 
-            // 5. Event Listener: Saat pin selesai digeser (dragend)
-            marker.on('dragend', function (event) {
-                const position = marker.getLatLng();
+            // 6. Event Listener: Selesai drag marker
+            customerMarker.on('dragend', function (event) {
+                const position = customerMarker.getLatLng();
                 updateCoordinates(position.lat, position.lng);
+                fetchShippingQuote(position.lat, position.lng);
             });
 
-            // 6. Event Listener: Klik langsung pada area peta
+            // 7. Event Listener: Klik langsung pada area peta
             map.on('click', function (event) {
                 const lat = event.latlng.lat;
                 const lng = event.latlng.lng;
-                marker.setLatLng([lat, lng]);
+                customerMarker.setLatLng([lat, lng]);
                 updateCoordinates(lat, lng);
+                fetchShippingQuote(lat, lng);
             });
 
-            // Invalidate size setelah delay kecil agar render tile sempurna di berbagai resolusi layar
+            // Invalidate size setelah delay kecil agar render tile optimal
             setTimeout(function () {
                 map.invalidateSize();
             }, 300);
         }
 
-        // Fungsi Update Koordinat ke Hidden Inputs dan Tampilan Teks
+        // Format Angka Ribuan Rupiah
+        function formatRupiah(amount) {
+            return new Intl.NumberFormat('id-ID').format(amount);
+        }
+
+        // Perbarui Koordinat di Input Form & Tampilan
         function updateCoordinates(lat, lng) {
             const formattedLat = Number(lat).toFixed(6);
             const formattedLng = Number(lng).toFixed(6);
@@ -624,22 +828,253 @@
             if (inputLng) inputLng.value = formattedLng;
             if (displayCoords) displayCoords.innerText = `${formattedLat}, ${formattedLng}`;
 
-            if (marker) {
-                marker.setPopupContent(`<b>Titik Pengantaran Terpilih:</b><br>${formattedLat}, ${formattedLng}`);
+            if (customerMarker) {
+                customerMarker.setPopupContent(`<b>Titik Pengantaran Terpilih:</b><br>${formattedLat}, ${formattedLng}`);
             }
         }
 
-        // Fungsi Ambil Lokasi Sekarang via HTML5 Geolocation API
+        // Fungsi Hitung Quote Ongkos Kirim via API Backend (FR-7.1, FR-7.2, FR-7.3)
+        function fetchShippingQuote(lat, lng) {
+            const currentMethod = document.querySelector('input[name="metode_pemenuhan"]:checked')?.value || 'pengiriman';
+            if (currentMethod === 'ambil_sendiri') return;
+
+            const displayDistance = document.getElementById('display-jarak');
+            const displayOngkir = document.getElementById('display-ongkir');
+            const displayFormula = document.getElementById('display-formula-ket');
+            const summaryOngkir = document.getElementById('summary-ongkir');
+            const summaryDistance = document.getElementById('summary-distance-note');
+            const summaryTotal = document.getElementById('summary-total');
+            const btnSubmitText = document.getElementById('btn-submit-text');
+            const alertGeofence = document.getElementById('alert-geofence');
+            const geofenceErrorText = document.getElementById('geofence-error-text');
+            const submitBtn = document.getElementById('btn-submit-order');
+
+            if (displayOngkir) displayOngkir.innerHTML = '<span class="animate-pulse text-slate-500">Menghitung...</span>';
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '{{ csrf_token() }}';
+
+            fetch('/api/shipping/quote', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    metode_pemenuhan: 'pengiriman',
+                    lat: lat,
+                    lng: lng
+                })
+            })
+            .then(async response => {
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    isOutsideMojokerto = false;
+                    if (alertGeofence) alertGeofence.classList.add('hidden');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+
+                    const data = result.data;
+                    currentOngkir = data.ongkir;
+                    const newTotal = BASE_SUBTOTAL + currentOngkir;
+
+                    if (displayDistance) displayDistance.textContent = data.jarak_formatted;
+                    if (displayOngkir) {
+                        displayOngkir.textContent = data.ongkir === 0 ? 'Rp 0 (Promo)' : data.ongkir_formatted;
+                    }
+                    if (displayFormula) displayFormula.textContent = data.formula_ket;
+
+                    if (summaryOngkir) {
+                        summaryOngkir.innerHTML = data.ongkir === 0 
+                            ? `<span class="text-[10px] line-through text-slate-400">Rp 5.000</span><span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">Rp 0 (Promo)</span>`
+                            : `<span class="font-bold text-slate-900">${data.ongkir_formatted}</span>`;
+                    }
+                    if (summaryDistance) summaryDistance.textContent = data.jarak_formatted;
+                    if (summaryTotal) summaryTotal.textContent = `Rp ${formatRupiah(newTotal)}`;
+                    if (btnSubmitText) btnSubmitText.textContent = `Buat Pesanan & Bayar QRIS (Rp ${formatRupiah(newTotal)})`;
+                } else {
+                    // Validasi Geofence Gagal (Di luar Kota Mojokerto)
+                    isOutsideMojokerto = true;
+                    const errorMsg = result.message || 'Titik lokasi tujuan berada di luar jangkauan wilayah Kota Mojokerto.';
+                    if (alertGeofence) {
+                        alertGeofence.classList.remove('hidden');
+                        if (geofenceErrorText) geofenceErrorText.textContent = errorMsg;
+                    }
+                    if (displayOngkir) displayOngkir.textContent = 'Di luar jangkauan';
+                    if (displayDistance) displayDistance.textContent = '-';
+                    if (summaryOngkir) summaryOngkir.innerHTML = `<span class="text-rose-600 font-bold text-[11px]">Di luar jangkauan</span>`;
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
+                }
+            })
+            .catch(error => {
+                console.warn('Gagal memanggil API quote shipping, menjalankan fallback client-side:', error);
+                fallbackCalculateQuote(lat, lng);
+            });
+        }
+
+        // Fallback Perhitungan Jarak & Ongkir di Sisi Klien
+        function fallbackCalculateQuote(lat, lng) {
+            // Geofence Bounding Box Kota Mojokerto
+            const isInside = (lat >= -7.530000 && lat <= -7.420000 && lng >= 112.390000 && lng <= 112.480000);
+            const alertGeofence = document.getElementById('alert-geofence');
+            const submitBtn = document.getElementById('btn-submit-order');
+
+            if (!isInside) {
+                isOutsideMojokerto = true;
+                if (alertGeofence) alertGeofence.classList.remove('hidden');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                const summaryOngkir = document.getElementById('summary-ongkir');
+                if (summaryOngkir) summaryOngkir.innerHTML = `<span class="text-rose-600 font-bold text-[11px]">Di luar jangkauan</span>`;
+                return;
+            }
+
+            isOutsideMojokerto = false;
+            if (alertGeofence) alertGeofence.classList.add('hidden');
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+
+            const R = 6371; // Radius Bumi km
+            const dLat = (lat - DEFAULT_LAT) * Math.PI / 180;
+            const dLng = (lng - DEFAULT_LNG) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(DEFAULT_LAT * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
+                      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const straightDistance = R * c;
+            const routeDistance = Math.max(0.3, Math.round(straightDistance * 1.25 * 10) / 10);
+
+            let ongkir = 0;
+            let formulaKet = 'Gratis ongkir untuk jarak <= 5,5 km';
+            if (routeDistance > 5.5) {
+                const step = Math.floor(routeDistance - 5.5) + 1;
+                ongkir = 2000 * step;
+                formulaKet = `Jarak ${routeDistance} km (Kenaikan Rp 2.000 / km setelah 5,5 km)`;
+            }
+
+            currentOngkir = ongkir;
+            const newTotal = BASE_SUBTOTAL + currentOngkir;
+
+            const displayDistance = document.getElementById('display-jarak');
+            const displayOngkir = document.getElementById('display-ongkir');
+            const displayFormula = document.getElementById('display-formula-ket');
+            const summaryOngkir = document.getElementById('summary-ongkir');
+            const summaryDistance = document.getElementById('summary-distance-note');
+            const summaryTotal = document.getElementById('summary-total');
+            const btnSubmitText = document.getElementById('btn-submit-text');
+
+            if (displayDistance) displayDistance.textContent = `${routeDistance} km`;
+            if (displayOngkir) displayOngkir.textContent = ongkir === 0 ? 'Rp 0 (Promo)' : `Rp ${formatRupiah(ongkir)}`;
+            if (displayFormula) displayFormula.textContent = formulaKet;
+
+            if (summaryOngkir) {
+                summaryOngkir.innerHTML = ongkir === 0 
+                    ? `<span class="text-[10px] line-through text-slate-400">Rp 5.000</span><span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">Rp 0 (Promo)</span>`
+                    : `<span class="font-bold text-slate-900">Rp ${formatRupiah(ongkir)}</span>`;
+            }
+            if (summaryDistance) summaryDistance.textContent = `${routeDistance} km`;
+            if (summaryTotal) summaryTotal.textContent = `Rp ${formatRupiah(newTotal)}`;
+            if (btnSubmitText) btnSubmitText.textContent = `Buat Pesanan & Bayar QRIS (Rp ${formatRupiah(newTotal)})`;
+        }
+
+        // Penggantian Metode Pemenuhan (Delivery vs Ambil Sendiri)
+        function handleFulfillmentChange(method) {
+            const cardPengiriman = document.getElementById('card-option-pengiriman');
+            const cardAmbil = document.getElementById('card-option-ambil');
+            const sectionDelivery = document.getElementById('section-delivery-details');
+            const sectionPickup = document.getElementById('section-pickup-details');
+            const badgeMetodeText = document.getElementById('badge-metode-text');
+            const badgeMetodeIcon = document.getElementById('badge-metode-icon');
+            const summaryOngkir = document.getElementById('summary-ongkir');
+            const summaryDistance = document.getElementById('summary-distance-note');
+            const summaryTotal = document.getElementById('summary-total');
+            const btnSubmitText = document.getElementById('btn-submit-text');
+            const alamatTextarea = document.getElementById('alamat');
+            const alertGeofence = document.getElementById('alert-geofence');
+            const submitBtn = document.getElementById('btn-submit-order');
+
+            if (method === 'ambil_sendiri') {
+                // Tampilan Switcher Card
+                cardAmbil.classList.add('border-blue-900', 'bg-blue-50/40');
+                cardAmbil.classList.remove('border-slate-200', 'bg-white');
+                cardPengiriman.classList.remove('border-blue-900', 'bg-blue-50/40');
+                cardPengiriman.classList.add('border-slate-200', 'bg-white');
+
+                // Switch Sections
+                sectionDelivery.classList.add('hidden');
+                sectionPickup.classList.remove('hidden');
+
+                // Badge Header
+                badgeMetodeText.textContent = 'Ambil Sendiri';
+                badgeMetodeIcon.textContent = 'storefront';
+
+                // Ongkir Rp 0 & Update Total
+                currentOngkir = 0;
+                const newTotal = BASE_SUBTOTAL;
+                summaryOngkir.innerHTML = `<span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">Rp 0 (Ambil di Lapak)</span>`;
+                summaryDistance.textContent = 'Ambil di Lapak';
+                summaryTotal.textContent = `Rp ${formatRupiah(newTotal)}`;
+                btnSubmitText.textContent = `Buat Pesanan & Bayar QRIS (Rp ${formatRupiah(newTotal)})`;
+
+                // Izinkan Submit
+                if (alertGeofence) alertGeofence.classList.add('hidden');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+
+                // Otomatisasi Alamat jika kosong untuk Ambil Sendiri
+                if (alamatTextarea && !alamatTextarea.value.trim()) {
+                    alamatTextarea.value = `Ambil Sendiri di ${LAPAK_NAME} (${LAPAK_ADDRESS})`;
+                }
+            } else {
+                // Tampilan Switcher Card
+                cardPengiriman.classList.add('border-blue-900', 'bg-blue-50/40');
+                cardPengiriman.classList.remove('border-slate-200', 'bg-white');
+                cardAmbil.classList.remove('border-blue-900', 'bg-blue-50/40');
+                cardAmbil.classList.add('border-slate-200', 'bg-white');
+
+                // Switch Sections
+                sectionPickup.classList.add('hidden');
+                sectionDelivery.classList.remove('hidden');
+
+                // Badge Header
+                badgeMetodeText.textContent = 'Delivery';
+                badgeMetodeIcon.textContent = 'two_wheeler';
+
+                // Refresh leaflet map render setelah container terlihat
+                if (map) {
+                    setTimeout(() => {
+                        map.invalidateSize();
+                    }, 200);
+                }
+
+                // Hitung kembali ongkir berdasarkan koordinat saat ini
+                const lat = parseFloat(document.getElementById('input_lat')?.value || DEFAULT_LAT);
+                const lng = parseFloat(document.getElementById('input_lng')?.value || DEFAULT_LNG);
+                fetchShippingQuote(lat, lng);
+            }
+        }
+
+        // Ambil Lokasi Sekarang via HTML5 Geolocation API
         function getCurrentLocation() {
             const btn = document.getElementById('btn-use-location');
             const btnText = document.getElementById('btn-use-location-text');
 
             if (!navigator.geolocation) {
-                alert("Perangkat Anda tidak mendukung fitur Geolocation.");
+                alert("Perangkat atau browser Anda tidak mendukung fitur Geolocation.");
                 return;
             }
 
-            // Ubah tampilan tombol ke state loading
             btn.disabled = true;
             btnText.innerText = "Mencari GPS...";
 
@@ -648,13 +1083,14 @@
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
 
-                    // Pindahkan posisi peta dan marker
-                    map.setView([lat, lng], 17);
-                    marker.setLatLng([lat, lng]);
-                    updateCoordinates(lat, lng);
-                    marker.bindPopup("<b>Lokasi Anda Terdeteksi!</b><br>Titik pengantaran berhasil diperbarui.").openPopup();
+                    if (map && customerMarker) {
+                        map.setView([lat, lng], 17);
+                        customerMarker.setLatLng([lat, lng]);
+                        updateCoordinates(lat, lng);
+                        fetchShippingQuote(lat, lng);
+                        customerMarker.bindPopup("<b>Lokasi Anda Ditemukan!</b><br>Titik pengantaran berhasil diperbarui.").openPopup();
+                    }
 
-                    // Kembalikan tampilan tombol
                     btn.disabled = false;
                     btnText.innerText = "Lokasi Ditemukan ✓";
                     setTimeout(() => {
@@ -666,9 +1102,9 @@
                     btnText.innerText = "Gunakan Lokasi Saya";
                     let msg = "Gagal mendapatkan lokasi GPS.";
                     if (error.code === error.PERMISSION_DENIED) {
-                        msg = "Izin akses lokasi GPS ditolak oleh browser/perangkat Anda. Silakan geser pin manual pada peta.";
+                        msg = "Izin akses lokasi GPS ditolak oleh browser/perangkat Anda. Silakan tentukan lokasi dengan menggeser pin manual pada peta.";
                     } else if (error.code === error.POSITION_UNAVAILABLE) {
-                        msg = "Informasi lokasi tidak tersedia saat ini. Silakan klik manual pada peta.";
+                        msg = "Informasi lokasi GPS tidak tersedia saat ini. Silakan klik manual pada peta.";
                     } else if (error.code === error.TIMEOUT) {
                         msg = "Permintaan lokasi GPS melebihi batas waktu (timeout).";
                     }
@@ -684,23 +1120,40 @@
 
         // Handler Submit Form & Pencegahan Double Submit (FR-5.2)
         function handleCheckoutSubmit(event) {
-            const form = document.getElementById('formCheckout');
-            const submitBtn = document.getElementById('btn-submit-order');
-            const submitIcon = document.getElementById('btn-submit-icon');
-            const submitText = document.getElementById('btn-submit-text');
-
-            // Validasi input wajib
+            const currentMethod = document.querySelector('input[name="metode_pemenuhan"]:checked')?.value || 'pengiriman';
             const nama = document.getElementById('nama_penerima').value.trim();
             const telp = document.getElementById('telepon').value.trim();
             const alamat = document.getElementById('alamat').value.trim();
 
-            if (!nama || !telp || !alamat) {
+            if (!nama || !telp) {
                 event.preventDefault();
-                alert("Harap lengkapi semua kolom wajib (Nama Penerima, Nomor WhatsApp, dan Alamat Pengiriman).");
+                alert("Harap lengkapi Nama Penerima dan Nomor WhatsApp.");
                 return false;
             }
 
-            // Ubah tampilan tombol ke loading state & cegah double submit
+            if (currentMethod === 'pengiriman') {
+                if (!alamat) {
+                    event.preventDefault();
+                    alert("Harap isi Alamat Lengkap Pengiriman.");
+                    return false;
+                }
+
+                if (isOutsideMojokerto) {
+                    event.preventDefault();
+                    alert("Titik pengantaran berada di luar wilayah layanan Kota Mojokerto. Silakan pilih titik dalam Kota Mojokerto atau pilih Ambil Sendiri di Lapak.");
+                    return false;
+                }
+            } else {
+                // Ambil sendiri: pastikan alamat terisi agar validasi model backend tetap terpenuhi
+                if (!alamat) {
+                    document.getElementById('alamat').value = `Ambil Sendiri di ${LAPAK_NAME} (${LAPAK_ADDRESS})`;
+                }
+            }
+
+            const submitBtn = document.getElementById('btn-submit-order');
+            const submitIcon = document.getElementById('btn-submit-icon');
+            const submitText = document.getElementById('btn-submit-text');
+
             setTimeout(function() {
                 submitBtn.disabled = true;
             }, 10);
