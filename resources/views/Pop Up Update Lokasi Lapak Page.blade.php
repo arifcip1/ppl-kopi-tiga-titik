@@ -148,17 +148,27 @@
 
         <!-- 3. ALAMAT LENGKAP LAPAK -->
         <div>
-            <label for="alamat" class="text-xs font-bold text-slate-700 block mb-1.5 flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-sm text-blue-900">home</span>
-                <span>Alamat Lengkap Lapak di Mojokerto</span>
-                <span class="text-rose-500">*</span>
-            </label>
+            <div class="flex items-center justify-between mb-1.5 gap-2">
+                <label for="alamat" class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm text-blue-900">home</span>
+                    <span>Alamat Lengkap Lapak di Mojokerto</span>
+                    <span class="text-rose-500">*</span>
+                </label>
+                <button type="button" onclick="triggerForwardGeocode()" class="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-lg text-[10px] font-bold inline-flex items-center gap-1 transition-colors cursor-pointer shrink-0" title="Sesuaikan titik peta dari teks alamat">
+                    <span class="material-symbols-outlined text-[12px]">my_location</span>
+                    <span>Sesuaikan Titik Peta</span>
+                </button>
+            </div>
             <textarea id="alamat" 
                       name="alamat" 
                       rows="2" 
                       required
                       placeholder="Tuliskan nama jalan, kelurahan, dan patokan booth (Contoh: Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto)"
                       class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10 transition-all leading-relaxed placeholder:text-slate-400">{{ old('alamat', $lokasiAktif->alamat ?? 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto') }}</textarea>
+            <div id="geocode-status-owner" class="text-[10px] text-slate-500 mt-1 flex items-center gap-1 hidden">
+                <span class="material-symbols-outlined text-[12px] text-blue-900" id="geocode-status-icon">sync</span>
+                <span id="geocode-status-text">Menyinkronkan lokasi...</span>
+            </div>
             <x-input-error for="alamat" class="mt-1" />
         </div>
 
@@ -328,16 +338,233 @@
         markerLapak.on('dragend', function () {
             const pos = markerLapak.getLatLng();
             updateLapakCoords(pos.lat, pos.lng);
+            reverseGeocodeLapak(pos.lat, pos.lng);
         });
 
         mapLapak.on('click', function (e) {
             markerLapak.setLatLng(e.latlng);
             updateLapakCoords(e.latlng.lat, e.latlng.lng);
+            reverseGeocodeLapak(e.latlng.lat, e.latlng.lng);
         });
+
+        // Sinkronisasi Otomatis Input Manual Alamat / Nama Lokasi -> Geser Pin Peta (Forward Geocoding)
+        const inputAlamatEl = document.getElementById('alamat');
+        const inputNamaEl = document.getElementById('nama_lokasi');
+
+        if (inputAlamatEl) {
+            inputAlamatEl.addEventListener('input', function () {
+                if (isUpdatingFromMap) return;
+                clearTimeout(forwardGeocodeTimer);
+                forwardGeocodeTimer = setTimeout(() => {
+                    const val = inputAlamatEl.value.trim();
+                    if (val.length >= 5) {
+                        forwardGeocodeLapak(val, false);
+                    }
+                }, 800);
+            });
+        }
+
+        if (inputNamaEl) {
+            inputNamaEl.addEventListener('input', function () {
+                if (isUpdatingFromMap) return;
+                clearTimeout(forwardGeocodeTimer);
+                forwardGeocodeTimer = setTimeout(() => {
+                    const rawName = inputNamaEl.value.trim().replace(/^lapak\s+/i, '');
+                    if (rawName.length >= 4) {
+                        forwardGeocodeLapak(rawName, true);
+                    }
+                }, 850);
+            });
+        }
 
         setTimeout(() => {
             mapLapak.invalidateSize();
         }, 350);
+    }
+
+    let isUpdatingFromMap = false;
+    let forwardGeocodeTimer = null;
+
+    // Kamus Fallback Jalan & Patokan Utama Kota Mojokerto (jika offline / rate-limit)
+    const MOJOKERTO_STREETS = [
+        { keywords: ['kuwung', 'mergelo'], nama: 'Lapak Jl. Kuwung', alamat: 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto', lat: -7.472600, lng: 112.438500 },
+        { keywords: ['benteng pancasila', 'benpas', 'taman sentanan'], nama: 'Lapak Jl. Benteng Pancasila', alamat: 'Jl. Benteng Pancasila, Mergelo, Kec. Magersari, Kota Mojokerto', lat: -7.468800, lng: 112.441200 },
+        { keywords: ['hasyim ashari', 'hasyim asyari', 'kauman'], nama: 'Lapak Jl. KH. Hasyim Ashari', alamat: 'Jl. Kyai H. Hasyim Ashari, Kauman, Kec. Prajurit Kulon, Kota Mojokerto', lat: -7.466200, lng: 112.432500 },
+        { keywords: ['majapahit', 'alun-alun', 'alun alun'], nama: 'Lapak Jl. Majapahit', alamat: 'Jl. Majapahit, Mergelo, Kranggan, Kec. Prajurit Kulon, Kota Mojokerto', lat: -7.466500, lng: 112.434200 },
+        { keywords: ['gajah mada', 'empu'], nama: 'Lapak Jl. Gajah Mada', alamat: 'Jl. Gajah Mada, Mergelo, Balongsari, Kec. Magersari, Kota Mojokerto', lat: -7.464800, lng: 112.439800 },
+        { keywords: ['pahlawan', 'stasiun'], nama: 'Lapak Jl. Pahlawan', alamat: 'Jl. Pahlawan, Mergelo, Kranggan, Kec. Kranggan, Kota Mojokerto', lat: -7.475200, lng: 112.435100 },
+        { keywords: ['bhayangkara', 'miji'], nama: 'Lapak Jl. Bhayangkara', alamat: 'Jl. Bhayangkara, Mergelo, Miji, Kec. Kranggan, Kota Mojokerto', lat: -7.470100, lng: 112.434500 },
+        { keywords: ['suroso', 'suromulang'], nama: 'Lapak Jl. Suroso', alamat: 'Jl. Suroso, Surodinawan, Kec. Prajurit Kulon, Kota Mojokerto', lat: -7.481500, lng: 112.422000 },
+        { keywords: ['wijaya kusuma', 'sookook'], nama: 'Lapak Jl. Wijaya Kusuma', alamat: 'Jl. Wijaya Kusuma, Banjaragung, Kec. Puri, Mojokerto', lat: -7.488200, lng: 112.442500 },
+        { keywords: ['empunala', 'kedundung'], nama: 'Lapak Jl. Empunala', alamat: 'Jl. Empunala, Kedundung, Kec. Magersari, Kota Mojokerto', lat: -7.463100, lng: 112.449500 }
+    ];
+
+    function showGeocodeStatus(message, isSuccess = true, isLoading = false) {
+        const box = document.getElementById('geocode-status-owner');
+        const icon = document.getElementById('geocode-status-icon');
+        const text = document.getElementById('geocode-status-text');
+        if (!box || !icon || !text) return;
+
+        box.classList.remove('hidden');
+        text.innerText = message;
+        if (isLoading) {
+            icon.innerText = 'sync';
+            icon.className = 'material-symbols-outlined text-[12px] text-blue-900 animate-spin';
+            text.className = 'text-blue-900 font-medium';
+        } else if (isSuccess) {
+            icon.innerText = 'check_circle';
+            icon.className = 'material-symbols-outlined text-[12px] text-emerald-600';
+            text.className = 'text-emerald-700 font-semibold';
+        } else {
+            icon.innerText = 'info';
+            icon.className = 'material-symbols-outlined text-[12px] text-amber-600';
+            text.className = 'text-amber-700 font-medium';
+        }
+    }
+
+    // Arah 1: Titik Peta -> Otomatis Isi Alamat & Nama Lokasi (Reverse Geocoding)
+    async function reverseGeocodeLapak(lat, lng) {
+        showGeocodeStatus('Menyesuaikan alamat otomatis dari titik peta...', true, true);
+        isUpdatingFromMap = true;
+
+        try {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1&accept-language=id`;
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) throw new Error('Reverse geocode gagal');
+            const data = await res.json();
+
+            if (data && data.address) {
+                const addr = data.address;
+                const road = addr.road || addr.pedestrian || addr.footway || addr.amenity || addr.shop || addr.tourism || addr.building || data.name || '';
+                const houseNumber = addr.house_number ? `No. ${addr.house_number}` : '';
+                const kelurahan = addr.village || addr.suburb || addr.neighbourhood || addr.hamlet || '';
+                const rawKec = addr.city_district || addr.municipality || addr.subdistrict || '';
+                const kecamatan = rawKec ? (rawKec.toLowerCase().startsWith('kec') ? rawKec : `Kec. ${rawKec}`) : '';
+                const kota = addr.city || addr.town || addr.county || 'Kota Mojokerto';
+
+                const streetPart = [road, houseNumber].filter(Boolean).join(' ');
+                const fullAddress = [streetPart, kelurahan, kecamatan, kota].filter(Boolean).join(', ') || data.display_name;
+
+                let namaLapak = 'Lapak Kopi Tiga Titik';
+                if (data.name && road && data.name.toLowerCase() !== road.toLowerCase()) {
+                    namaLapak = `Lapak ${data.name} (${road})`;
+                } else if (road) {
+                    namaLapak = road.toLowerCase().startsWith('lapak') ? road : `Lapak ${road}`;
+                } else if (kelurahan) {
+                    namaLapak = `Lapak Area ${kelurahan}`;
+                }
+
+                const inputAlamat = document.getElementById('alamat');
+                const inputNama = document.getElementById('nama_lokasi');
+                if (inputAlamat && fullAddress) inputAlamat.value = fullAddress;
+                if (inputNama && namaLapak) inputNama.value = namaLapak;
+
+                if (markerLapak) {
+                    markerLapak.setPopupContent(`<b>${namaLapak}</b><br><span style="font-size:11px;">${fullAddress}</span>`).openPopup();
+                }
+
+                showGeocodeStatus('Alamat & nama tempat otomatis diperbarui dari titik peta.', true, false);
+                setTimeout(() => { isUpdatingFromMap = false; }, 150);
+                return;
+            }
+        } catch (err) {
+            // Fallback ke pencocokan terdekat Mojokerto
+            let nearest = MOJOKERTO_STREETS[0];
+            let minDist = Infinity;
+            MOJOKERTO_STREETS.forEach(st => {
+                const d = Math.hypot(st.lat - lat, st.lng - lng);
+                if (d < minDist) {
+                    minDist = d;
+                    nearest = st;
+                }
+            });
+
+            if (nearest) {
+                document.getElementById('nama_lokasi').value = nearest.nama;
+                document.getElementById('alamat').value = nearest.alamat;
+                showGeocodeStatus('Alamat disesuaikan ke area terdekat di Mojokerto.', true, false);
+            }
+        }
+        setTimeout(() => { isUpdatingFromMap = false; }, 150);
+    }
+
+    // Arah 2: Input Manual Alamat / Nama Lokasi -> Otomatis Geser Pin Peta (Forward Geocoding)
+    async function forwardGeocodeLapak(queryText, alsoUpdateAddress = false) {
+        if (!queryText || queryText.trim().length < 4) return;
+        showGeocodeStatus('Mencari titik koordinat di peta sesuai alamat...', true, true);
+
+        const qLower = queryText.toLowerCase();
+        const searchQuery = qLower.includes('mojokerto') ? queryText : `${queryText}, Kota Mojokerto, Jawa Timur`;
+
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(searchQuery)}&viewbox=112.38,-7.42,112.50,-7.52&bounded=0&limit=1&addressdetails=1&accept-language=id`;
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) throw new Error('Forward geocode gagal');
+            const results = await res.json();
+
+            if (Array.isArray(results) && results.length > 0) {
+                const hit = results[0];
+                const lat = parseFloat(hit.lat);
+                const lng = parseFloat(hit.lon);
+
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    updateLapakCoords(lat, lng);
+                    if (mapLapak && markerLapak) {
+                        markerLapak.setLatLng([lat, lng]);
+                        mapLapak.flyTo([lat, lng], 17, { duration: 0.6 });
+                        markerLapak.openPopup();
+                    }
+
+                    if (alsoUpdateAddress && hit.address) {
+                        const addr = hit.address;
+                        const road = addr.road || addr.pedestrian || hit.name || queryText;
+                        const kelurahan = addr.village || addr.suburb || addr.neighbourhood || '';
+                        const rawKec = addr.city_district || addr.municipality || '';
+                        const kecamatan = rawKec ? (rawKec.toLowerCase().startsWith('kec') ? rawKec : `Kec. ${rawKec}`) : '';
+                        const kota = addr.city || addr.town || 'Kota Mojokerto';
+                        const formattedAddr = [road, kelurahan, kecamatan, kota].filter(Boolean).join(', ');
+                        if (formattedAddr) {
+                            isUpdatingFromMap = true;
+                            document.getElementById('alamat').value = formattedAddr;
+                            setTimeout(() => { isUpdatingFromMap = false; }, 150);
+                        }
+                    }
+
+                    showGeocodeStatus('Titik pin di peta otomatis mengikuti alamat yang diketik.', true, false);
+                    return;
+                }
+            }
+        } catch (err) {
+            // Abaikan error jaringan, lanjutkan ke fallback kamus Mojokerto
+        }
+
+        // Fallback kamus lokal jalan Mojokerto
+        const matched = MOJOKERTO_STREETS.find(st => st.keywords.some(k => qLower.includes(k)));
+        if (matched) {
+            updateLapakCoords(matched.lat, matched.lng);
+            if (mapLapak && markerLapak) {
+                markerLapak.setLatLng([matched.lat, matched.lng]);
+                mapLapak.flyTo([matched.lat, matched.lng], 17, { duration: 0.6 });
+                markerLapak.openPopup();
+            }
+            if (alsoUpdateAddress) {
+                isUpdatingFromMap = true;
+                document.getElementById('alamat').value = matched.alamat;
+                setTimeout(() => { isUpdatingFromMap = false; }, 150);
+            }
+            showGeocodeStatus('Titik pin peta disesuaikan ke lokasi jalan di Mojokerto.', true, false);
+        } else {
+            showGeocodeStatus('Titik spesifik belum ditemukan, silakan geser pin secara langsung di peta.', false, false);
+        }
+    }
+
+    function triggerForwardGeocode() {
+        const alamatVal = document.getElementById('alamat')?.value?.trim() || '';
+        const namaVal = document.getElementById('nama_lokasi')?.value?.trim() || '';
+        const query = alamatVal.length >= 4 ? alamatVal : namaVal.replace(/^lapak\s+/i, '');
+        if (query) {
+            forwardGeocodeLapak(query, false);
+        }
     }
 
     function updateLapakCoords(lat, lng) {

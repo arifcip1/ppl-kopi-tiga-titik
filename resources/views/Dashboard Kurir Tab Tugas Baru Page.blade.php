@@ -177,8 +177,11 @@
                                 {{ $tugas->total_formatted ?? ('Rp ' . number_format($tugas->total ?? 0, 0, ',', '.')) }}
                             </span>
                         </div>
-                        <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold {{ optional($tugas->payment)->status === 'lunas' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
-                            {{ optional($tugas->payment)->status === 'lunas' ? '● Lunas (QRIS)' : '● Belum Lunas / COD' }}
+                        @php
+                            $isPaidCourier = in_array(optional($tugas->payment)->status, ['berhasil', 'lunas']) || in_array($tugas->status, ['diproses', 'dikirim', 'selesai']);
+                        @endphp
+                        <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold {{ $isPaidCourier ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                            {{ $isPaidCourier ? '● Lunas (QRIS)' : '● Menunggu Pembayaran' }}
                         </span>
                     </div>
                 </div>

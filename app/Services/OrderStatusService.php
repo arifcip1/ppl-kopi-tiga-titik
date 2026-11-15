@@ -96,6 +96,17 @@ class OrderStatusService
                 $this->syncSalesHistory($lockedOrder);
             }
 
+            // Sinkronkan status payment jika pesanan sudah masuk diproses / dikirim / selesai
+            if (in_array($newStatus, ['diproses', 'dikirim', 'selesai'])) {
+                $lockedOrder->loadMissing('payment');
+                if ($lockedOrder->payment && $lockedOrder->payment->status !== 'berhasil') {
+                    $lockedOrder->payment->update([
+                        'status'       => 'berhasil',
+                        'dibayar_pada' => $lockedOrder->payment->dibayar_pada ?? now(),
+                    ]);
+                }
+            }
+
             return $lockedOrder;
         });
     }

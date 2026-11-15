@@ -395,17 +395,27 @@
 
                     <!-- Detail Alamat Lengkap (Textarea) -->
                     <div>
-                        <label for="alamat" class="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-1.5">
-                            <span class="material-symbols-outlined text-base text-slate-500">home_pin</span>
-                            <span>Alamat Lengkap & Patokan Rumah / Kantor</span>
-                            <span class="text-rose-500">*</span>
-                        </label>
+                        <div class="flex items-center justify-between mb-1.5 gap-2">
+                            <label for="alamat" class="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                                <span class="material-symbols-outlined text-base text-slate-500">home_pin</span>
+                                <span>Alamat Lengkap & Patokan Rumah / Kantor</span>
+                                <span class="text-rose-500">*</span>
+                            </label>
+                            <button type="button" onclick="triggerCustomerForwardGeocode()" class="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-lg text-[10px] font-bold inline-flex items-center gap-1 transition-colors cursor-pointer shrink-0">
+                                <span class="material-symbols-outlined text-[12px]">my_location</span>
+                                <span>Sesuaikan Titik Peta</span>
+                            </button>
+                        </div>
                         <textarea id="alamat" 
                                   name="alamat" 
                                   rows="3" 
                                   required
                                   placeholder="Tuliskan nama jalan, nomor rumah, RT/RW, kelurahan, dan patokan (Contoh: Jl. Kuwung No. 24, RT 02 / RW 01, Kel. Mergelo, pagar hitam depan pos satpam)" 
-                                  class="w-full px-3.5 py-2.5 bg-slate-50/70 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium hover:border-slate-400 focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10 transition-all leading-relaxed placeholder:text-slate-400">{{ old('alamat', Auth::user()->alamat ?? 'Jl. Kuwung No. 24, RT 02 / RW 01, Kel. Mergelo, Kota Mojokerto (Pagar hitam samping warung kelontong)') }}</textarea>
+                                  class="w-full px-3.5 py-2.5 bg-slate-50/70 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium hover:border-slate-400 focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10 transition-all leading-relaxed placeholder:text-slate-400">{{ old('alamat', Auth::user()->alamat ?? ($lokasiAktif->alamat ?? 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto')) }}</textarea>
+                        <div id="geocode-status-customer" class="text-[10px] text-slate-500 mt-1 flex items-center gap-1 hidden">
+                            <span class="material-symbols-outlined text-[12px] text-blue-900" id="geocode-cust-icon">sync</span>
+                            <span id="geocode-cust-text">Menyinkronkan alamat...</span>
+                        </div>
                         <x-input-error for="alamat" class="mt-1" />
                     </div>
 
@@ -793,6 +803,7 @@
                 const position = customerMarker.getLatLng();
                 updateCoordinates(position.lat, position.lng);
                 fetchShippingQuote(position.lat, position.lng);
+                reverseGeocodeCustomer(position.lat, position.lng);
             });
 
             // 7. Event Listener: Klik langsung pada area peta
@@ -802,13 +813,114 @@
                 customerMarker.setLatLng([lat, lng]);
                 updateCoordinates(lat, lng);
                 fetchShippingQuote(lat, lng);
+                reverseGeocodeCustomer(lat, lng);
             });
+
+            // 8. Sinkronisasi Otomatis Input Manual Alamat -> Geser Pin Peta (Forward Geocoding)
+            const custAlamatInput = document.getElementById('alamat');
+            if (custAlamatInput) {
+                custAlamatInput.addEventListener('input', function () {
+                    if (isUpdatingCustomerMap) return;
+                    clearTimeout(custForwardTimer);
+                    custForwardTimer = setTimeout(() => {
+                        const val = custAlamatInput.value.trim();
+                        if (val.length >= 5) {
+                            forwardGeocodeCustomer(val);
+                        }
+                    }, 850);
+                });
+            }
 
             // Invalidate size setelah delay kecil agar render tile optimal
             setTimeout(function () {
                 map.invalidateSize();
             }, 300);
         }
+
+        let isUpdatingCustomerMap = false;
+        let custForwardTimer = null;
+
+        function showCustGeocodeStatus(msg, isSuccess = true, isLoading = false) {
+            const box = document.getElementById('geocode-status-customer');
+            const icon = document.getElementById('geocode-cust-icon');
+            const text = document.getElementById('geocode-cust-text');
+            if (!box || !icon || !text) return;
+            box.classList.remove('hidden');
+            text.innerText = msg;
+            if (isLoading) {
+                icon.innerText = 'sync';
+                icon.className = 'material-symbols-outlined text-[12px] text-blue-900 animate-spin';
+                text.className = 'text-blue-900 font-medium';
+            } else if (isSuccess) {
+                icon.innerText = 'check_circle';
+                icon.className = 'material-symbols-outlined text-[12px] text-emerald-600';
+                text.className = 'text-emerald-700 font-semibold';
+            } else {
+                icon.innerText = 'info';
+                icon.className = 'material-symbols-outlined text-[12px] text-amber-600';
+                text.className = 'text-amber-700 font-medium';
+            }
+        }
+
+        async function reverseGeocodeCustomer(lat, lng) {
+            showCustGeocodeStatus('Menyesuaikan alamat otomatis dari titik peta...', true, true);
+            isUpdatingCustomerMap = true;
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1&accept-language=id`;
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                if (!res.ok) throw new Error('Gagal reverse geocode');
+                const data = await res.json();
+                if (data && data.address) {
+                    const addr = data.address;
+                    const road = addr.road || addr.pedestrian || addr.footway || addr.amenity || addr.shop || data.name || '';
+                    const num = addr.house_number ? `No. ${addr.house_number}` : '';
+                    const kel = addr.village || addr.suburb || addr.neighbourhood || '';
+                    const kec = addr.city_district || addr.municipality || '';
+                    const kota = addr.city || addr.town || 'Kota Mojokerto';
+                    const street = [road, num].filter(Boolean).join(' ');
+                    const full = [street, kel, kec ? (kec.toLowerCase().startsWith('kec') ? kec : `Kec. ${kec}`) : '', kota].filter(Boolean).join(', ') || data.display_name;
+                    const el = document.getElementById('alamat');
+                    if (el && full) el.value = full;
+                    showCustGeocodeStatus('Alamat lengkap otomatis disesuaikan dari titik pin.', true, false);
+                }
+            } catch (e) {
+                showCustGeocodeStatus('Titik koordinat diperbarui.', true, false);
+            }
+            setTimeout(() => { isUpdatingCustomerMap = false; }, 150);
+        }
+
+        async function forwardGeocodeCustomer(queryText) {
+            if (!queryText || queryText.trim().length < 4) return;
+            showCustGeocodeStatus('Mencari titik koordinat di peta...', true, true);
+            const qLower = queryText.toLowerCase();
+            const searchQuery = qLower.includes('mojokerto') ? queryText : `${queryText}, Kota Mojokerto, Jawa Timur`;
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(searchQuery)}&viewbox=112.38,-7.42,112.50,-7.52&bounded=0&limit=1&addressdetails=1&accept-language=id`;
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                if (!res.ok) throw new Error('Gagal forward geocode');
+                const results = await res.json();
+                if (Array.isArray(results) && results.length > 0) {
+                    const lat = parseFloat(results[0].lat);
+                    const lng = parseFloat(results[0].lon);
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        updateCoordinates(lat, lng);
+                        if (map && customerMarker) {
+                            customerMarker.setLatLng([lat, lng]);
+                            map.flyTo([lat, lng], 17, { duration: 0.6 });
+                        }
+                        fetchShippingQuote(lat, lng);
+                        showCustGeocodeStatus('Titik pin peta & ongkir otomatis mengikuti alamat.', true, false);
+                        return;
+                    }
+                }
+            } catch (e) {}
+            showCustGeocodeStatus('Silakan geser pin biru pada peta untuk akurasi titik rumah.', false, false);
+        }
+
+        window.triggerCustomerForwardGeocode = function () {
+            const val = document.getElementById('alamat')?.value?.trim() || '';
+            if (val) forwardGeocodeCustomer(val);
+        };
 
         // Format Angka Ribuan Rupiah
         function formatRupiah(amount) {

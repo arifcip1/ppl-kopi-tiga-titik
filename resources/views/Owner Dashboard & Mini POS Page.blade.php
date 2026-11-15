@@ -332,10 +332,15 @@
 
                         <!-- Status Bayar -->
                         <div class="text-right">
-                            @if(optional($order->payment)->status === 'berhasil')
+                            @if(optional($order->payment)->status === 'berhasil' || in_array($order->status, ['diproses', 'dikirim', 'selesai']))
                                 <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded-md inline-flex items-center gap-1">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                    Lunas QRIS
+                                    {{ $order->sumber_transaksi === 'pos' ? 'Lunas POS' : 'Lunas QRIS' }}
+                                </span>
+                            @elseif($order->status === 'dibatalkan' || in_array(optional($order->payment)->status, ['gagal', 'kedaluwarsa']))
+                                <span class="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold rounded-md inline-flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                    Dibatalkan
                                 </span>
                             @else
                                 <span class="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold rounded-md inline-flex items-center gap-1">
@@ -799,7 +804,8 @@
                 const customerPhone = (d.customer && d.customer.telepon) || d.telepon || (d.user && d.user.no_telepon) || '-';
                 const deliveryAddress = d.alamat_pengiriman || d.alamat || d.alamat_lokasi_asal || '-';
                 const paymentStatus = (d.payment && d.payment.status) || 'menunggu_pembayaran';
-                const isPaid = paymentStatus === 'lunas';
+                const isPaid = ['berhasil', 'lunas'].includes(paymentStatus) || ['diproses', 'dikirim', 'selesai'].includes(d.status);
+                const paymentMethodLabel = d.sumber_transaksi === 'pos' ? 'Lunas (POS Lapak)' : 'Lunas (QRIS)';
 
                 contentEl.innerHTML = `
                     <!-- Info Pelanggan & Alamat -->
@@ -854,7 +860,7 @@
                         </div>
                         <div class="flex justify-between items-center pt-1 text-[10px]">
                             <span class="text-slate-500">Status Pembayaran:</span>
-                            <span class="font-bold ${isPaid ? 'text-emerald-700' : 'text-amber-700'} uppercase">${isPaid ? 'Lunas (QRIS)' : 'Menunggu / COD'}</span>
+                            <span class="font-bold ${isPaid ? 'text-emerald-700' : (d.status === 'dibatalkan' ? 'text-rose-700' : 'text-amber-700')} uppercase">${isPaid ? paymentMethodLabel : (d.status === 'dibatalkan' ? 'Dibatalkan' : 'Menunggu Pembayaran')}</span>
                         </div>
                     </div>
 
