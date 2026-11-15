@@ -87,11 +87,15 @@ class SalesHistorySeeder extends Seeder
                 }
             }
 
-            // 4. Update nominal harga total di Nota Order
+            // 4. Update nominal harga total di Nota Order (pertahankan created_at & updated_at historis)
+            $order->timestamps = false;
             $order->update([
                 'subtotal' => $subtotalOrder,
                 'total' => $subtotalOrder + $order->ongkir,
+                'created_at' => $date->copy()->setHour(10),
+                'updated_at' => $date->copy()->setHour(10),
             ]);
+            $order->timestamps = true;
 
             $date->addDay();
             $day++;

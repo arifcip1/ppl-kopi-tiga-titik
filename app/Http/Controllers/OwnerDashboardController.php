@@ -23,7 +23,8 @@ class OwnerDashboardController extends Controller
     public function __construct(
         protected CourierManagementService $courierService,
         protected OrderStatusService $statusService,
-        protected WebNotificationService $notificationService
+        protected WebNotificationService $notificationService,
+        protected SalesReportService $reportService
     ) {}
 
     /**
@@ -56,16 +57,22 @@ class OwnerDashboardController extends Controller
     public function index(Request $request): View
     {
         // 1. Ringkasan Metrik Operasional Hari Ini
-        // Menghitung pesanan yang selesai hari ini (berdasarkan updated_at) atau transaksi hari ini (created_at)
-        $todayRevenue = Order::where(function ($query) {
-                $query->whereDate('updated_at', today())
-                      ->where('status', 'selesai');
-            })
-            ->orWhere(function ($query) {
-                $query->whereDate('created_at', today())
-                      ->whereIn('status', ['diproses', 'dikirim', 'selesai']);
-            })
-            ->sum('subtotal'); // Omzet bersih tanpa ongkir sesuai FR-15 / BR-16
+        // Menggunakan SalesReportService agar 100% sinkron dengan Halaman Riwayat Penjualan & Ekspor Excel (PPL-30 / FR-15)
+        $harianReport = $this->reportService->getReport('harian');
+        $todayRevenue = (int) ($harianReport['summary']['total_omzet'] ?? 0);
+
+        // Fallback jika sales_history hari ini belum ada baris namun terdapat pesanan selesai hari ini di tabel orders
+        if ($todayRevenue === 0) {
+            $todayRevenue = (int) Order::where(function ($query) {
+                    $query->whereDate('updated_at', today())
+                          ->where('status', 'selesai');
+                })
+                ->orWhere(function ($query) {
+                    $query->whereDate('created_at', today())
+                          ->whereIn('status', ['diproses', 'dikirim', 'selesai']);
+                })
+                ->sum('subtotal'); // Omzet bersih tanpa ongkir sesuai FR-15 / BR-16
+        }
 
         $pendingOrdersCount = Order::whereIn('status', ['menunggu_pembayaran', 'diproses'])->count();
 
@@ -82,7 +89,17 @@ class OwnerDashboardController extends Controller
             ->get();
         $lowStockCount = $lowStockProducts->count();
 
-        $activeLocation = ShippingLocation::where('aktif', true)->first();
+        // Data Lokasi Lapak Aktif & Jam Operasional (Sinkron dengan Pengaturan Lapak PPL-25/PPL-30)
+        $activeLocationId = \App\Models\Setting::where('key', 'lokasi_pengiriman_aktif_id')->value('value');
+        $activeLocation = $activeLocationId ? ShippingLocation::find($activeLocationId) : null;
+        if (! $activeLocation) {
+            $activeLocation = ShippingLocation::where('aktif', true)->first();
+        }
+
+        $jamBuka = \App\Models\Setting::where('key', 'jam_buka')->value('value') ?? '15:00';
+        $jamTutup = \App\Models\Setting::where('key', 'jam_tutup')->value('value') ?? '18:00';
+        $statusLapak = \App\Models\Setting::where('key', 'status_lapak')->value('value') ?? 'buka';
+        $lokasiAktif = $activeLocation;
 
         // 2. Query Daftar Pesanan dengan Filter Status & Pencarian (FR-8.1)
         $ordersQuery = Order::with(['orderItems.product', 'payment', 'courier', 'user', 'statusHistories'])
@@ -135,6 +152,10 @@ class OwnerDashboardController extends Controller
             'lowStockProducts',
             'lowStockCount',
             'activeLocation',
+            'lokasiAktif',
+            'jamBuka',
+            'jamTutup',
+            'statusLapak',
             'orders',
             'couriers',
             'products',

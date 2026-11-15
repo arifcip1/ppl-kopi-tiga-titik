@@ -7,12 +7,19 @@
 @section('page_subtitle', 'Pantau ringkasan operasional harian, kelola antrean pesanan, dan penugasan kurir')
 
 @section('header_actions')
-    <!-- Indikator Status Lapak Buka -->
+    <!-- Indikator Status Lapak Buka / Tutup -->
     <div class="flex items-center gap-2">
-        <div class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shadow-2xs">
+        @if(($statusLapak ?? 'buka') === 'buka')
+        <a href="{{ route('owner.update-lokasi') }}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold shadow-2xs transition-colors" title="Pengaturan Lapak (Status: Buka)">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>Lapak Buka</span>
-        </div>
+        </a>
+        @else
+        <a href="{{ route('owner.update-lokasi') }}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold shadow-2xs transition-colors" title="Pengaturan Lapak (Status: Tutup)">
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+            <span>Lapak Tutup</span>
+        </a>
+        @endif
 
         <!-- Tombol Kelola Kurir (US-31 - Header Desktop) -->
         <button type="button" onclick="openCouriersModal()" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-xs font-bold transition-colors cursor-pointer shadow-2xs" title="Kelola Akun Kurir (Maks. 2 Kurir)">
@@ -171,19 +178,24 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h3 class="font-bold text-slate-900 text-xs md:text-sm font-['Plus_Jakarta_Sans']">Titik Lapak Hari Ini</h3>
-                    <span class="px-2 py-0.2 bg-blue-100 text-blue-900 text-[9px] font-extrabold rounded">15.00 - 18.00 WIB</span>
+                    <span class="px-2 py-0.5 bg-blue-100 text-blue-900 text-[10px] font-extrabold rounded-md">
+                        {{ $jamBuka ?? '15:00' }} - {{ $jamTutup ?? '18:00' }} WIB
+                    </span>
+                    @if(($statusLapak ?? 'buka') === 'tutup')
+                        <span class="px-2 py-0.5 bg-rose-100 text-rose-800 text-[10px] font-extrabold rounded-md">Tutup</span>
+                    @endif
                 </div>
                 <p class="text-xs font-semibold text-slate-800 mt-1 flex items-center gap-1">
                     <span class="material-symbols-outlined text-sm text-slate-400">storefront</span>
-                    <span>{{ $activeLocation->nama_lokasi ?? 'Jl. Benteng Pancasila (Depan Taman Sentanan)' }}</span>
+                    <span>{{ $lokasiAktif->nama_lokasi ?? $activeLocation->nama_lokasi ?? 'Jl. Benteng Pancasila (Depan Taman Sentanan)' }}</span>
                 </p>
                 <p class="text-[11px] text-slate-500 mt-0.5">
-                    {{ $activeLocation->alamat_lengkap ?? 'Samping booth es krim • Parkir motor timur, Mojokerto' }}
+                    {{ $lokasiAktif->alamat ?? $activeLocation->alamat ?? 'Samping booth es krim • Parkir motor timur, Mojokerto' }}
                 </p>
             </div>
         </div>
 
-        <a href="{{ url('/owner/update-lokasi') }}" class="px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0">
+        <a href="{{ route('owner.update-lokasi') }}" class="px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0">
             <span class="material-symbols-outlined text-sm">edit_location</span>
             <span>Perbarui Lokasi Lapak</span>
         </a>

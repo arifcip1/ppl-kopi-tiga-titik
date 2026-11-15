@@ -376,5 +376,56 @@ class OrderStatusAndCourierBackendTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonStructure(['success', 'data']);
     }
+
+    /**
+     * 12. Test Sinkronisasi: Pesanan selesai otomatis mencatat ke sales_history dan sinkron ke omset dashboard.
+     */
+    public function test_completed_order_synchronizes_with_sales_history_and_dashboard_omzet(): void
+    {
+        $statusService = app(OrderStatusService::class);
+        $reportService = app(\App\Services\SalesReportService::class);
+
+        // Buat pesanan dengan 3 botol Titik Temu
+        $order = Order::factory()->create([
+            'user_id' => $this->customer->id,
+            'status' => 'diproses',
+            'metode_pemenuhan' => 'ambil_sendiri',
+            'subtotal' => 30000,
+            'ongkir' => 0,
+            'total' => 30000,
+            'sumber_transaksi' => 'online',
+        ]);
+
+        OrderItem::create([
+            'order_id' => $order->id,
+            'product_id' => $this->product->id,
+            'nama_produk' => $this->product->nama,
+            'jumlah' => 3,
+            'harga_satuan' => 10000,
+            'subtotal' => 30000,
+        ]);
+
+        // Selesaikan pesanan
+        $statusService->transition($order, 'selesai', $this->owner, 'Pesanan diambil pelanggan di lapak.');
+
+        // 1. Verifikasi sales_history bertambah
+        $salesRecord = \App\Models\SalesHistory::where('product_id', $this->product->id)
+            ->whereDate('tanggal', today())
+            ->where('sumber', 'transaksi')
+            ->first();
+
+        $this->assertNotNull($salesRecord);
+        $this->assertEquals(3, $salesRecord->jumlah_terjual);
+
+        // 2. Verifikasi SalesReportService harian memuat 3 botol dan Rp 30.000
+        $report = $reportService->getReport('harian');
+        $this->assertEquals(3, $report['summary']['total_botol']);
+        $this->assertEquals(30000, $report['summary']['total_omzet']);
+
+        // 3. Verifikasi Dashboard Owner memuat omset Rp 30.000
+        $dashboardResponse = $this->actingAs($this->owner)->get(route('owner.dashboard'));
+        $dashboardResponse->assertStatus(200);
+        $dashboardResponse->assertSee('Rp 30.000');
+    }
 }
 

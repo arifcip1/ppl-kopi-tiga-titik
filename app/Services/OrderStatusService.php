@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
+use App\Models\SalesHistory;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -90,8 +91,37 @@ class OrderStatusService
                 'keterangan' => $keterangan ?? "Status pesanan diubah menjadi {$newStatus}.",
             ]);
 
+            // Catat ke sales_history secara atomik jika pesanan selesai (PPL-30 / Kontrak 20.4)
+            if ($newStatus === 'selesai') {
+                $this->syncSalesHistory($lockedOrder);
+            }
+
             return $lockedOrder;
         });
+    }
+
+    /**
+     * Mencatat agregasi penjualan produk ke tabel sales_history saat pesanan selesai.
+     */
+    protected function syncSalesHistory(Order $order): void
+    {
+        $order->loadMissing('orderItems');
+        $tanggal = today()->toDateString();
+
+        foreach ($order->orderItems as $item) {
+            if (!$item->product_id) {
+                continue;
+            }
+
+            $record = SalesHistory::firstOrNew([
+                'product_id' => $item->product_id,
+                'tanggal'    => $tanggal,
+                'sumber'     => 'transaksi',
+            ]);
+
+            $record->jumlah_terjual = ($record->jumlah_terjual ?? 0) + (int) $item->jumlah;
+            $record->save();
+        }
     }
 }
 
