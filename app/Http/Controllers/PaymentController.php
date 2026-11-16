@@ -1,0 +1,225 @@
+<?php
+
+namespace App\Services;
+
+namespace App\Http\Controllers;
+
+use App\Models\Order;
+use App\Models\Payment;
+use App\Models\Setting;
+use App\Models\ShippingLocation;
+use App\Services\MidtransService;
+use App\Services\OrderStockService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
+
+class PaymentController extends Controller
+{
+    public function __construct(
+        protected MidtransService $midtransService,
+        protected OrderStockService $orderStockService
+    ) {}
+
+    /**
+     * Menampilkan halaman pembayaran QRIS pelanggan (FR-6.3 / PPL-27).
+     *
+     * URL: GET /pembayaran-qris atau /pembayaran-qris/{kode}
+     */
+    public function show(Request $request, ?string $kode = null): View|RedirectResponse
+    {
+        $orderId = $request->query('order_id') ?? session('order_id');
+
+        $query = Order::with(['orderItems', 'payment']);
+
+        if ($kode !== null) {
+            $order = $query->where('kode', $kode)->first();
+        } elseif ($orderId !== null) {
+            $order = $query->where('id', $orderId)->first();
+        } else {
+            // Jika tidak ada parameter, ambil pesanan menunggu pembayaran terbaru milik user login
+            $order = $query->where('user_id', Auth::id())
+                ->where('status', 'menunggu_pembayaran')
+                ->latest()
+                ->first();
+        }
+
+        if ($order === null) {
+            return redirect()->route('orders')->with('error', 'Pesanan tidak ditemukan atau belum dipilih.');
+        }
+
+        // Otorisasi: Hanya pemilik pesanan atau admin yang dapat mengakses
+        if (Auth::check() && Auth::user()->role !== 'admin' && $order->user_id !== Auth::id()) {
+            abort(403, 'Anda tidak memiliki hak untuk mengakses pembayaran pesanan ini.');
+        }
+
+        // Jika pesanan sudah dibayar, langsung alihkan ke pelacakan status
+        if ($order->isProcessing() || $order->isShipped() || $order->isCompleted()) {
+            return redirect()->route('tracking.detail', $order->kode)
+                ->with('success', 'Pembayaran pesanan ini telah berhasil diselesaikan.');
+        }
+
+        // Pengecekan masa kedaluwarsa realtime saat halaman dibuka (FR-6.8)
+        if ($order->isWaitingPayment()) {
+            $expiresAt = $order->expires_at;
+            if ($expiresAt !== null && now()->greaterThanOrEqualTo($expiresAt)) {
+                $this->orderStockService->expireOrder($order);
+                $order->refresh();
+            }
+        }
+
+        if ($order->isCancelled()) {
+            return redirect()->route('orders')->with('error', 'Pesanan telah dibatalkan karena melewati batas waktu pembayaran.');
+        }
+
+        // Request QRIS Charge ke Midtrans Sandbox
+        $qrisData = $this->midtransService->createQrisCharge($order, $order->payment);
+
+        // Ambil info lapak aktif
+        $activeLocationId = Setting::where('key', 'lokasi_pengiriman_aktif_id')->value('value');
+        $lokasiLapak = ShippingLocation::find($activeLocationId)
+            ?? ShippingLocation::where('aktif', true)->first();
+
+        // Hitung sisa detik untuk hitung mundur frontend (10 menit TTL)
+        $expiresAt = $order->expires_at ?? now()->addMinutes(10);
+        $remainingSeconds = max(0, now()->diffInSeconds($expiresAt, false));
+
+        return view('Pembayaran QRIS Page', [
+            'order' => $order,
+            'payment' => $order->payment,
+            'qrisData' => $qrisData,
+            'lokasiLapak' => $lokasiLapak,
+            'remainingSeconds' => (int) $remainingSeconds,
+            'expiresAt' => $expiresAt,
+        ]);
+    }
+
+    /**
+     * Endpoint API polling status pembayaran realtime (FR-6.3).
+     *
+     * URL: GET /api/orders/{identifier}/payment-status
+     */
+    public function status(Request $request, string $identifier): JsonResponse
+    {
+        $order = Order::with('payment')
+            ->where('id', $identifier)
+            ->orWhere('kode', $identifier)
+            ->first();
+
+        if ($order === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pesanan tidak ditemukan.',
+            ], 404);
+        }
+
+        // Otorisasi kepemilikan pesanan
+        if (Auth::check() && !in_array(Auth::user()->role, ['admin', 'kurir']) && $order->user_id !== Auth::id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak.',
+            ], 403);
+        }
+
+        // Pengecekan kedaluwarsa saat polling jika sudah lewat batas waktu (FR-6.8)
+        if ($order->isWaitingPayment()) {
+            $expiresAt = $order->expires_at;
+            if ($expiresAt !== null && now()->greaterThanOrEqualTo($expiresAt)) {
+                $this->orderStockService->expireOrder($order);
+                $order->refresh();
+            }
+        }
+
+        $payment = $order->payment;
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'order_id' => $order->id,
+                'kode_pesanan' => $order->kode,
+                'order_status' => $order->status,
+                'payment_status' => $payment?->status ?? 'pending',
+                'is_paid' => in_array($order->status, ['diproses', 'dikirim', 'selesai']),
+                'is_expired' => $order->status === 'dibatalkan',
+                'verified_at' => $payment?->waktu_verifikasi?->toISOString(),
+                'expires_at' => $order->expires_at?->toISOString(),
+            ],
+        ]);
+    }
+
+    /**
+     * Endpoint Webhook Handler Server-to-Server dari Midtrans Sandbox (FR-6.4).
+     *
+     * URL: POST /api/payments/webhook
+     */
+    public function webhook(Request $request): JsonResponse
+    {
+        $payload = $request->all();
+
+        $result = $this->midtransService->handleNotification($payload);
+
+        $httpCode = $result['code'] ?? ($result['success'] ? 200 : 400);
+
+        return response()->json([
+            'success' => $result['success'],
+            'message' => $result['message'],
+            'order_status' => $result['order_status'] ?? null,
+            'payment_status' => $result['payment_status'] ?? null,
+        ], $httpCode);
+    }
+
+    /**
+     * Endpoint simulasi pembayaran sukses khusus mode Sandbox / Pengujian Lokal.
+     *
+     * URL: POST /api/orders/{identifier}/simulate-payment
+     */
+    public function simulateSuccess(Request $request, string $identifier): JsonResponse
+    {
+        $order = Order::with('payment')
+            ->where('id', $identifier)
+            ->orWhere('kode', $identifier)
+            ->first();
+
+        if ($order === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pesanan tidak ditemukan.',
+            ], 404);
+        }
+
+        if (!$order->isWaitingPayment()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pesanan sudah tidak menunggu pembayaran (Status: ' . $order->status . ').',
+            ], 400);
+        }
+
+        $payment = $order->payment;
+        $midtransOrderId = $order->kode . '-' . ($payment ? $payment->id : 1);
+        $serverKey = config('services.midtrans.server_key', '');
+        $grossAmount = (string) $order->total;
+        $statusCode = '200';
+        $signature = hash('sha512', $midtransOrderId . $statusCode . $grossAmount . $serverKey);
+
+        $payload = [
+            'order_id' => $midtransOrderId,
+            'status_code' => $statusCode,
+            'gross_amount' => $grossAmount,
+            'signature_key' => $signature,
+            'transaction_status' => 'settlement',
+            'fraud_status' => 'accept',
+            'payment_type' => 'qris',
+        ];
+
+        $result = $this->midtransService->handleNotification($payload);
+
+        return response()->json([
+            'success' => $result['success'] ?? true,
+            'message' => 'Pembayaran berhasil disimulasikan lunas.',
+            'redirect_url' => route('tracking.detail', $order->kode),
+        ]);
+    }
+}
+
