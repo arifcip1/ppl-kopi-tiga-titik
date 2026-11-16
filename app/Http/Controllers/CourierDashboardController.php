@@ -6,16 +6,19 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
 use App\Services\OrderStatusService;
+use App\Services\WebNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class CourierDashboardController extends Controller
 {
     public function __construct(
-        protected OrderStatusService $statusService
+        protected OrderStatusService $statusService,
+        protected WebNotificationService $notificationService
     ) {}
 
     /**
@@ -39,8 +42,9 @@ class CourierDashboardController extends Controller
         });
 
         $stats = $this->getCourierStats($courier->id);
+        $notifications = $this->notificationService->getNotificationsForUser($courier);
 
-        return view('Dashboard Kurir Tab Tugas Baru Page', compact('tasks', 'stats', 'courier'));
+        return view('Dashboard Kurir Tab Tugas Baru Page', compact('tasks', 'stats', 'courier', 'notifications'));
     }
 
     /**
@@ -96,8 +100,53 @@ class CourierDashboardController extends Controller
         });
 
         $stats = $this->getCourierStats($courier->id);
+        $notifications = $this->notificationService->getNotificationsForUser($courier);
 
-        return view('Dashboard Kurir Tab Selesai Page', compact('completedTasks', 'stats', 'courier'));
+        return view('Dashboard Kurir Tab Selesai Page', compact('completedTasks', 'stats', 'courier', 'notifications'));
+    }
+
+    /**
+     * Menampilkan profil kurir (US-31).
+     * Endpoint: GET /kurir/profil
+     */
+    public function showProfile(): View
+    {
+        $courier = Auth::user();
+        $notifications = $this->notificationService->getNotificationsForUser($courier);
+
+        return view('Profil Kurir Page', compact('courier', 'notifications'));
+    }
+
+    /**
+     * Memperbarui profil dan kontak WhatsApp kurir.
+     * Endpoint: PUT /kurir/profil
+     */
+    public function updateProfile(Request $request): RedirectResponse
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $validated = $request->validate([
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'phone'    => ['nullable', 'string', 'max:20'],
+            'telepon'  => ['nullable', 'string', 'max:20'],
+            'password' => ['nullable', 'string', 'min:8'],
+        ]);
+
+        $phone = $validated['phone'] ?? $validated['telepon'] ?? $user->telepon;
+
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        $user->telepon = $phone;
+
+        if (!empty($validated['password'])) {
+            $user->password = Hash::make($validated['password']);
+        }
+
+        $user->save();
+
+        return back()->with('success', 'Profil dan nomor WhatsApp kurir berhasil diperbarui!');
     }
 
     /**

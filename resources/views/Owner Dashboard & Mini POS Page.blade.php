@@ -205,25 +205,38 @@
     <!-- 3. TOOLBAR PENCARIAN & FILTER STATUS PESANAN (F13 & FR-8)      -->
     <!-- ============================================================== -->
     <div id="filter-pesanan" class="p-4 bg-white rounded-2xl shadow-xs border border-slate-200/80 flex flex-col lg:flex-row lg:items-center justify-between gap-3 scroll-mt-20">
-        <!-- Pencarian Kode / Nama / Telepon (Point 4: Reset & Clear Icon) -->
-        <div class="flex items-center gap-2 flex-1 max-w-lg">
-            <form method="GET" action="{{ route('owner.dashboard') }}#filter-pesanan" class="relative flex-1">
+        <!-- Pencarian Kode / Nama / Telepon & Sortir (Point 8) -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 max-w-xl">
+            <form id="ownerFilterForm" method="GET" action="{{ route('owner.dashboard') }}#filter-pesanan" class="flex items-center gap-2 flex-1">
                 @if(request('status'))
                     <input type="hidden" name="status" value="{{ request('status') }}">
                 @endif
-                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-                <input type="text" name="search" id="ownerSearchInput" value="{{ request('search') }}" placeholder="Cari kode pesanan / nama penerima / telepon..." class="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-900 transition-colors" />
-                @if(request('search'))
-                    <a href="{{ route('owner.dashboard', ['status' => request('status', 'semua')]) }}#filter-pesanan" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-0.5 rounded-full hover:bg-slate-200 transition-colors" title="Hapus Kata Kunci Pencarian">
-                        <span class="material-symbols-outlined text-base block">close</span>
-                    </a>
-                @endif
+                <div class="relative flex-1">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+                    <input type="text" name="search" id="ownerSearchInput" value="{{ request('search') }}" placeholder="Cari kode / nama penerima / telepon..." class="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-900 transition-colors" />
+                    @if(request('search'))
+                        <a href="{{ route('owner.dashboard', array_filter(['status' => request('status'), 'sort' => request('sort')])) }}#filter-pesanan" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-0.5 rounded-full hover:bg-slate-200 transition-colors" title="Hapus Kata Kunci Pencarian">
+                            <span class="material-symbols-outlined text-base block">close</span>
+                        </a>
+                    @endif
+                </div>
+
+                <!-- Dropdown Urutan / Sort -->
+                <div class="relative shrink-0">
+                    <select name="sort" onchange="document.getElementById('ownerFilterForm').submit()" class="py-2 pl-2.5 pr-7 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-900 cursor-pointer shadow-2xs">
+                        <option value="terbaru" {{ request('sort', 'terbaru') === 'terbaru' ? 'selected' : '' }}>⏱️ Terbaru</option>
+                        <option value="terlama" {{ request('sort') === 'terlama' ? 'selected' : '' }}>⌛ Terlama</option>
+                        <option value="hari_ini" {{ request('sort') === 'hari_ini' ? 'selected' : '' }}>📅 Hari Ini</option>
+                        <option value="total_tertinggi" {{ request('sort') === 'total_tertinggi' ? 'selected' : '' }}>💰 Total Tertinggi</option>
+                        <option value="total_terendah" {{ request('sort') === 'total_terendah' ? 'selected' : '' }}>🏷️ Total Terendah</option>
+                    </select>
+                </div>
             </form>
 
-            @if(request('search') || (request('status') && request('status') !== 'semua'))
+            @if(request('search') || request('sort') || (request('status') && request('status') !== 'semua'))
                 <a href="{{ route('owner.dashboard') }}#filter-pesanan" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shrink-0 shadow-2xs" title="Reset Semua Filter & Pencarian">
                     <span class="material-symbols-outlined text-sm">restart_alt</span>
-                    <span class="hidden sm:inline">Reset Filter</span>
+                    <span class="hidden sm:inline">Reset</span>
                 </a>
             @endif
         </div>
@@ -351,11 +364,19 @@
                         </div>
                     </div>
 
-                    <!-- Alamat / Catatan Pengiriman -->
+                    <!-- Alamat / Catatan Pengiriman (Point 4: Tombol Lihat Titik Peta Tujuan) -->
                     @if($order->metode_pemenuhan !== 'ambil_sendiri' && $order->alamat)
-                        <div class="mt-2 p-2 bg-slate-50 rounded-xl text-[11px] text-slate-600 flex items-start gap-1.5">
-                            <span class="material-symbols-outlined text-slate-400 text-sm mt-0.5 shrink-0">place</span>
-                            <span class="line-clamp-2">{{ $order->alamat }}</span>
+                        <div class="mt-2 p-2 bg-slate-50 rounded-xl text-[11px] text-slate-600 flex items-start justify-between gap-1.5">
+                            <div class="flex items-start gap-1.5 min-w-0">
+                                <span class="material-symbols-outlined text-slate-400 text-sm mt-0.5 shrink-0">place</span>
+                                <span class="line-clamp-2">{{ $order->alamat }}</span>
+                            </div>
+                            @if($order->lat && $order->lng)
+                                <a href="https://www.google.com/maps/dir/?api=1&destination={{ $order->lat }},{{ $order->lng }}" target="_blank" rel="noopener" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[10px] font-bold shrink-0 flex items-center gap-1 transition-colors" title="Buka Titik Peta Tujuan di Google Maps">
+                                    <span class="material-symbols-outlined text-[13px]">map</span>
+                                    <span>Peta</span>
+                                </a>
+                            @endif
                         </div>
                     @endif
 
@@ -823,6 +844,14 @@
                         ${deliveryAddress ? `
                             <div class="text-[11px] text-slate-600 mt-1 pt-1 border-t border-slate-200">
                                 <strong>Alamat:</strong> ${deliveryAddress}
+                            </div>
+                        ` : ''}
+                        ${(d.lat && d.lng) ? `
+                            <div class="mt-2">
+                                <a href="https://www.google.com/maps/dir/?api=1&destination=${d.lat},${d.lng}" target="_blank" rel="noopener" class="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs">
+                                    <span class="material-symbols-outlined text-base">pin_drop</span>
+                                    <span>Buka Titik Peta Tujuan di Google Maps (${d.lat}, ${d.lng})</span>
+                                </a>
                             </div>
                         ` : ''}
                         ${d.courier ? `

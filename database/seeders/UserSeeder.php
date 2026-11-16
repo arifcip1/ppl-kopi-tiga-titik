@@ -30,6 +30,7 @@ class UserSeeder extends Seeder
                 'name'     => 'Ilham Ramadhan',
                 'password' => Hash::make('password123'),
                 'role'     => 'kurir',
+                'telepon'  => '081234567890',
             ]
         );
 
@@ -39,6 +40,7 @@ class UserSeeder extends Seeder
                 'name'     => 'awaludin',
                 'password' => Hash::make('password123'),
                 'role'     => 'kurir',
+                'telepon'  => '085712345678',
             ]
         );
 

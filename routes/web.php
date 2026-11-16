@@ -117,8 +117,9 @@ Route::middleware(['role:kurir'])->group(function () {
     Route::get('/kurir/selesai', [CourierDashboardController::class, 'selesai'])->name('kurir.selesai');
     Route::post('/kurir/orders/{order}/complete', [CourierDashboardController::class, 'markComplete'])->name('kurir.orders.complete');
     Route::get('/api/kurir/tasks', [CourierDashboardController::class, 'apiTasks'])->name('api.kurir.tasks');
-    Route::get('/kurir/profil', fn() => view('Profil Kurir Page'));
-    Route::get('/profil-kurir', fn() => view('Profil Kurir Page'));
+    Route::get('/kurir/profil', [CourierDashboardController::class, 'showProfile'])->name('kurir.profil');
+    Route::put('/kurir/profil', [CourierDashboardController::class, 'updateProfile'])->name('kurir.profil.update');
+    Route::get('/profil-kurir', [CourierDashboardController::class, 'showProfile']);
 });
 
 // =========================================================================

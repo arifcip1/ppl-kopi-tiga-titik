@@ -73,8 +73,8 @@
             <div class="p-4 md:p-5 bg-white rounded-3xl shadow-xs border-2 border-blue-900/30 flex flex-col gap-3">
                 <div class="flex items-center justify-between text-xs">
                     <span class="px-2.5 py-1 bg-blue-50 text-blue-900 font-bold rounded-full flex items-center gap-1.5 border border-blue-200/60">
-                        <span class="material-symbols-outlined text-sm">local_cafe</span>
-                        <span>Lapak Kuwung • Delivery</span>
+                        <span class="material-symbols-outlined text-sm">{{ $order->metode_pemenuhan === 'ambil_sendiri' ? 'storefront' : 'local_shipping' }}</span>
+                        <span>{{ $order->nama_lokasi_asal ?? 'Lapak Kopi Tiga Titik' }} • {{ $order->metode_pemenuhan === 'ambil_sendiri' ? 'Ambil di Lapak' : 'Delivery' }}</span>
                     </span>
                     <span class="text-[11px] font-semibold text-slate-500">Live Status</span>
                 </div>
@@ -83,11 +83,11 @@
                     <div>
                         <span class="text-[11px] text-slate-400 font-medium">Estimasi Waktu</span>
                         @if($order->status === 'diproses')
-                            <div class="text-xl md:text-2xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">15 – 20 Menit</div>
+                            <div class="text-xl md:text-2xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">{{ $order->metode_pemenuhan === 'ambil_sendiri' ? '10 – 15 Menit (Peracikan)' : '15 – 20 Menit' }}</div>
                         @elseif($order->status === 'dikirim')
-                            <div class="text-xl md:text-2xl font-extrabold text-purple-900 font-['Plus_Jakarta_Sans']">Dalam Perjalanan 🛵</div>
+                            <div class="text-xl md:text-2xl font-extrabold text-purple-900 font-['Plus_Jakarta_Sans']">{{ $order->metode_pemenuhan === 'ambil_sendiri' ? 'Siap Diambil di Lapak 🏪' : 'Dalam Perjalanan 🛵' }}</div>
                         @elseif($order->status === 'selesai')
-                            <div class="text-xl md:text-2xl font-extrabold text-emerald-700 font-['Plus_Jakarta_Sans']">Telah Diterima ✓</div>
+                            <div class="text-xl md:text-2xl font-extrabold text-emerald-700 font-['Plus_Jakarta_Sans']">{{ $order->metode_pemenuhan === 'ambil_sendiri' ? 'Telah Diambil di Lapak ✓' : 'Telah Diterima ✓' }}</div>
                         @elseif($order->status === 'dibatalkan')
                             <div class="text-xl md:text-2xl font-extrabold text-rose-700 font-['Plus_Jakarta_Sans']">Pesanan Dibatalkan</div>
                         @else
@@ -161,20 +161,28 @@
                         </div>
                     </div>
 
-                    <!-- Step 3: Kurir Mengantar (Dikirim) -->
+                    <!-- Step 3: Kurir Mengantar (Dikirim) / Siap Diambil di Lapak (Point 10) -->
                     <div class="relative flex items-start gap-3.5">
                         <div class="absolute -left-7 w-6 h-6 rounded-full {{ $step >= 3 ? 'bg-purple-900 text-white shadow-xs ring-4 ring-purple-100' : 'bg-slate-200 text-slate-400' }} flex items-center justify-center text-xs shrink-0">
-                            <span class="material-symbols-outlined text-xs">moped</span>
+                            <span class="material-symbols-outlined text-xs">{{ $order->metode_pemenuhan === 'ambil_sendiri' ? 'storefront' : 'moped' }}</span>
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between text-xs">
-                                <span class="font-bold {{ $step >= 3 ? 'text-slate-900' : 'text-slate-400' }}">Kurir Mengantar Pesanan</span>
+                                <span class="font-bold {{ $step >= 3 ? 'text-slate-900' : 'text-slate-400' }}">
+                                    {{ $order->metode_pemenuhan === 'ambil_sendiri' ? 'Siap Diambil di Lapak' : 'Kurir Mengantar Pesanan' }}
+                                </span>
                                 @if($step === 3)
-                                    <span class="px-1.5 py-0.2 bg-purple-100 text-purple-900 text-[9px] font-extrabold rounded">Diantar</span>
+                                    <span class="px-1.5 py-0.2 bg-purple-100 text-purple-900 text-[9px] font-extrabold rounded">
+                                        {{ $order->metode_pemenuhan === 'ambil_sendiri' ? 'Siap Diambil' : 'Diantar' }}
+                                    </span>
                                 @endif
                             </div>
                             <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
-                                Kurir toko sedang dalam perjalanan menuju alamat pengirimanmu.
+                                @if($order->metode_pemenuhan === 'ambil_sendiri')
+                                    Pesanan telah selesai diracik oleh barista dan siap kamu ambil langsung di booth lapak.
+                                @else
+                                    Kurir toko sedang dalam perjalanan menuju alamat pengirimanmu.
+                                @endif
                             </p>
                         </div>
                     </div>
@@ -222,47 +230,92 @@
                 @endif
             </div>
 
-            <!-- Kartu Alamat & Informasi Kurir -->
-            <div class="p-5 bg-white rounded-3xl shadow-xs border border-slate-200/80 flex flex-col gap-3">
-                <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
-                    <div class="flex items-center gap-2">
-                        <span class="material-symbols-outlined text-blue-900 text-lg">location_on</span>
-                        <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Tujuan Pengiriman & Penerima</h3>
+            <!-- Kartu Alamat & Informasi Kurir / Lapak (Point 10) -->
+            @if($order->metode_pemenuhan === 'ambil_sendiri')
+                <div class="p-5 bg-white rounded-3xl shadow-xs border border-slate-200/80 flex flex-col gap-3">
+                    <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-blue-900 text-lg">storefront</span>
+                            <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Titik Pengambilan di Lapak</h3>
+                        </div>
+                        <span class="text-[10px] font-extrabold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">AMBIL SENDIRI (PICKUP)</span>
                     </div>
-                    <span class="text-[10px] font-extrabold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-md">DELIVERY</span>
-                </div>
 
-                <div class="flex flex-col gap-1 text-xs">
-                    <div class="font-bold text-slate-900">{{ $order->nama_penerima ?? Auth::user()->name }}</div>
-                    <p class="text-slate-500 leading-relaxed">{{ $order->alamat }}</p>
-                    <div class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
-                        <span class="material-symbols-outlined text-[13px]">call</span>
-                        <span>{{ $order->telepon ?? '-' }}</span>
-                    </div>
-                    @if($order->catatan)
-                        <div class="mt-1.5 p-2 bg-amber-50/70 border border-amber-200/60 rounded-xl text-[11px] text-amber-900 flex items-start gap-1.5">
-                            <span class="material-symbols-outlined text-sm shrink-0 mt-0.5">sticky_note_2</span>
-                            <span><strong>Catatan:</strong> {{ $order->catatan }}</span>
+                    <div class="flex flex-col gap-1 text-xs">
+                        <div class="font-bold text-slate-900">{{ $order->nama_lokasi_asal ?? 'Lapak Kopi Tiga Titik' }}</div>
+                        <p class="text-slate-600 leading-relaxed">{{ $order->alamat_lokasi_asal ?? 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto' }}</p>
+                        
+                        <div class="mt-2 p-3 bg-amber-50/70 border border-amber-200/70 rounded-2xl flex flex-col gap-1">
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+                                <span class="material-symbols-outlined text-sm">schedule</span>
+                                <span>Batas Waktu Pengambilan (24 Jam):</span>
+                            </div>
+                            <span class="text-xs font-extrabold text-slate-900 font-mono">
+                                {{ $order->batas_pengambilan ? $order->batas_pengambilan->translatedFormat('d F Y, H:i') . ' WIB' : '24 Jam sejak pembayaran diverifikasi' }}
+                            </span>
+                            <p class="text-[10px] text-amber-800 mt-0.5">
+                                Tunjukkan kode pesanan <strong>#{{ $order->kode }}</strong> atau nota digital kepada barista di lapak saat mengambil pesanan.
+                            </p>
                         </div>
-                    @endif
-                </div>
 
-                <!-- Kurir Info -->
-                <div class="mt-2 p-3 bg-blue-50/70 rounded-2xl border border-blue-100 flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-9 h-9 rounded-xl bg-blue-900 text-white font-extrabold text-xs flex items-center justify-center shrink-0">
-                            {{ $order->courier ? strtoupper(substr($order->courier->name, 0, 1)) : 'K' }}
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold text-slate-900">{{ $order->courier ? $order->courier->name : 'Kurir Toko Resmi' }}</div>
-                            <div class="text-[10px] text-blue-900 font-semibold">Pengantar Khusus Kopi Tiga Titik</div>
-                        </div>
+                        @if($order->latitude_lokasi_asal && $order->longitude_lokasi_asal)
+                            <a href="https://www.google.com/maps/dir/?api=1&destination={{ $order->latitude_lokasi_asal }},{{ $order->longitude_lokasi_asal }}" target="_blank" rel="noopener" class="mt-2 w-full py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs">
+                                <span class="material-symbols-outlined text-base">directions</span>
+                                <span>Buka Rute Navigasi ke Lapak di Google Maps</span>
+                            </a>
+                        @endif
                     </div>
-                    <span class="px-2 py-0.5 bg-white text-blue-900 font-bold text-[10px] rounded-lg border border-blue-200">
-                        Siap Antar
-                    </span>
                 </div>
-            </div>
+            @else
+                <div class="p-5 bg-white rounded-3xl shadow-xs border border-slate-200/80 flex flex-col gap-3">
+                    <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-blue-900 text-lg">location_on</span>
+                            <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Tujuan Pengiriman & Penerima</h3>
+                        </div>
+                        <span class="text-[10px] font-extrabold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-md">DELIVERY</span>
+                    </div>
+
+                    <div class="flex flex-col gap-1 text-xs">
+                        <div class="font-bold text-slate-900">{{ $order->nama_penerima ?? Auth::user()->name }}</div>
+                        <p class="text-slate-500 leading-relaxed">{{ $order->alamat }}</p>
+                        <div class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[13px]">call</span>
+                            <span>{{ $order->telepon ?? '-' }}</span>
+                        </div>
+                        @if($order->catatan)
+                            <div class="mt-1.5 p-2 bg-amber-50/70 border border-amber-200/60 rounded-xl text-[11px] text-amber-900 flex items-start gap-1.5">
+                                <span class="material-symbols-outlined text-sm shrink-0 mt-0.5">sticky_note_2</span>
+                                <span><strong>Catatan:</strong> {{ $order->catatan }}</span>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Kurir Info -->
+                    <div class="mt-2 p-3 bg-blue-50/70 rounded-2xl border border-blue-100 flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-blue-900 text-white font-extrabold text-xs flex items-center justify-center shrink-0">
+                                {{ $order->courier ? strtoupper(substr($order->courier->name, 0, 1)) : 'K' }}
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-slate-900">{{ $order->courier ? $order->courier->name : 'Kurir Toko Resmi' }}</div>
+                                <div class="text-[10px] text-blue-900 font-semibold">
+                                    {{ $order->courier && $order->courier->telepon ? 'WhatsApp: ' . $order->courier->telepon : 'Pengantar Khusus Kopi Tiga Titik' }}
+                                </div>
+                            </div>
+                        </div>
+                        @if($order->status === 'dikirim')
+                            <span class="px-2 py-0.5 bg-purple-100 text-purple-900 font-bold text-[10px] rounded-lg border border-purple-200">
+                                Sedang Mengantar
+                            </span>
+                        @else
+                            <span class="px-2 py-0.5 bg-white text-blue-900 font-bold text-[10px] rounded-lg border border-blue-200">
+                                Siap Antar
+                            </span>
+                        @endif
+                    </div>
+                </div>
+            @endif
 
         </div>
 
@@ -350,3 +403,38 @@
 @endif
 
 @endsection
+
+@push('scripts')
+@if(isset($order) && $order)
+<script>
+    // Live Polling Real-time Status Pesanan Tanpa Refresh Manual (Point 5)
+    (function () {
+        const orderKode = "{{ $order->kode }}";
+        let currentStatus = "{{ $order->status }}";
+        let currentCourierId = "{{ $order->courier_id ?? '' }}";
+
+        // Hanya polling jika pesanan masih dalam proses aktif (menunggu, diproses, dikirim)
+        if (['menunggu_pembayaran', 'diproses', 'dikirim'].includes(currentStatus)) {
+            setInterval(function () {
+                fetch(`/api/orders/${orderKode}`, {
+                    headers: { 'Accept': 'application/json' }
+                })
+                .then(res => res.json())
+                .then(json => {
+                    if (json && json.success && json.data) {
+                        const newStatus = json.data.status;
+                        const newCourierId = json.data.courier_id ? String(json.data.courier_id) : '';
+
+                        // Jika status berubah atau ada kurir baru yang ditugaskan, refresh otomatis secara halus
+                        if (newStatus !== currentStatus || newCourierId !== currentCourierId) {
+                            window.location.reload();
+                        }
+                    }
+                })
+                .catch(() => {});
+            }, 3500);
+        }
+    })();
+</script>
+@endif
+@endpush

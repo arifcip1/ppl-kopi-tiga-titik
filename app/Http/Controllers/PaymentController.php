@@ -11,6 +11,7 @@ use App\Services\OrderStockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -26,7 +27,7 @@ class PaymentController extends Controller
      *
      * URL: GET /pembayaran-qris atau /pembayaran-qris/{kode}
      */
-    public function show(Request $request, ?string $kode = null): View|RedirectResponse
+    public function show(Request $request, ?string $kode = null): Response|View|RedirectResponse
     {
         $orderId = $request->query('order_id') ?? session('order_id');
 
@@ -84,14 +85,18 @@ class PaymentController extends Controller
         $expiresAt = $order->expires_at ?? now()->addMinutes(10);
         $remainingSeconds = max(0, now()->diffInSeconds($expiresAt, false));
 
-        return view('Pembayaran QRIS Page', [
-            'order' => $order,
-            'payment' => $order->payment,
-            'qrisData' => $qrisData,
-            'lokasiLapak' => $lokasiLapak,
-            'remainingSeconds' => (int) $remainingSeconds,
-            'expiresAt' => $expiresAt,
-        ]);
+        return response()
+            ->view('Pembayaran QRIS Page', [
+                'order' => $order,
+                'payment' => $order->payment,
+                'qrisData' => $qrisData,
+                'lokasiLapak' => $lokasiLapak,
+                'remainingSeconds' => (int) $remainingSeconds,
+                'expiresAt' => $expiresAt,
+            ])
+            ->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
     }
 
     /**

@@ -115,9 +115,61 @@
                 </div>
             </div>
 
-            <!-- Tombol Aksi Kanan Header -->
+            <!-- Tombol Aksi Kanan Header & Lonceng Notifikasi (Point 7) -->
             <div class="flex items-center gap-2 shrink-0">
                 @yield('header_actions')
+
+                <!-- Lonceng Notifikasi Kurir -->
+                <div class="relative" id="courierNotificationWrapper">
+                    <button type="button" onclick="toggleCourierNotifications()" class="w-9 h-9 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-blue-900 flex items-center justify-center transition-all cursor-pointer relative shadow-2xs" title="Notifikasi Tugas Kurir">
+                        <span class="material-symbols-outlined text-xl">notifications</span>
+                        @php
+                            $notifCount = isset($notifications) ? count($notifications) : 0;
+                        @endphp
+                        <span id="courierNotifBadge" class="{{ $notifCount > 0 ? '' : 'hidden' }} absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center shadow-xs animate-bounce">
+                            {{ $notifCount }}
+                        </span>
+                    </button>
+
+                    <!-- Dropdown Menu Notifikasi -->
+                    <div id="courierNotificationDropdown" class="hidden absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 p-3 flex flex-col gap-2">
+                        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                            <span class="font-bold text-xs text-slate-900 font-['Plus_Jakarta_Sans'] flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-blue-900 text-base">notifications_active</span>
+                                Notifikasi Tugas Pengantaran
+                            </span>
+                            <span id="courierNotifTotal" class="text-[10px] text-slate-500 font-semibold">{{ $notifCount }} Tugas</span>
+                        </div>
+
+                        <div id="courierNotifList" class="max-h-72 overflow-y-auto flex flex-col gap-2 divide-y divide-slate-100">
+                            @if(isset($notifications) && count($notifications) > 0)
+                                @foreach($notifications as $notif)
+                                    <a href="{{ $notif['link'] ?? url('/kurir/tugas-baru') }}" class="pt-2 first:pt-0 flex items-start gap-2.5 hover:bg-slate-50 p-1.5 rounded-xl transition-colors">
+                                        <div class="w-7 h-7 rounded-lg bg-blue-100 text-blue-900 flex items-center justify-center shrink-0 mt-0.5">
+                                            <span class="material-symbols-outlined text-base">moped</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-xs font-bold text-slate-800 leading-tight">{{ $notif['judul'] }}</p>
+                                            <p class="text-[11px] text-slate-500 mt-0.5">{{ $notif['pesan'] }}</p>
+                                            <span class="text-[10px] text-slate-400 mt-1 block">{{ $notif['waktu'] }}</span>
+                                        </div>
+                                    </a>
+                                @endforeach
+                            @else
+                                <div class="py-6 text-center text-slate-400 text-xs">
+                                    <span class="material-symbols-outlined text-2xl text-slate-300 block mb-1">notifications_off</span>
+                                    Belum ada tugas pengantaran baru saat ini.
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-100 text-center">
+                            <a href="{{ url('/kurir/tugas-baru') }}" class="text-xs font-bold text-blue-900 hover:underline">
+                                Buka Daftar Tugas Antar
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -202,6 +254,47 @@
                 }
             }
         }
+
+        // Toggle Lonceng Notifikasi Kurir (Point 7)
+        function toggleCourierNotifications() {
+            const dropdown = document.getElementById('courierNotificationDropdown');
+            if (dropdown) dropdown.classList.toggle('hidden');
+        }
+
+        document.addEventListener('click', function(e) {
+            const wrapper = document.getElementById('courierNotificationWrapper');
+            const dropdown = document.getElementById('courierNotificationDropdown');
+            if (wrapper && dropdown && !wrapper.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // Polling notifikasi tugas kurir setiap 5 detik
+        function pollCourierTasks() {
+            fetch('{{ route("api.kurir.tasks") }}', {
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res && res.success && res.meta) {
+                    const total = res.meta.total_tasks || 0;
+                    const badge = document.getElementById('courierNotifBadge');
+                    const totalEl = document.getElementById('courierNotifTotal');
+                    if (badge) {
+                        badge.innerText = total;
+                        if (total > 0) {
+                            badge.classList.remove('hidden');
+                        } else {
+                            badge.classList.add('hidden');
+                        }
+                    }
+                    if (totalEl) totalEl.innerText = `${total} Tugas`;
+                }
+            })
+            .catch(() => {});
+        }
+
+        setInterval(pollCourierTasks, 5000);
     </script>
 
     @stack('scripts')

@@ -194,6 +194,15 @@
                 </div>
             </div>
 
+            <!-- Alert Penolakan Luar Kota Mojokerto (Point 1) -->
+            <div id="alert-lapak-out-of-bounds" class="hidden mt-2 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-rose-900">
+                <span class="material-symbols-outlined text-rose-600 text-lg shrink-0 mt-0.5">error</span>
+                <div class="text-xs leading-relaxed">
+                    <strong class="font-bold block text-rose-950 mb-0.5">Lokasi di Luar Kota Mojokerto Ditolak!</strong>
+                    <span>Lapak street coffee Kopi Tiga Titik wajib berlokasi di dalam wilayah Kota Mojokerto. Titik yang kamu pilih saat ini berada di luar Kota Mojokerto. Silakan geser pin kembali ke area Kota Mojokerto.</span>
+                </div>
+            </div>
+
             <input type="hidden" name="latitude" id="input_latitude" value="{{ old('latitude', $lokasiAktif->latitude ?? -7.472600) }}">
             <input type="hidden" name="longitude" id="input_longitude" value="{{ old('longitude', $lokasiAktif->longitude ?? 112.438500) }}">
             <x-input-error for="latitude" class="mt-1" />
@@ -567,18 +576,59 @@
         }
     }
 
+    function isInsideMojokertoCity(lat, lng) {
+        return lat >= -7.530000 && lat <= -7.420000 &&
+               lng >= 112.390000 && lng <= 112.480000;
+    }
+
     function updateLapakCoords(lat, lng) {
+        const numLat = parseFloat(lat);
+        const numLng = parseFloat(lng);
         const formattedLat = Number(lat).toFixed(6);
         const formattedLng = Number(lng).toFixed(6);
 
         document.getElementById('input_latitude').value = formattedLat;
         document.getElementById('input_longitude').value = formattedLng;
-        document.getElementById('display-coords-owner').innerText = `${formattedLat}, ${formattedLng}`;
+        
+        const coordsDisplay = document.getElementById('display-coords-owner');
+        const alertBox = document.getElementById('alert-lapak-out-of-bounds');
+        const isMojokerto = isInsideMojokertoCity(numLat, numLng);
+
+        if (isMojokerto) {
+            coordsDisplay.className = 'text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md font-mono';
+            coordsDisplay.innerText = `${formattedLat}, ${formattedLng}`;
+            if (alertBox) alertBox.classList.add('hidden');
+        } else {
+            coordsDisplay.className = 'text-[10px] text-rose-700 bg-rose-100 border border-rose-300 px-2 py-0.5 rounded-md font-mono font-bold';
+            coordsDisplay.innerText = `${formattedLat}, ${formattedLng} (DI LUAR MOJOKERTO)`;
+            if (alertBox) alertBox.classList.remove('hidden');
+        }
 
         if (markerLapak) {
-            markerLapak.setPopupContent(`<b>Titik Lapak:</b><br>${formattedLat}, ${formattedLng}`);
+            const popupMsg = isMojokerto 
+                ? `<b>Titik Lapak:</b><br>${formattedLat}, ${formattedLng}`
+                : `<b style="color: #b91c1c;">⚠️ Di Luar Kota Mojokerto</b><br><span style="font-size:11px;">Pilih lokasi di dalam Mojokerto</span>`;
+            markerLapak.setPopupContent(popupMsg);
         }
     }
+
+    // Cegah submit form jika titik berada di luar Kota Mojokerto
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('formUpdateLokasi');
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                const lat = parseFloat(document.getElementById('input_latitude').value);
+                const lng = parseFloat(document.getElementById('input_longitude').value);
+                if (!isInsideMojokertoCity(lat, lng)) {
+                    e.preventDefault();
+                    const alertBox = document.getElementById('alert-lapak-out-of-bounds');
+                    if (alertBox) alertBox.classList.remove('hidden');
+                    alert('Titik koordinat lapak berada di luar wilayah Kota Mojokerto!\n\nLapak street coffee Kopi Tiga Titik wajib berlokasi di dalam Kota Mojokerto.');
+                    return false;
+                }
+            });
+        }
+    });
 
     function loadSavedLocation(id, nama, alamat, lat, lng) {
         document.getElementById('shipping_location_id').value = id;

@@ -101,9 +101,8 @@ class OwnerDashboardController extends Controller
         $statusLapak = \App\Models\Setting::where('key', 'status_lapak')->value('value') ?? 'buka';
         $lokasiAktif = $activeLocation;
 
-        // 2. Query Daftar Pesanan dengan Filter Status & Pencarian (FR-8.1)
-        $ordersQuery = Order::with(['orderItems.product', 'payment', 'courier', 'user', 'statusHistories'])
-            ->latest();
+        // 2. Query Daftar Pesanan dengan Filter Status, Pencarian, & Sorting (Point 8)
+        $ordersQuery = Order::with(['orderItems.product', 'payment', 'courier', 'user', 'statusHistories']);
 
         $currentStatus = $request->query('status', 'semua');
         if ($currentStatus !== 'semua' && in_array($currentStatus, ['menunggu_pembayaran', 'diproses', 'dikirim', 'selesai', 'dibatalkan'])) {
@@ -118,6 +117,15 @@ class OwnerDashboardController extends Controller
                     ->orWhere('telepon', 'like', "%{$search}%");
             });
         }
+
+        $sort = $request->query('sort', 'terbaru');
+        match ($sort) {
+            'terlama'          => $ordersQuery->oldest('id'),
+            'hari_ini'         => $ordersQuery->whereDate('created_at', \Carbon\Carbon::today())->latest('id'),
+            'total_tertinggi'  => $ordersQuery->orderByDesc('total'),
+            'total_terendah'   => $ordersQuery->orderBy('total', 'asc'),
+            default            => $ordersQuery->latest('id'),
+        };
 
         $orders = $ordersQuery->paginate(8)->withQueryString();
 
@@ -171,8 +179,7 @@ class OwnerDashboardController extends Controller
      */
     public function apiOrdersIndex(Request $request): JsonResponse
     {
-        $ordersQuery = Order::with(['orderItems.product', 'payment', 'courier', 'user', 'statusHistories'])
-            ->latest();
+        $ordersQuery = Order::with(['orderItems.product', 'payment', 'courier', 'user', 'statusHistories']);
 
         $status = $request->query('status');
         if ($status && in_array($status, ['menunggu_pembayaran', 'diproses', 'dikirim', 'selesai', 'dibatalkan'])) {
@@ -187,6 +194,15 @@ class OwnerDashboardController extends Controller
                     ->orWhere('telepon', 'like', "%{$search}%");
             });
         }
+
+        $sort = $request->query('sort', 'terbaru');
+        match ($sort) {
+            'terlama'          => $ordersQuery->oldest('id'),
+            'hari_ini'         => $ordersQuery->whereDate('created_at', \Carbon\Carbon::today())->latest('id'),
+            'total_tertinggi'  => $ordersQuery->orderByDesc('total'),
+            'total_terendah'   => $ordersQuery->orderBy('total', 'asc'),
+            default            => $ordersQuery->latest('id'),
+        };
 
         $orders = $ordersQuery->paginate($request->query('per_page', 10));
 

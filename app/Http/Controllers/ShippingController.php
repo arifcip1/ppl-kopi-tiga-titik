@@ -133,6 +133,16 @@ class ShippingController extends Controller
             'jam_tutup.required'   => 'Jam tutup operasional wajib diisi.',
         ]);
 
+        $lat = (float) $validated['latitude'];
+        $lng = (float) $validated['longitude'];
+
+        // Validasi Geofence Lapak: Wajib di dalam wilayah administratif Kota Mojokerto
+        if (! $this->resolver->isInsideMojokertoCity($lat, $lng)) {
+            return redirect()->back()->withInput()->withErrors([
+                'latitude' => 'Titik lokasi lapak berada di luar jangkauan wilayah Kota Mojokerto. Lokasi operasional lapak Kopi Tiga Titik wajib berada di dalam area Kota Mojokerto.',
+            ])->with('error', 'Titik lokasi berada di luar wilayah Kota Mojokerto! Silakan tentukan lokasi di dalam Kota Mojokerto.');
+        }
+
         // Simpan / perbarui ke tabel shipping_locations (BR-34, FR-11.1)
         if (! empty($validated['shipping_location_id'])) {
             $location = ShippingLocation::findOrFail($validated['shipping_location_id']);

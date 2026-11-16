@@ -25,17 +25,17 @@
                 <div class="flex items-center gap-4">
                     <div class="relative shrink-0">
                         <div class="w-16 h-16 bg-blue-900 rounded-full flex items-center justify-center text-white text-2xl font-bold font-['Plus_Jakarta_Sans'] shadow-md">
-                            I
+                            {{ strtoupper(substr(auth()->user()->name ?? 'K', 0, 1)) }}
                         </div>
                         <div class="absolute -bottom-0.5 -right-0.5 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center border-2 border-white shadow-xs">
                             <span class="material-symbols-outlined text-white text-xs">moped</span>
                         </div>
                     </div>
                     <div class="min-w-0 flex flex-col">
-                        <h2 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans'] leading-tight truncate">Ilham Ramadhan</h2>
+                        <h2 class="text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans'] leading-tight truncate">{{ auth()->user()->name ?? 'Kurir' }}</h2>
                         <div class="pt-0.5 flex items-center gap-1.5 text-slate-500 text-xs">
                             <span class="material-symbols-outlined text-slate-400 text-sm">mail</span>
-                            <span class="truncate">kurir1ilham@gmail.com</span>
+                            <span class="truncate">{{ auth()->user()->email ?? 'kurir@gmail.com' }}</span>
                         </div>
                         <div class="pt-2">
                             <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-blue-50 text-blue-900 rounded-full text-[11px] font-bold border border-blue-100">
@@ -51,12 +51,14 @@
                 <div class="p-3 bg-blue-50/70 rounded-xl border border-blue-100/80 flex items-center justify-between">
                     <div class="flex items-center gap-1.5 text-xs font-semibold text-blue-900">
                         <span>WhatsApp:</span>
-                        <span>+62 812-3456-7890</span>
+                        <span>{{ auth()->user()->telepon ?? '-' }}</span>
                     </div>
-                    <a href="https://wa.me/6281234567890" target="_blank" rel="noopener" aria-label="Buka WhatsApp"
-                       class="p-1 rounded-lg text-blue-900 hover:bg-blue-100 transition-colors" title="Hubungi via WhatsApp">
-                        <span class="material-symbols-outlined text-base">chat</span>
-                    </a>
+                    @if(auth()->user()->telepon)
+                        <a href="https://wa.me/{{ preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', auth()->user()->telepon)) }}" target="_blank" rel="noopener" aria-label="Buka WhatsApp"
+                           class="p-1 rounded-lg text-blue-900 hover:bg-blue-100 transition-colors" title="Hubungi via WhatsApp">
+                            <span class="material-symbols-outlined text-base">chat</span>
+                        </a>
+                    @endif
                 </div>
             </div>
 
@@ -119,7 +121,7 @@
                         <label for="name" class="text-xs font-bold text-slate-700">Nama Kurir</label>
                         <div class="relative">
                             <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base">person</span>
-                            <input id="name" name="name" type="text" value="{{ old('name', 'Ilham Ramadhan') }}" required
+                            <input id="name" name="name" type="text" value="{{ old('name', auth()->user()->name ?? 'Ilham Ramadhan') }}" required
                                    class="w-full py-2.5 pl-10 pr-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-900 focus:bg-white transition-colors" />
                         </div>
                         @error('name') <p class="text-[11px] text-rose-600">{{ $message }}</p> @enderror
@@ -129,7 +131,7 @@
                         <label for="email" class="text-xs font-bold text-slate-700">Alamat Email</label>
                         <div class="relative">
                             <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base">mail</span>
-                            <input id="email" name="email" type="email" value="{{ old('email', 'kurir1ilham@gmail.com') }}" required
+                            <input id="email" name="email" type="email" value="{{ old('email', auth()->user()->email ?? 'kurir1ilham@gmail.com') }}" required
                                    class="w-full py-2.5 pl-10 pr-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-900 focus:bg-white transition-colors" />
                         </div>
                         @error('email') <p class="text-[11px] text-rose-600">{{ $message }}</p> @enderror
@@ -141,7 +143,7 @@
                         <label for="phone" class="text-xs font-bold text-slate-700">Nomor WhatsApp Koordinasi</label>
                         <div class="relative">
                             <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base">call</span>
-                            <input id="phone" name="phone" type="tel" value="{{ old('phone', '+62 812-3456-7890') }}" required
+                            <input id="phone" name="phone" type="tel" value="{{ old('phone', auth()->user()->telepon ?? '081234567890') }}" required
                                    class="w-full py-2.5 pl-10 pr-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-900 focus:bg-white transition-colors" />
                         </div>
                         @error('phone') <p class="text-[11px] text-rose-600">{{ $message }}</p> @enderror

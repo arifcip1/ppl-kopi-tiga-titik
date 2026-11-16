@@ -327,7 +327,7 @@
                 if (json.data.is_paid) {
                     clearInterval(pollInterval);
                     if (btnText) btnText.textContent = 'Pembayaran Berhasil! Mengalihkan...';
-                    window.location.href = `/order-tracking/${orderKode || orderId}`;
+                    window.location.replace(`/order-tracking/${orderKode || orderId}`);
                     return;
                 }
 
@@ -375,7 +375,7 @@
             if (json.success) {
                 if (btnText) btnText.textContent = 'Lunas ✓ Mengalihkan ke Tracking...';
                 setTimeout(() => {
-                    window.location.href = json.redirect_url || `/order-tracking/${targetIdentifier}`;
+                    window.location.replace(json.redirect_url || `/order-tracking/${targetIdentifier}`);
                 }, 800);
             } else {
                 alert(json.message || 'Gagal memproses simulasi.');
@@ -393,6 +393,13 @@
     updateCountdown();
     setInterval(updateCountdown, 1000);
     pollInterval = setInterval(() => checkPaymentStatus(false), 3000);
+
+    // Deteksi jika user kembali lewat tombol Back browser dari bfcache (Point 9)
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
 </script>
 </body>
 </html>
