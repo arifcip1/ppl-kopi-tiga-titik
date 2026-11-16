@@ -168,16 +168,26 @@
             <span id="btn-check-text">Saya Sudah Membayar (Cek Status)</span>
         </button>
 
-        <!-- Tombol Pengujian Sandbox (Khusus Pengujian Tanpa Bank Asli) -->
+        <!-- Tombol Pengujian Sandbox (Simulator Resmi Midtrans & Simulasi Instan) -->
         @if(!config('services.midtrans.is_production', false))
             <div class="p-3.5 bg-amber-50/90 rounded-2xl border border-amber-200 text-center flex flex-col gap-2">
                 <div class="flex items-center justify-center gap-1.5 text-amber-900 font-bold text-xs">
                     <span class="material-symbols-outlined text-base text-amber-700">science</span>
-                    <span>Mode Pengujian Sandbox (Uji Coba)</span>
+                    <span>Mode Pengujian Midtrans Sandbox</span>
                 </div>
                 <p class="text-[11px] text-amber-800 leading-relaxed">
-                    Karena m-banking asli tidak memproses QR Sandbox, Anda dapat memverifikasi pembayaran lunas secara instan di sini:
+                    Uji pembayaran melalui <strong>Simulator QRIS Resmi Midtrans</strong> (tempel URL QRIS yang tersalin otomatis) atau gunakan tombol verifikasi instan:
                 </p>
+
+                @if(!empty($qrCodeUrl))
+                    <button type="button"
+                            onclick="copyQrUrlAndOpenSimulator('{{ $qrCodeUrl }}')"
+                            class="w-full py-2.5 bg-white hover:bg-blue-50 text-blue-900 border border-blue-300 rounded-xl font-bold text-xs flex justify-center items-center gap-1.5 shadow-2xs transition-all cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">open_in_new</span>
+                        <span id="btn-open-simulator-text">Salin URL QRIS & Buka Simulator Midtrans</span>
+                    </button>
+                @endif
+
                 <button type="button" 
                         id="btn-simulate-payment" 
                         onclick="simulateSuccessPayment()" 
@@ -208,6 +218,22 @@
     let remainingSeconds = parseInt("{{ $remainingSeconds ?? 600 }}", 10);
     const totalTtlSeconds = 600; // 10 menit
     let pollInterval = null;
+
+    // Salin URL Gambar QRIS Midtrans & Buka Halaman Simulator Resmi Midtrans
+    function copyQrUrlAndOpenSimulator(qrUrl) {
+        const label = document.getElementById('btn-open-simulator-text');
+        if (navigator.clipboard && qrUrl) {
+            navigator.clipboard.writeText(qrUrl).then(() => {
+                if (label) {
+                    label.textContent = 'URL QRIS Tersalin! Membuka Simulator...';
+                    setTimeout(() => {
+                        label.textContent = 'Salin URL QRIS & Buka Simulator Midtrans';
+                    }, 3500);
+                }
+            }).catch(() => {});
+        }
+        window.open('https://simulator.sandbox.midtrans.com/v2/qris/index', '_blank', 'noopener');
+    }
 
     // Salin Nominal ke Clipboard
     function copyNominal(amount) {

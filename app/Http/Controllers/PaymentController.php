@@ -1,7 +1,5 @@
 <?php
 
-namespace App\Services;
-
 namespace App\Http\Controllers;
 
 use App\Models\Order;
@@ -123,7 +121,12 @@ class PaymentController extends Controller
             ], 403);
         }
 
-        // Pengecekan kedaluwarsa saat polling jika sudah lewat batas waktu (FR-6.8)
+        // Pengecekan kedaluwarsa & sinkronisasi status langsung ke API Midtrans Sandbox saat polling (FR-6.3 & FR-6.8)
+        if ($order->isWaitingPayment()) {
+            $this->midtransService->syncTransactionStatusFromMidtrans($order, $order->payment);
+            $order->refresh();
+        }
+
         if ($order->isWaitingPayment()) {
             $expiresAt = $order->expires_at;
             if ($expiresAt !== null && now()->greaterThanOrEqualTo($expiresAt)) {

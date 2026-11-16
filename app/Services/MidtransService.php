@@ -66,6 +66,34 @@ class MidtransService
         // Format order_id unik untuk Midtrans: KTT-YYYYMMDD-NNNN-{payment_id}
         $midtransOrderId = $order->kode . '-' . $payment->id;
 
+        // Jika sudah pernah berhasil membuat QRIS asli di Midtrans untuk payment ini, gunakan kembali agar tidak terkena 406 Duplicate Order ID saat refresh halaman
+        $existingRaw = is_array($payment->payload_mentah) ? $payment->payload_mentah : [];
+        $existingRef = (string) ($payment->referensi_provider ?? '');
+        if ($existingRef !== '' && !str_starts_with($existingRef, 'MOCK-MID-') && !empty($existingRaw)) {
+            $existingQrUrl = null;
+            if (!empty($existingRaw['actions']) && is_array($existingRaw['actions'])) {
+                foreach ($existingRaw['actions'] as $action) {
+                    if (($action['name'] ?? '') === 'generate-qr-code') {
+                        $existingQrUrl = $action['url'] ?? null;
+                        break;
+                    }
+                }
+            }
+
+            if ($existingQrUrl || !empty($existingRaw['qr_string'])) {
+                return [
+                    'success' => true,
+                    'order_id' => $existingRaw['order_id'] ?? $midtransOrderId,
+                    'transaction_id' => $existingRef,
+                    'gross_amount' => (int) $order->total,
+                    'qr_url' => $existingQrUrl,
+                    'qr_string' => $existingRaw['qr_string'] ?? null,
+                    'status' => $existingRaw['transaction_status'] ?? 'pending',
+                    'raw' => $existingRaw,
+                ];
+            }
+        }
+
         $items = $order->orderItems->map(fn($item) => [
             'id' => (string) $item->product_id,
             'price' => (int) $item->harga_satuan,
@@ -174,6 +202,73 @@ class MidtransService
             'status' => 'pending',
             'raw' => $payment->payload_mentah,
         ];
+    }
+
+    /**
+     * Mengecek status transaksi secara aktif ke API Midtrans Sandbox (GET /v2/{order_id}/status)
+     * agar pembayaran melalui Midtrans Simulator langsung terdeteksi otomatis meskipun berjalan di localhost.
+     */
+    public function syncTransactionStatusFromMidtrans(Order $order, ?Payment $payment = null): bool
+    {
+        if (app()->runningUnitTests()) {
+            return false;
+        }
+
+        $payment = $payment ?? $order->payment;
+        if ($payment === null) {
+            return false;
+        }
+
+        $serverKey = $this->getServerKey();
+        if ($serverKey === '' || str_contains($serverKey, 'default-test-key') || str_contains($serverKey, 'test-key-12345')) {
+            return false;
+        }
+
+        $ref = (string) ($payment->referensi_provider ?? '');
+        if ($ref === '' || str_starts_with($ref, 'MOCK-MID-')) {
+            return false;
+        }
+
+        $raw = is_array($payment->payload_mentah) ? $payment->payload_mentah : [];
+        $midtransOrderId = (string) ($raw['order_id'] ?? ($order->kode . '-' . $payment->id));
+        $baseUrl = $this->getBaseUrl();
+
+        try {
+            $response = Http::withBasicAuth($serverKey, '')
+                ->timeout(5)
+                ->acceptJson()
+                ->get("{$baseUrl}/v2/{$midtransOrderId}/status");
+
+            if (!$response->successful()) {
+                return false;
+            }
+
+            $data = $response->json();
+            $transactionStatus = (string) ($data['transaction_status'] ?? '');
+            if ($transactionStatus === '' || $transactionStatus === 'pending') {
+                return false;
+            }
+
+            $statusCode = (string) ($data['status_code'] ?? '200');
+            $grossAmount = (string) ($data['gross_amount'] ?? $order->total);
+            $signature = hash('sha512', $midtransOrderId . $statusCode . $grossAmount . $serverKey);
+
+            $payload = array_merge($data, [
+                'order_id' => $midtransOrderId,
+                'status_code' => $statusCode,
+                'gross_amount' => $grossAmount,
+                'signature_key' => $signature,
+                'transaction_status' => $transactionStatus,
+                'fraud_status' => $data['fraud_status'] ?? 'accept',
+            ]);
+
+            $result = $this->handleNotification($payload);
+
+            return (bool) ($result['success'] ?? false);
+        } catch (\Throwable $e) {
+            Log::debug('Midtrans Status Check Exception: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**
