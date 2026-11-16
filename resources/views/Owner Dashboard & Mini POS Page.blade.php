@@ -226,7 +226,6 @@
                     <select name="sort" onchange="document.getElementById('ownerFilterForm').submit()" class="py-2 pl-2.5 pr-7 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-900 cursor-pointer shadow-2xs">
                         <option value="terbaru" {{ request('sort', 'terbaru') === 'terbaru' ? 'selected' : '' }}>⏱️ Terbaru</option>
                         <option value="terlama" {{ request('sort') === 'terlama' ? 'selected' : '' }}>⌛ Terlama</option>
-                        <option value="hari_ini" {{ request('sort') === 'hari_ini' ? 'selected' : '' }}>📅 Hari Ini</option>
                         <option value="total_tertinggi" {{ request('sort') === 'total_tertinggi' ? 'selected' : '' }}>💰 Total Tertinggi</option>
                         <option value="total_terendah" {{ request('sort') === 'total_terendah' ? 'selected' : '' }}>🏷️ Total Terendah</option>
                     </select>

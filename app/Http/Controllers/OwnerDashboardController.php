@@ -103,8 +103,9 @@ class OwnerDashboardController extends Controller
         $statusLapak = \App\Models\Setting::where('key', 'status_lapak')->value('value') ?? 'buka';
         $lokasiAktif = $activeLocation;
 
-        // 2. Query Daftar Pesanan dengan Filter Status, Pencarian, & Sorting (Point 8)
-        $ordersQuery = Order::with(['orderItems.product', 'payment', 'courier', 'user', 'statusHistories']);
+        // 2. Query Daftar Pesanan Khusus Hari Ini dengan Filter Status, Pencarian, & Sorting (Point 8)
+        $ordersQuery = Order::whereDate('created_at', today())
+            ->with(['orderItems.product', 'payment', 'courier', 'user', 'statusHistories']);
 
         $currentStatus = $request->query('status', 'semua');
         if ($currentStatus !== 'semua' && in_array($currentStatus, ['menunggu_pembayaran', 'diproses', 'dikirim', 'selesai', 'dibatalkan'])) {
@@ -123,7 +124,6 @@ class OwnerDashboardController extends Controller
         $sort = $request->query('sort', 'terbaru');
         match ($sort) {
             'terlama'          => $ordersQuery->oldest('id'),
-            'hari_ini'         => $ordersQuery->whereDate('created_at', \Carbon\Carbon::today())->latest('id'),
             'total_tertinggi'  => $ordersQuery->orderByDesc('total'),
             'total_terendah'   => $ordersQuery->orderBy('total', 'asc'),
             default            => $ordersQuery->latest('id'),
@@ -141,14 +141,14 @@ class OwnerDashboardController extends Controller
         $couriers = $this->courierService->getCouriers();
         $products = Product::where('aktif', true)->orderBy('id')->get();
 
-        // Hitung jumlah pesanan per status untuk badge filter tab
+        // Hitung jumlah pesanan per status khusus hari ini untuk badge filter tab
         $statusCounts = [
-            'semua' => Order::count(),
-            'menunggu_pembayaran' => Order::where('status', 'menunggu_pembayaran')->count(),
-            'diproses' => Order::where('status', 'diproses')->count(),
-            'dikirim' => Order::where('status', 'dikirim')->count(),
-            'selesai' => Order::where('status', 'selesai')->count(),
-            'dibatalkan' => Order::where('status', 'dibatalkan')->count(),
+            'semua' => Order::whereDate('created_at', today())->count(),
+            'menunggu_pembayaran' => Order::whereDate('created_at', today())->where('status', 'menunggu_pembayaran')->count(),
+            'diproses' => Order::whereDate('created_at', today())->where('status', 'diproses')->count(),
+            'dikirim' => Order::whereDate('created_at', today())->where('status', 'dikirim')->count(),
+            'selesai' => Order::whereDate('created_at', today())->where('status', 'selesai')->count(),
+            'dibatalkan' => Order::whereDate('created_at', today())->where('status', 'dibatalkan')->count(),
         ];
 
         // Buat notifikasi web dinamis (F14) tanpa tabel baru
@@ -181,7 +181,8 @@ class OwnerDashboardController extends Controller
      */
     public function apiOrdersIndex(Request $request): JsonResponse
     {
-        $ordersQuery = Order::with(['orderItems.product', 'payment', 'courier', 'user', 'statusHistories']);
+        $ordersQuery = Order::whereDate('created_at', today())
+            ->with(['orderItems.product', 'payment', 'courier', 'user', 'statusHistories']);
 
         $status = $request->query('status');
         if ($status && in_array($status, ['menunggu_pembayaran', 'diproses', 'dikirim', 'selesai', 'dibatalkan'])) {
@@ -200,7 +201,6 @@ class OwnerDashboardController extends Controller
         $sort = $request->query('sort', 'terbaru');
         match ($sort) {
             'terlama'          => $ordersQuery->oldest('id'),
-            'hari_ini'         => $ordersQuery->whereDate('created_at', \Carbon\Carbon::today())->latest('id'),
             'total_tertinggi'  => $ordersQuery->orderByDesc('total'),
             'total_terendah'   => $ordersQuery->orderBy('total', 'asc'),
             default            => $ordersQuery->latest('id'),
