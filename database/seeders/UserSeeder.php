@@ -44,8 +44,8 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // 3. Akun Pelanggan (Sesuai UI Nabil Pratama)
-        $nabil = User::updateOrCreate(
+        // 3. Akun Pelanggan (Data Awal)
+        User::updateOrCreate(
             ['email' => 'nabil@gmail.com'],
             [
                 'name'     => 'Nabil Pratama',
@@ -54,7 +54,7 @@ class UserSeeder extends Seeder
             ]
         );
 
-        $arif = User::updateOrCreate(
+        User::updateOrCreate(
             ['email' => 'arif@gmail.com'],
             [
                 'name'     => 'arif',
@@ -63,7 +63,7 @@ class UserSeeder extends Seeder
             ]
         );
 
-        $nizam = User::updateOrCreate(
+        User::updateOrCreate(
             ['email' => 'nizam@gmail.com'],
             [
                 'name'     => 'nizam',
@@ -72,7 +72,7 @@ class UserSeeder extends Seeder
             ]
         );
 
-        $davi = User::updateOrCreate(
+        User::updateOrCreate(
             ['email' => 'davi@gmail.com'],
             [
                 'name'     => 'davi',
@@ -81,7 +81,7 @@ class UserSeeder extends Seeder
             ]
         );
 
-        $farrel = User::updateOrCreate(
+        User::updateOrCreate(
             ['email' => 'farrel@gmail.com'],
             [
                 'name'     => 'farrel',
@@ -89,6 +89,51 @@ class UserSeeder extends Seeder
                 'role'     => 'pelanggan',
             ]
         );
+
+        // 4. Tambahan Akun Pelanggan Baru untuk Variasi Simulasi
+        User::updateOrCreate(
+            ['email' => 'budi@gmail.com'],
+            [
+                'name'     => 'Budi Santoso',
+                'password' => Hash::make('password123'),
+                'role'     => 'pelanggan',
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'siti@gmail.com'],
+            [
+                'name'     => 'Siti Aminah',
+                'password' => Hash::make('password123'),
+                'role'     => 'pelanggan',
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'dimas@gmail.com'],
+            [
+                'name'     => 'Dimas Anggara',
+                'password' => Hash::make('password123'),
+                'role'     => 'pelanggan',
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'ayu@gmail.com'],
+            [
+                'name'     => 'Ayu Lestari',
+                'password' => Hash::make('password123'),
+                'role'     => 'pelanggan',
+            ]
+        );
+
+        User::updateOrCreate(
+            ['email' => 'rina@gmail.com'],
+            [
+                'name'     => 'Rina Melati',
+                'password' => Hash::make('password123'),
+                'role'     => 'pelanggan',
+            ]
+        );
     }
 }
-

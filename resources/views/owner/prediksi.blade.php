@@ -2,7 +2,7 @@
 
 @section('title', 'Prediksi Stok (Moving Average)')
 @section('page_title', 'Prediksi Kebutuhan Stok')
-@section('page_subtitle', 'Estimasi kebutuhan stok botol menggunakan metode Moving Average 3 Minggu (21 Hari Kalender)')
+@section('page_subtitle', 'Estimasi kebutuhan stok botol menggunakan metode Moving Average')
 @section('active_menu', 'prediksi-stok')
 
 @section('header_actions')
@@ -26,11 +26,11 @@
             </div>
             <div>
                 <div class="flex items-center gap-2">
-                    <h2 class="text-sm md:text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Metode: Simple Moving Average (SMA 3 Minggu)</h2>
-                    <span class="px-2 py-0.5 bg-blue-100 text-blue-900 font-extrabold text-[10px] rounded-full uppercase">Aturan BR-17</span>
+                    <h2 class="text-sm md:text-base font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Metode: Simple Moving Average </h2>
+                    <!-- <span class="px-2 py-0.5 bg-blue-100 text-blue-900 font-extrabold text-[10px] rounded-full uppercase"></span> -->
                 </div>
                 <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">
-                    Perhitungan didasarkan pada total penjualan riil (Online terverifikasi & POS kasir) selama 21 hari kalender ke belakang yang dibagi menjadi 3 periode 7-harian mundur.
+                    Perhitungan didasarkan pada total penjualan riil (Online terverifikasi & POS kasir) selama 21 hari ke belakang yang dibagi menjadi 3 periode 7-harian mundur.
                 </p>
             </div>
         </div>
@@ -38,7 +38,7 @@
         <div class="flex items-center gap-2 shrink-0">
             <div class="px-3.5 py-2 bg-slate-50 rounded-xl border border-slate-200 text-center">
                 <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Formula SMA</span>
-                <span class="text-xs font-bold text-blue-900 font-mono">Total 21 Hari ÷ 21</span>
+                <span class="text-xs font-bold text-blue-900 font-mono">Total Penjulan 21 Hari ÷ 21</span>
             </div>
             <div class="px-3.5 py-2 bg-slate-50 rounded-xl border border-slate-200 text-center">
                 <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Standar Harian</span>
@@ -69,7 +69,7 @@
             <div class="px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                     <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Rincian Rekomendasi Kebutuhan Stok per Varian</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">Evaluasi pergerakan penjualan dan kebutuhan restok mingguan</p>
+                    <p class="text-xs text-slate-500 mt-0.5"></p>
                 </div>
                 <div class="flex items-center gap-2 text-xs text-slate-500">
                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>

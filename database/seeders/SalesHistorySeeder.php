@@ -8,6 +8,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\Payment;
 use App\Models\Product;
 use App\Models\SalesHistory;
+use App\Models\User; // <-- Tambahkan model User
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -17,6 +18,10 @@ class SalesHistorySeeder extends Seeder
     public function run(): void
     {
         $products = Product::orderBy('id')->take(4)->get();
+        
+        // Ambil semua user yang ada di database (hasil dari UserSeeder)
+        // Jika ada role tertentu untuk pelanggan, bisa ditambahkan where('role', 'pelanggan')
+        $users = User::where('role', 'pelanggan')->get(); 
 
         // Periode 2 bulan terakhir sampai hari ini
         $startDate = Carbon::today()->subMonths(2);
@@ -34,8 +39,10 @@ class SalesHistorySeeder extends Seeder
         $day = 0;
 
         while ($date->lte($endDate)) {
-            // Acak sumber transaksi untuk hari ini (50% Online, 50% POS)
             $sumberTransaksi = rand(0, 1) ? 'online' : 'pos';
+            
+            // Pilih satu user secara acak dari database
+            $randomUser = $users->random();
 
             // 1. Buat Nota Utama (Orders)
             $order = Order::create([
@@ -43,10 +50,12 @@ class SalesHistorySeeder extends Seeder
                 'sumber_transaksi' => $sumberTransaksi,
                 'metode_pemenuhan' => $sumberTransaksi === 'online' ? 'pengiriman' : 'ambil_sendiri',
                 'status' => 'selesai',
+                'user_id' => $randomUser->id, // <-- Tautkan ke ID User Asli
                 'subtotal' => 0,
                 'ongkir' => $sumberTransaksi === 'online' ? 10000 : 0,
                 'total' => 0,
-                'nama_pelanggan' => 'Pelanggan Simulasi',
+                'nama_pelanggan' => $randomUser->name, // <-- Gunakan Nama User Asli
+                'nama_penerima' => $sumberTransaksi === 'online' ? $randomUser->name : null, // (Opsional) untuk online
                 'created_at' => $date->copy()->setHour(10),
                 'updated_at' => $date->copy()->setHour(10),
             ]);
@@ -61,11 +70,11 @@ class SalesHistorySeeder extends Seeder
                     $hargaItem = $product->harga ?? 15000;
                     $subtotalItem = $jumlahTerjual * $hargaItem;
                     
-                    // 2. Masukkan rincian botol ke Order Items (Ditambah nama_produk)
+                    // 2. Masukkan rincian botol ke Order Items
                     OrderItem::create([
                         'order_id' => $order->id,
                         'product_id' => $product->id,
-                        'nama_produk' => $product->nama, // <--- Perbaikan di sini
+                        'nama_produk' => $product->nama, 
                         'jumlah' => $jumlahTerjual,
                         'harga_satuan' => $hargaItem,
                         'subtotal' => $subtotalItem,
