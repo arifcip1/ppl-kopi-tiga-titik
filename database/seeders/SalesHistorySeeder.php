@@ -104,10 +104,11 @@ class SalesHistorySeeder extends Seeder
             Payment::updateOrCreate(
                 ['order_id' => $order->id],
                 [
-                    'metode' => $sumberTransaksi === 'pos' ? 'tunai' : 'qris',
+                    'referensi_provider' => 'SIMULASI-PAY-' . $order->id,
+                    'metode_pembayaran' => $sumberTransaksi === 'pos' ? 'tunai' : 'qris',
                     'status' => 'berhasil',
                     'jumlah' => $totalOrder,
-                    'dibayar_pada' => $date->copy()->setHour(10),
+                    'waktu_verifikasi' => $date->copy()->setHour(10),
                     'created_at' => $date->copy()->setHour(10),
                     'updated_at' => $date->copy()->setHour(10),
                 ]

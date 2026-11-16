@@ -101,8 +101,8 @@ class OrderStatusService
                 $lockedOrder->loadMissing('payment');
                 if ($lockedOrder->payment && $lockedOrder->payment->status !== 'berhasil') {
                     $lockedOrder->payment->update([
-                        'status'       => 'berhasil',
-                        'dibayar_pada' => $lockedOrder->payment->dibayar_pada ?? now(),
+                        'status'           => 'berhasil',
+                        'waktu_verifikasi' => $lockedOrder->payment->waktu_verifikasi ?? now(),
                     ]);
                 }
             }
