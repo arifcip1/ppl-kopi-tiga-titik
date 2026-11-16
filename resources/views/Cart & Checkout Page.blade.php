@@ -334,7 +334,7 @@
                             <span class="material-symbols-outlined text-base text-emerald-600 shrink-0">location_searching</span>
                             <span class="text-[11px] sm:text-xs shrink-0">Koordinat Tujuan:</span>
                             <span class="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded-md border border-slate-200 text-[11px] shadow-2xs truncate" id="display-coords">
-                                {{ old('lat', $lokasiAktif ? $lokasiAktif->latitude : '-7.472600') }}, {{ old('lng', $lokasiAktif ? $lokasiAktif->longitude : '112.438500') }}
+                                {{ old('lat', $customerDefaultLat ?? '-7.472100') }}, {{ old('lng', $customerDefaultLng ?? '112.434000') }}
                             </span>
                         </div>
                         <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full inline-flex items-center gap-1.5 border border-emerald-200 self-start sm:self-auto shrink-0">
@@ -388,24 +388,34 @@
                     </div>
 
                     <!-- Hidden Inputs Koordinat -->
-                    <input type="hidden" name="lat" id="input_lat" value="{{ old('lat', $lokasiAktif ? $lokasiAktif->latitude : '-7.472600') }}">
-                    <input type="hidden" name="lng" id="input_lng" value="{{ old('lng', $lokasiAktif ? $lokasiAktif->longitude : '112.438500') }}">
+                    <input type="hidden" name="lat" id="input_lat" value="{{ old('lat', $customerDefaultLat ?? '-7.472100') }}">
+                    <input type="hidden" name="lng" id="input_lng" value="{{ old('lng', $customerDefaultLng ?? '112.434000') }}">
                     <x-input-error for="lat" class="mt-1" />
                     <x-input-error for="lng" class="mt-1" />
 
                     <!-- Detail Alamat Lengkap (Textarea) -->
                     <div>
-                        <label for="alamat" class="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-1.5">
-                            <span class="material-symbols-outlined text-base text-slate-500">home_pin</span>
-                            <span>Alamat Lengkap & Patokan Rumah / Kantor</span>
-                            <span class="text-rose-500">*</span>
-                        </label>
+                        <div class="flex items-center justify-between mb-1.5 gap-2">
+                            <label for="alamat" class="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                                <span class="material-symbols-outlined text-base text-slate-500">home_pin</span>
+                                <span>Alamat Lengkap & Patokan Rumah / Kantor</span>
+                                <span class="text-rose-500">*</span>
+                            </label>
+                            <button type="button" onclick="triggerCustomerForwardGeocode()" class="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-lg text-[10px] font-bold inline-flex items-center gap-1 transition-colors cursor-pointer shrink-0">
+                                <span class="material-symbols-outlined text-[12px]">my_location</span>
+                                <span>Sesuaikan Titik Peta</span>
+                            </button>
+                        </div>
                         <textarea id="alamat" 
                                   name="alamat" 
                                   rows="3" 
                                   required
                                   placeholder="Tuliskan nama jalan, nomor rumah, RT/RW, kelurahan, dan patokan (Contoh: Jl. Kuwung No. 24, RT 02 / RW 01, Kel. Mergelo, pagar hitam depan pos satpam)" 
-                                  class="w-full px-3.5 py-2.5 bg-slate-50/70 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium hover:border-slate-400 focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10 transition-all leading-relaxed placeholder:text-slate-400">{{ old('alamat', Auth::user()->alamat ?? 'Jl. Kuwung No. 24, RT 02 / RW 01, Kel. Mergelo, Kota Mojokerto (Pagar hitam samping warung kelontong)') }}</textarea>
+                                  class="w-full px-3.5 py-2.5 bg-slate-50/70 border border-slate-300 rounded-xl text-xs text-slate-900 font-medium hover:border-slate-400 focus:bg-white focus:outline-none focus:border-blue-900 focus:ring-4 focus:ring-blue-900/10 transition-all leading-relaxed placeholder:text-slate-400">{{ old('alamat', $customerDefaultAlamat ?? (Auth::user()->alamat ?? 'Jl. Hayam Wuruk No. 42, Mergelo, Kec. Magersari, Kota Mojokerto')) }}</textarea>
+                        <div id="geocode-status-customer" class="text-[10px] text-slate-500 mt-1 flex items-center gap-1 hidden">
+                            <span class="material-symbols-outlined text-[12px] text-blue-900" id="geocode-cust-icon">sync</span>
+                            <span id="geocode-cust-text">Menyinkronkan alamat...</span>
+                        </div>
                         <x-input-error for="alamat" class="mt-1" />
                     </div>
 
@@ -707,9 +717,11 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <script>
-        // Koordinat Default Lapak Kopi Tiga Titik Mojokerto
-        const DEFAULT_LAT = {{ $lokasiAktif ? (float)$lokasiAktif->latitude : -7.472600 }};
-        const DEFAULT_LNG = {{ $lokasiAktif ? (float)$lokasiAktif->longitude : 112.438500 }};
+        // Koordinat Lapak Kopi Tiga Titik & Lokasi Default Pelanggan (Point 3)
+        const LAPAK_LAT = {{ $lokasiAktif ? (float)$lokasiAktif->latitude : -7.472600 }};
+        const LAPAK_LNG = {{ $lokasiAktif ? (float)$lokasiAktif->longitude : 112.438500 }};
+        const DEFAULT_LAT = {{ (float) ($customerDefaultLat ?? -7.472100) }};
+        const DEFAULT_LNG = {{ (float) ($customerDefaultLng ?? 112.434000) }};
         const LAPAK_NAME = "{{ addslashes($lokasiAktif->nama_lokasi ?? 'Lapak Jl. Kuwung') }}";
         const LAPAK_ADDRESS = "{{ addslashes($lokasiAktif->alamat ?? 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto') }}";
         const BASE_SUBTOTAL = {{ (int) ($subtotal ?? 28000) }};
@@ -933,7 +945,7 @@
                 popupAnchor: [0, -38]
             });
 
-            lapakMarker = L.marker([DEFAULT_LAT, DEFAULT_LNG], { icon: lapakIcon }).addTo(map);
+            lapakMarker = L.marker([LAPAK_LAT, LAPAK_LNG], { icon: lapakIcon }).addTo(map);
             lapakMarker.bindPopup(`<b>${LAPAK_NAME} (Lapak Asal)</b><br>${LAPAK_ADDRESS}`);
 
             // 4. Custom Marker Pin Pelanggan (Draggable Biru dengan Pulse Radar)
@@ -961,6 +973,14 @@
 
             customerMarker.bindPopup("<b>Titik Pengantaran Anda</b><br>Geser pin ke lokasi rumah / kantor Anda.").openPopup();
 
+            // Pusatkan tampilan peta agar mencakup kedua titik (Lapak & Lokasi Pelanggan)
+            try {
+                const bounds = L.latLngBounds([ [LAPAK_LAT, LAPAK_LNG], [DEFAULT_LAT, DEFAULT_LNG] ]);
+                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+            } catch (e) {
+                map.setView([DEFAULT_LAT, DEFAULT_LNG], 15);
+            }
+
             // 6. Event Listener: Selesai drag marker (Sinkronkan koordinat dan perbarui teks alamat)
             customerMarker.on('dragend', function (event) {
                 const position = customerMarker.getLatLng();
@@ -984,6 +1004,38 @@
                 map.invalidateSize();
             }, 300);
         }
+
+        function showCustGeocodeStatus(msg, isSuccess = true, isLoading = false) {
+            const box = document.getElementById('geocode-status-customer');
+            const icon = document.getElementById('geocode-cust-icon');
+            const text = document.getElementById('geocode-cust-text');
+            if (!box || !icon || !text) return;
+            box.classList.remove('hidden');
+            text.innerText = msg;
+            if (isLoading) {
+                icon.innerText = 'sync';
+                icon.className = 'material-symbols-outlined text-[12px] text-blue-900 animate-spin';
+                text.className = 'text-blue-900 font-medium';
+            } else if (isSuccess) {
+                icon.innerText = 'check_circle';
+                icon.className = 'material-symbols-outlined text-[12px] text-emerald-600';
+                text.className = 'text-emerald-700 font-semibold';
+            } else {
+                icon.innerText = 'info';
+                icon.className = 'material-symbols-outlined text-[12px] text-amber-600';
+                text.className = 'text-amber-700 font-medium';
+            }
+        }
+
+        window.triggerCustomerForwardGeocode = function () {
+            const val = document.getElementById('alamat')?.value?.trim() || '';
+            if (val) {
+                showCustGeocodeStatus('Mencari titik koordinat di peta...', true, true);
+                searchAddressGeocode(val).then(() => {
+                    showCustGeocodeStatus('Titik pin peta & ongkir otomatis mengikuti alamat.', true, false);
+                });
+            }
+        };
 
         // Format Angka Ribuan Rupiah
         function formatRupiah(amount) {

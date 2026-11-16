@@ -116,8 +116,10 @@ Route::middleware(['role:kurir'])->group(function () {
     Route::get('/kurir/tugas-baru', [CourierDashboardController::class, 'tugasBaru'])->name('kurir.tugas-baru');
     Route::get('/kurir/selesai', [CourierDashboardController::class, 'selesai'])->name('kurir.selesai');
     Route::post('/kurir/orders/{order}/complete', [CourierDashboardController::class, 'markComplete'])->name('kurir.orders.complete');
-    Route::get('/kurir/profil', fn() => view('Profil Kurir Page'));
-    Route::get('/profil-kurir', fn() => view('Profil Kurir Page'));
+    Route::get('/api/kurir/tasks', [CourierDashboardController::class, 'apiTasks'])->name('api.kurir.tasks');
+    Route::get('/kurir/profil', [CourierDashboardController::class, 'showProfile'])->name('kurir.profil');
+    Route::put('/kurir/profil', [CourierDashboardController::class, 'updateProfile'])->name('kurir.profil.update');
+    Route::get('/profil-kurir', [CourierDashboardController::class, 'showProfile']);
 });
 
 // =========================================================================
@@ -138,7 +140,19 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/owner/orders/{order}/detail', [OwnerDashboardController::class, 'show'])->name('owner.orders.detail');
     Route::post('/owner/orders/{order}/assign-courier', [OwnerDashboardController::class, 'assignCourier'])->name('owner.orders.assign-courier');
     Route::post('/owner/orders/{order}/complete-pickup', [OwnerDashboardController::class, 'completePickup'])->name('owner.orders.complete-pickup');
-    // Pengaturan Lokasi & Jam Operasional Lapak (PPL-25)
+
+    // PPL-32: Pengelolaan Akun Kurir (US-31)
+    Route::get('/owner/couriers', [OwnerDashboardController::class, 'couriersIndex'])->name('owner.couriers.index');
+    Route::post('/owner/couriers', [OwnerDashboardController::class, 'couriersStore'])->name('owner.couriers.store');
+    Route::delete('/owner/couriers/{user}', [OwnerDashboardController::class, 'couriersDestroy'])->name('owner.couriers.destroy');
+
+    // PPL-32: APIs Pesanan Owner (FR-8.1 & FR-8.2)
+    Route::get('/api/owner/orders', [OwnerDashboardController::class, 'apiOrdersIndex'])->name('api.owner.orders.index');
+    Route::get('/api/owner/orders/{order}', [OwnerDashboardController::class, 'show'])->name('api.owner.orders.show');
+    Route::post('/api/owner/orders/{order}/assign-courier', [OwnerDashboardController::class, 'assignCourier'])->name('api.owner.orders.assign-courier');
+    Route::post('/api/owner/orders/{order}/complete-pickup', [OwnerDashboardController::class, 'completePickup'])->name('api.owner.orders.complete-pickup');
+
+    // Pengaturan Lokasi & Jam Operasional Lapak (PPL-25 / PPL-30)
     Route::get('/owner/update-lokasi', [ShippingController::class, 'showLocationSettings'])->name('owner.update-lokasi');
     Route::post('/owner/update-lokasi', [ShippingController::class, 'updateLocationSettings'])->name('owner.update-lokasi.save');
     Route::patch('/owner/lokasi/{location}/select', [ShippingController::class, 'selectLocation'])->name('owner.lokasi.select');
@@ -165,8 +179,15 @@ Route::prefix('api/products')->group(function () {
 });
 
 // =========================================================================
-// 5. DEV & TESTING PREVIEW HALAMAN ERROR & VALIDASI (PPL-24)
+// 6. NOTIFIKASI WEB DINAMIS (F14 / FR-14 / BR-19 - PPL 28)
 // =========================================================================
+Route::middleware(['auth'])->get('/api/notifications', function (\Illuminate\Http\Request $request, \App\Services\WebNotificationService $notificationService) {
+    return response()->json([
+        'success' => true,
+        'data'    => $notificationService->getNotificationsForUser($request->user()),
+    ]);
+})->name('api.notifications');
+
 Route::get('/dev/error/{code}', function ($code) {
     abort((int) $code);
 })->where('code', '403|404|419|500')->name('dev.error');

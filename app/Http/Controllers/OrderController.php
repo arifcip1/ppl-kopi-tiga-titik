@@ -58,6 +58,19 @@ class OrderController extends Controller
         $jamTutup = Setting::where('key', 'jam_tutup')->value('value') ?? '18:00';
         $statusLapak = Setting::where('key', 'status_lapak')->value('value') ?? 'buka';
 
+        // Lokasi default pengantaran pelanggan dari profil/pesanan sebelumnya (Point 3)
+        $latestOrder = $user->orders()->whereNotNull('alamat')->latest()->first();
+        if ($latestOrder && $latestOrder->lat && $latestOrder->lng) {
+            $customerDefaultAlamat = $latestOrder->alamat;
+            $customerDefaultLat = (float) $latestOrder->lat;
+            $customerDefaultLng = (float) $latestOrder->lng;
+        } else {
+            // Default profil pelanggan Mojokerto (Jl. Hayam Wuruk No. 42, Magersari)
+            $customerDefaultAlamat = 'Jl. Hayam Wuruk No. 42, Mergelo, Kec. Magersari, Kota Mojokerto';
+            $customerDefaultLat = -7.472100;
+            $customerDefaultLng = 112.434000;
+        }
+
         return view('Deskop Cart & Checkout Page', compact(
             'cartItems',
             'subtotal',
@@ -67,7 +80,10 @@ class OrderController extends Controller
             'lokasiAktif',
             'jamBuka',
             'jamTutup',
-            'statusLapak'
+            'statusLapak',
+            'customerDefaultAlamat',
+            'customerDefaultLat',
+            'customerDefaultLng'
         ));
     }
 

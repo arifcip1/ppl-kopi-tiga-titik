@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\SalesHistory;
 use Closure;
 use Illuminate\Support\Facades\DB;
 
@@ -187,5 +188,66 @@ class OrderStockService
 
             $product->update(['stok' => $product->stok + $jumlah]);
         }
+    }
+
+    /**
+     * Mencatat transaksi riil ke tabel sales_history saat pesanan online diselesaikan (FR-8.3 & F15).
+     * Mencegah pencatatan ganda jika pesanan sudah dicatat sebelumnya atau via Midtrans.
+     */
+    public function recordSalesHistory(Order $order): void
+    {
+        // 1. Cek apakah pembayaran pesanan sudah pernah mencatat sales_history via Midtrans
+        $alreadyRecordedByMidtrans = OrderStatusHistory::where('order_id', $order->id)
+            ->where('keterangan', 'like', '%Midtrans%')
+            ->exists();
+
+        if ($alreadyRecordedByMidtrans) {
+            return;
+        }
+
+        // 2. Cek apakah pesanan ini sudah pernah dicatat di sales_history sebelumnya
+        $alreadyRecorded = OrderStatusHistory::where('order_id', $order->id)
+            ->where('keterangan', 'like', '%[sales_recorded]%')
+            ->exists();
+
+        if ($alreadyRecorded) {
+            return;
+        }
+
+        $order->loadMissing('orderItems');
+        $tanggal = $order->created_at ? $order->created_at->toDateString() : today()->toDateString();
+
+        DB::transaction(function () use ($order, $tanggal) {
+            foreach ($order->orderItems as $item) {
+                if (!$item->product_id) {
+                    continue;
+                }
+
+                $record = SalesHistory::where('product_id', $item->product_id)
+                    ->whereDate('tanggal', $tanggal)
+                    ->where('sumber', 'transaksi')
+                    ->first();
+
+                if ($record) {
+                    $record->increment('jumlah_terjual', (int) $item->jumlah);
+                } else {
+                    SalesHistory::create([
+                        'product_id'     => $item->product_id,
+                        'tanggal'        => $tanggal,
+                        'jumlah_terjual' => (int) $item->jumlah,
+                        'sumber'         => 'transaksi',
+                    ]);
+                }
+            }
+
+            // Catat penanda idempoten agar tidak dicatat ganda pada request/pemanggilan berikutnya
+            OrderStatusHistory::create([
+                'order_id'        => $order->id,
+                'status_baru'     => 'selesai',
+                'diubah_oleh'     => $order->courier_id ?? $order->user_id,
+                'waktu_perubahan' => now(),
+                'keterangan'      => '[sales_recorded] Transaksi botol berhasil dicatat ke riwayat penjualan.',
+            ]);
+        });
     }
 }

@@ -27,7 +27,7 @@
             <span class="material-symbols-outlined text-base text-slate-500">task_alt</span>
             <span>Riwayat Selesai</span>
             <span class="px-1.5 py-0.2 bg-slate-200 text-slate-700 rounded-full text-[10px]">
-                {{ $stats['completed_today'] ?? 0 }}
+                {{ $stats['total_completed'] ?? $stats['completed_today'] ?? 0 }}
             </span>
         </a>
     </div>
@@ -59,6 +59,7 @@
                 <div class="text-lg md:text-xl font-extrabold text-emerald-800 font-['Plus_Jakarta_Sans']">
                     {{ $stats['completed_today'] ?? 0 }} Pesanan
                 </div>
+                <p class="text-[10px] text-slate-400 mt-0.5">{{ $stats['total_completed'] ?? 0 }} total pengantaran selesai</p>
             </div>
         </div>
 
@@ -72,6 +73,7 @@
                 <div class="text-lg md:text-xl font-extrabold text-slate-900 font-['Plus_Jakarta_Sans']">
                     {{ $stats['total_bottles_delivered'] ?? 0 }} Botol
                 </div>
+                <p class="text-[10px] text-slate-400 mt-0.5">Akumulasi seluruh botol kopi</p>
             </div>
         </div>
     </div>
@@ -106,7 +108,7 @@
                             </span>
                         </div>
                         <span class="text-[10px] text-slate-400 font-medium">
-                            Ditugaskan: {{ $tugas->created_at ? $tugas->created_at->format('H:i') : '-' }} WIB
+                            Ditugaskan: {{ $tugas->ditugaskan_waktu_formatted ?? ($tugas->created_at ? $tugas->created_at->format('H:i') . ' WIB' : '-') }}
                         </span>
                     </div>
 
@@ -166,17 +168,30 @@
                             @endforeach
                         </div>
                     </div>
+
+                    <!-- Rincian Total Tagihan & Status Pembayaran (Point 9) -->
+                    <div class="mt-2.5 p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] text-slate-500 font-medium block">Total Tagihan:</span>
+                            <span class="text-xs md:text-sm font-extrabold text-slate-900 font-['Plus_Jakarta_Sans']">
+                                {{ $tugas->total_formatted ?? ('Rp ' . number_format($tugas->total ?? 0, 0, ',', '.')) }}
+                            </span>
+                        </div>
+                        @php
+                            $isPaidCourier = in_array(optional($tugas->payment)->status, ['berhasil', 'lunas']) || in_array($tugas->status, ['diproses', 'dikirim', 'selesai']);
+                        @endphp
+                        <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold {{ $isPaidCourier ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                            {{ $isPaidCourier ? '● Lunas (QRIS)' : '● Menunggu Pembayaran' }}
+                        </span>
+                    </div>
                 </div>
 
-                <!-- Footer Kartu: Konfirmasi Selesai -->
+                <!-- Footer Kartu: Konfirmasi Selesai dengan Template Alert Modal (Point 12) -->
                 <div class="pt-3 border-t border-slate-100">
-                    <form action="{{ route('kurir.orders.complete', $tugas->id) }}" method="POST">
-                        @csrf
-                        <button type="submit" onclick="return confirm('Konfirmasi bahwa pesanan #{{ $tugas->kode }} telah diterima dengan baik oleh pembeli?')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-98">
-                            <span class="material-symbols-outlined text-base">check_circle</span>
-                            <span>Tandai Selesai (Diterima Pembeli)</span>
-                        </button>
-                    </form>
+                    <button type="button" onclick="openCompleteTaskModal('{{ $tugas->id }}', '{{ $tugas->kode }}', '{{ addslashes($customerName) }}')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-98">
+                        <span class="material-symbols-outlined text-base">check_circle</span>
+                        <span>Tandai Selesai (Diterima Pembeli)</span>
+                    </button>
                 </div>
             </div>
         @empty
@@ -190,4 +205,56 @@
         @endforelse
     </div>
 
+    <!-- ============================================================== -->
+    <!-- MODAL KONFIRMASI TANDAI SELESAI (TEMPLATE ALERT STANDAR PPL-24)-->
+    <!-- ============================================================== -->
+    <div id="modal-complete-task-confirm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200" onclick="if (event.target === this) closeCompleteTaskModal()">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 text-center flex flex-col items-center">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3">
+                <span class="material-symbols-outlined text-3xl">task_alt</span>
+            </div>
+            <h3 class="font-bold text-slate-900 text-base font-['Plus_Jakarta_Sans']">Selesaikan Pengantaran?</h3>
+            <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                Apakah pesanan <strong id="complete-task-code" class="text-slate-900">#KTT</strong> untuk penerima <strong id="complete-task-customer" class="text-slate-900">-</strong> sudah diterima dengan baik?
+            </p>
+
+            <form id="completeTaskForm" method="POST" action="" class="w-full mt-5">
+                @csrf
+                <div class="grid grid-cols-2 gap-2.5">
+                    <button type="button" onclick="closeCompleteTaskModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs cursor-pointer flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-sm">check_circle</span>
+                        <span>Ya, Selesai</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 @endsection
+
+@push('scripts')
+<script>
+    function openCompleteTaskModal(orderId, orderCode, customerName) {
+        const modal = document.getElementById('modal-complete-task-confirm');
+        const codeEl = document.getElementById('complete-task-code');
+        const customerEl = document.getElementById('complete-task-customer');
+        const form = document.getElementById('completeTaskForm');
+
+        codeEl.innerText = '#' + orderCode;
+        customerEl.innerText = customerName;
+        form.action = '{{ url("/kurir/orders") }}/' + orderId + '/complete';
+
+        modal.classList.remove('hidden');
+        setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    }
+
+    function closeCompleteTaskModal() {
+        const modal = document.getElementById('modal-complete-task-confirm');
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 200);
+    }
+</script>
+@endpush

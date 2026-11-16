@@ -7,12 +7,28 @@
 @section('page_subtitle', 'Pantau ringkasan operasional harian, kelola antrean pesanan, dan penugasan kurir')
 
 @section('header_actions')
-    <!-- Indikator Status Lapak Buka -->
+    <!-- Indikator Status Lapak Buka / Tutup -->
     <div class="flex items-center gap-2">
-        <div class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shadow-2xs">
+        @if(($statusLapak ?? 'buka') === 'buka')
+        <a href="{{ route('owner.update-lokasi') }}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold shadow-2xs transition-colors" title="Pengaturan Lapak (Status: Buka)">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>Lapak Buka</span>
-        </div>
+        </a>
+        @else
+        <a href="{{ route('owner.update-lokasi') }}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold shadow-2xs transition-colors" title="Pengaturan Lapak (Status: Tutup)">
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+            <span>Lapak Tutup</span>
+        </a>
+        @endif
+
+        <!-- Tombol Kelola Kurir (US-31 - Header Desktop) -->
+        <button type="button" onclick="openCouriersModal()" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-xs font-bold transition-colors cursor-pointer shadow-2xs" title="Kelola Akun Kurir (Maks. 2 Kurir)">
+            <span class="material-symbols-outlined text-base">badge</span>
+            <span>Kelola Kurir</span>
+            <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-900 text-white font-extrabold">
+                {{ count($couriers) }}/2
+            </span>
+        </button>
 
         <!-- Dropdown Lonceng Notifikasi Web (FR-14) -->
         <div class="relative" id="webNotificationWrapper">
@@ -162,19 +178,24 @@
             <div>
                 <div class="flex items-center gap-2">
                     <h3 class="font-bold text-slate-900 text-xs md:text-sm font-['Plus_Jakarta_Sans']">Titik Lapak Hari Ini</h3>
-                    <span class="px-2 py-0.2 bg-blue-100 text-blue-900 text-[9px] font-extrabold rounded">15.00 - 18.00 WIB</span>
+                    <span class="px-2 py-0.5 bg-blue-100 text-blue-900 text-[10px] font-extrabold rounded-md">
+                        {{ $jamBuka ?? '15:00' }} - {{ $jamTutup ?? '18:00' }} WIB
+                    </span>
+                    @if(($statusLapak ?? 'buka') === 'tutup')
+                        <span class="px-2 py-0.5 bg-rose-100 text-rose-800 text-[10px] font-extrabold rounded-md">Tutup</span>
+                    @endif
                 </div>
                 <p class="text-xs font-semibold text-slate-800 mt-1 flex items-center gap-1">
                     <span class="material-symbols-outlined text-sm text-slate-400">storefront</span>
-                    <span>{{ $activeLocation->nama_lokasi ?? 'Jl. Benteng Pancasila (Depan Taman Sentanan)' }}</span>
+                    <span>{{ $lokasiAktif->nama_lokasi ?? $activeLocation->nama_lokasi ?? 'Jl. Benteng Pancasila (Depan Taman Sentanan)' }}</span>
                 </p>
                 <p class="text-[11px] text-slate-500 mt-0.5">
-                    {{ $activeLocation->alamat_lengkap ?? 'Samping booth es krim • Parkir motor timur, Mojokerto' }}
+                    {{ $lokasiAktif->alamat ?? $activeLocation->alamat ?? 'Samping booth es krim • Parkir motor timur, Mojokerto' }}
                 </p>
             </div>
         </div>
 
-        <a href="{{ url('/owner/update-lokasi') }}" class="px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0">
+        <a href="{{ route('owner.update-lokasi') }}" class="px-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0">
             <span class="material-symbols-outlined text-sm">edit_location</span>
             <span>Perbarui Lokasi Lapak</span>
         </a>
@@ -183,17 +204,43 @@
     <!-- ============================================================== -->
     <!-- 3. TOOLBAR PENCARIAN & FILTER STATUS PESANAN (F13 & FR-8)      -->
     <!-- ============================================================== -->
-    <div class="p-4 bg-white rounded-2xl shadow-xs border border-slate-200/80 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        <!-- Pencarian Kode / Nama / Telepon -->
-        <form method="GET" action="{{ route('owner.dashboard') }}" class="relative flex-1 max-w-md">
-            @if(request('status'))
-                <input type="hidden" name="status" value="{{ request('status') }}">
-            @endif
-            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari kode pesanan / nama penerima / telepon..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-900 transition-colors" />
-        </form>
+    <div id="filter-pesanan" class="p-4 bg-white rounded-2xl shadow-xs border border-slate-200/80 flex flex-col lg:flex-row lg:items-center justify-between gap-3 scroll-mt-20">
+        <!-- Pencarian Kode / Nama / Telepon & Sortir (Point 8) -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 max-w-xl">
+            <form id="ownerFilterForm" method="GET" action="{{ route('owner.dashboard') }}#filter-pesanan" class="flex items-center gap-2 flex-1">
+                @if(request('status'))
+                    <input type="hidden" name="status" value="{{ request('status') }}">
+                @endif
+                <div class="relative flex-1">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+                    <input type="text" name="search" id="ownerSearchInput" value="{{ request('search') }}" placeholder="Cari kode / nama penerima / telepon..." class="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-900 transition-colors" />
+                    @if(request('search'))
+                        <a href="{{ route('owner.dashboard', array_filter(['status' => request('status'), 'sort' => request('sort')])) }}#filter-pesanan" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-0.5 rounded-full hover:bg-slate-200 transition-colors" title="Hapus Kata Kunci Pencarian">
+                            <span class="material-symbols-outlined text-base block">close</span>
+                        </a>
+                    @endif
+                </div>
 
-        <!-- Horizontal Filter Status Tabs with Badge Counters -->
+                <!-- Dropdown Urutan / Sort -->
+                <div class="relative shrink-0">
+                    <select name="sort" onchange="document.getElementById('ownerFilterForm').submit()" class="py-2 pl-2.5 pr-7 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-900 cursor-pointer shadow-2xs">
+                        <option value="terbaru" {{ request('sort', 'terbaru') === 'terbaru' ? 'selected' : '' }}>⏱️ Terbaru</option>
+                        <option value="terlama" {{ request('sort') === 'terlama' ? 'selected' : '' }}>⌛ Terlama</option>
+                        <option value="total_tertinggi" {{ request('sort') === 'total_tertinggi' ? 'selected' : '' }}>💰 Total Tertinggi</option>
+                        <option value="total_terendah" {{ request('sort') === 'total_terendah' ? 'selected' : '' }}>🏷️ Total Terendah</option>
+                    </select>
+                </div>
+            </form>
+
+            @if(request('search') || request('sort') || (request('status') && request('status') !== 'semua'))
+                <a href="{{ route('owner.dashboard') }}#filter-pesanan" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shrink-0 shadow-2xs" title="Reset Semua Filter & Pencarian">
+                    <span class="material-symbols-outlined text-sm">restart_alt</span>
+                    <span class="hidden sm:inline">Reset</span>
+                </a>
+            @endif
+        </div>
+
+        <!-- Horizontal Filter Status Tabs with Badge Counters (Point 3: Anchor #filter-pesanan) -->
         <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
             @php
                 $currentStatus = request('status', 'semua');
@@ -210,7 +257,7 @@
             @foreach($statuses as $key => $statusData)
                 @php
                     $isActive = ($currentStatus === $key);
-                    $url = route('owner.dashboard', array_merge(request()->query(), ['status' => $key]));
+                    $url = route('owner.dashboard', array_merge(request()->query(), ['status' => $key])) . '#filter-pesanan';
                 @endphp
                 <a href="{{ $url }}" class="px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 {{ $isActive ? 'bg-blue-900 text-white shadow-xs' : 'bg-slate-100 hover:bg-slate-200 text-slate-700' }}">
                     <span>{{ $statusData['label'] }}</span>
@@ -225,14 +272,22 @@
     <!-- ============================================================== -->
     <!-- 4. DAFTAR ANTREAN PESANAN (GRID RESPONSIF DESKTOP & MOBILE)     -->
     <!-- ============================================================== -->
-    <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined text-blue-900 text-lg">receipt_long</span>
-            <h3 class="font-extrabold text-slate-900 text-sm md:text-base font-['Plus_Jakarta_Sans']">Kelola & Antrean Pesanan</h3>
+    <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+            <span class="material-symbols-outlined text-blue-900 text-lg shrink-0">receipt_long</span>
+            <h3 class="font-extrabold text-slate-900 text-xs sm:text-sm md:text-base font-['Plus_Jakarta_Sans'] truncate">Kelola & Antrean Pesanan</h3>
         </div>
-        <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-xl">
-            {{ $orders->total() }} Pesanan Ditemukan
-        </span>
+        <div class="flex items-center gap-2 shrink-0">
+            <!-- Tombol Kelola Kurir Khusus Tampilan Mobile (Tidak Menimpa Header) -->
+            <button type="button" onclick="openCouriersModal()" class="flex sm:hidden items-center gap-1 px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-xs font-bold transition-colors cursor-pointer shadow-2xs" title="Kelola Akun Kurir (Maks. 2 Kurir)">
+                <span class="material-symbols-outlined text-sm">badge</span>
+                <span>Kelola Kurir</span>
+                <span class="px-1.5 py-0.2 rounded-full text-[9px] bg-blue-900 text-white font-extrabold">{{ count($couriers) }}/2</span>
+            </button>
+            <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-xl hidden sm:inline-block">
+                {{ $orders->total() }} Pesanan Ditemukan
+            </span>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -289,10 +344,15 @@
 
                         <!-- Status Bayar -->
                         <div class="text-right">
-                            @if(optional($order->payment)->status === 'berhasil')
+                            @if(optional($order->payment)->status === 'berhasil' || in_array($order->status, ['diproses', 'dikirim', 'selesai']))
                                 <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded-md inline-flex items-center gap-1">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                    Lunas QRIS
+                                    {{ $order->sumber_transaksi === 'pos' ? 'Lunas POS' : 'Lunas QRIS' }}
+                                </span>
+                            @elseif($order->status === 'dibatalkan' || in_array(optional($order->payment)->status, ['gagal', 'kedaluwarsa']))
+                                <span class="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold rounded-md inline-flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                    Dibatalkan
                                 </span>
                             @else
                                 <span class="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold rounded-md inline-flex items-center gap-1">
@@ -303,11 +363,19 @@
                         </div>
                     </div>
 
-                    <!-- Alamat / Catatan Pengiriman -->
+                    <!-- Alamat / Catatan Pengiriman (Point 4: Tombol Lihat Titik Peta Tujuan) -->
                     @if($order->metode_pemenuhan !== 'ambil_sendiri' && $order->alamat)
-                        <div class="mt-2 p-2 bg-slate-50 rounded-xl text-[11px] text-slate-600 flex items-start gap-1.5">
-                            <span class="material-symbols-outlined text-slate-400 text-sm mt-0.5 shrink-0">place</span>
-                            <span class="line-clamp-2">{{ $order->alamat }}</span>
+                        <div class="mt-2 p-2 bg-slate-50 rounded-xl text-[11px] text-slate-600 flex items-start justify-between gap-1.5">
+                            <div class="flex items-start gap-1.5 min-w-0">
+                                <span class="material-symbols-outlined text-slate-400 text-sm mt-0.5 shrink-0">place</span>
+                                <span class="line-clamp-2">{{ $order->alamat }}</span>
+                            </div>
+                            @if($order->lat && $order->lng)
+                                <a href="https://www.google.com/maps/dir/?api=1&destination={{ $order->lat }},{{ $order->lng }}" target="_blank" rel="noopener" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[10px] font-bold shrink-0 flex items-center gap-1 transition-colors" title="Buka Titik Peta Tujuan di Google Maps">
+                                    <span class="material-symbols-outlined text-[13px]">map</span>
+                                    <span>Peta</span>
+                                </a>
+                            @endif
                         </div>
                     @endif
 
@@ -459,10 +527,179 @@
         </div>
     </div>
 
+    <!-- ============================================================== -->
+    <!-- MODAL PENGELOLAAN AKUN KURIR (US-31 - MAKSIMAL 2 KURIR)        -->
+    <!-- ============================================================== -->
+    <div id="couriers-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200">
+        <div class="bg-white w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-lg">badge</span>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm font-['Plus_Jakarta_Sans']">Pengelolaan Akun Kurir</h3>
+                        <p class="text-[11px] text-slate-500">Maksimal 2 akun Kurir aktif sekaligus (Aturan Bisnis US-31)</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeCouriersModal()" class="w-7 h-7 rounded-lg hover:bg-slate-100 text-slate-400 flex items-center justify-center cursor-pointer">
+                    <span class="material-symbols-outlined text-lg">close</span>
+                </button>
+            </div>
+
+            <!-- Kuota Kurir Indicator -->
+            <div class="p-3 bg-blue-50/70 border border-blue-100 rounded-2xl flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold text-blue-900 block">Kuota Kurir Aktif:</span>
+                    <span class="text-[11px] text-slate-600">Sistem membatasi maksimal 2 akun kurir untuk efisiensi operasional.</span>
+                </div>
+                <span class="px-2.5 py-1 bg-blue-900 text-white rounded-xl text-xs font-extrabold shadow-2xs">
+                    {{ count($couriers) }} / 2 Akun
+                </span>
+            </div>
+
+            <!-- Daftar Kurir Saat Ini (Point 7: Custom Template Modal Alert) -->
+            <div>
+                <h4 class="text-xs font-bold text-slate-800 mb-2">Daftar Akun Kurir Terdaftar:</h4>
+                <div class="flex flex-col gap-2">
+                    @forelse($couriers as $courier)
+                        <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-xl bg-blue-900 text-white text-xs font-extrabold flex items-center justify-center">
+                                    {{ strtoupper(substr($courier->name, 0, 1)) }}
+                                </div>
+                                <div>
+                                    <span class="text-xs font-bold text-slate-900 block">{{ $courier->name }}</span>
+                                    <span class="text-[11px] text-slate-500">{{ $courier->email }} • {{ $courier->telepon ?? '-' }}</span>
+                                </div>
+                            </div>
+
+                            <button type="button" onclick="handleDeleteCourier('{{ $courier->id }}', '{{ addslashes($courier->name) }}', {{ $courier->active_tasks_count ?? 0 }})" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-2xs">
+                                <span class="material-symbols-outlined text-sm">delete</span>
+                                <span>Hapus</span>
+                            </button>
+                        </div>
+                    @empty
+                        <div class="py-4 text-center text-xs text-slate-400">Belum ada akun kurir terdaftar</div>
+                    @endforelse
+                </div>
+            </div>
+
+            <!-- Form Hidden Hapus Kurir -->
+            <form id="deleteCourierForm" action="" method="POST" class="hidden">
+                @csrf
+                @method('DELETE')
+            </form>
+
+            <!-- Form Tambah Kurir Baru (Jika kuota masih ada - Point 8: Cegah Autofill Password) -->
+            @if(count($couriers) < 2)
+                <div class="pt-3 border-t border-slate-100">
+                    <h4 class="text-xs font-bold text-slate-800 mb-2">+ Daftarkan Akun Kurir Baru:</h4>
+                    <form action="{{ route('owner.couriers.store') }}" method="POST" autocomplete="off" class="flex flex-col gap-2.5">
+                        @csrf
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-600 block mb-0.5">Nama Lengkap:</label>
+                                <input type="text" name="name" required placeholder="Contoh: Rizky Kurir" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-900">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-600 block mb-0.5">Nomor WhatsApp:</label>
+                                <input type="text" name="telepon" placeholder="08xxxxxxxxxx" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-900">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] font-bold text-slate-600 block mb-0.5">Alamat Email:</label>
+                            <input type="email" name="email" required placeholder="kurir@kopitigatitik.com" autocomplete="off" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-900">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-600 block mb-0.5">Kata Sandi (Min. 8 Karakter):</label>
+                                <input type="password" name="password" required autocomplete="new-password" value="" placeholder="••••••••" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-900">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-600 block mb-0.5">Konfirmasi Kata Sandi:</label>
+                                <input type="password" name="password_confirmation" required autocomplete="new-password" value="" placeholder="••••••••" class="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-900">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="mt-2 w-full py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer">
+                            <span class="material-symbols-outlined text-sm">person_add</span>
+                            <span>Simpan Akun Kurir Baru</span>
+                        </button>
+                    </form>
+                </div>
+            @else
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-[11px] text-amber-800 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-amber-600 text-base shrink-0">info</span>
+                    <span>Batas kuota maksimal 2 akun kurir telah terpenuhi. Hapus salah satu akun jika ingin mendaftarkan kurir baru.</span>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODAL PENOLAKAN HAPUS KURIR (KARENA ADA TUGAS AKTIF - POINT 7) -->
+    <!-- ============================================================== -->
+    <div id="modal-courier-cannot-delete" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200" onclick="if (event.target === this) closeCannotDeleteModal()">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 text-center flex flex-col items-center">
+            <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3">
+                <span class="material-symbols-outlined text-3xl">warning</span>
+            </div>
+            <h3 class="font-bold text-slate-900 text-base font-['Plus_Jakarta_Sans']">Kurir Tidak Dapat Dihapus</h3>
+            <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                Kurir <strong id="cannot-delete-courier-name" class="text-slate-900">Kurir</strong> tidak dapat dihapus karena masih memiliki pesanan aktif yang sedang dalam proses pengiriman (status: <strong class="text-indigo-900">DIKIRIM</strong>).
+            </p>
+            <div class="mt-5 w-full">
+                <button type="button" onclick="closeCannotDeleteModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition-colors cursor-pointer">
+                    Saya Mengerti
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODAL KONFIRMASI HAPUS KURIR (TEMPLATE ALERT STANDAR PPL-24)   -->
+    <!-- ============================================================== -->
+    <div id="modal-delete-courier-confirm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200" onclick="if (event.target === this) closeDeleteCourierModal()">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 text-center flex flex-col items-center">
+            <div class="w-14 h-14 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center mb-3">
+                <span class="material-symbols-outlined text-3xl">delete_forever</span>
+            </div>
+            <h3 class="font-bold text-slate-900 text-base font-['Plus_Jakarta_Sans']">Hapus Akun Kurir?</h3>
+            <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                Apakah kamu yakin ingin menghapus akun kurir <strong id="delete-courier-name" class="text-slate-900">Kurir</strong>? Akun ini tidak akan dapat login lagi ke sistem lapak.
+            </p>
+            <div class="mt-5 w-full grid grid-cols-2 gap-2.5">
+                <button type="button" onclick="closeDeleteCourierModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer">
+                    Batal
+                </button>
+                <button type="button" onclick="submitDeleteCourier()" class="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs cursor-pointer">
+                    Ya, Hapus
+                </button>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+
 @endsection
 
 @push('scripts')
 <script>
+    // Courier Management Modal Logic
+    function openCouriersModal() {
+        const modal = document.getElementById('couriers-modal');
+        modal.classList.remove('hidden');
+        setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    }
+
+    function closeCouriersModal() {
+        const modal = document.getElementById('couriers-modal');
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 200);
+    }
     // Toggle Web Notifications Dropdown
     function toggleWebNotifications() {
         const dropdown = document.getElementById('webNotificationDropdown');
@@ -496,7 +733,52 @@
         setTimeout(() => modal.classList.add('hidden'), 200);
     }
 
-    // Detail Order Modal AJAX Logic
+    // Modal Logika Hapus Kurir (Point 7)
+    let currentDeleteCourierId = null;
+
+    function handleDeleteCourier(id, name, activeTasks) {
+        if (parseInt(activeTasks) > 0) {
+            document.getElementById('cannot-delete-courier-name').innerText = name;
+            openCannotDeleteModal();
+        } else {
+            currentDeleteCourierId = id;
+            document.getElementById('delete-courier-name').innerText = name;
+            document.getElementById('deleteCourierForm').action = '{{ url("/owner/couriers") }}/' + id;
+            openDeleteCourierModal();
+        }
+    }
+
+    function openCannotDeleteModal() {
+        const modal = document.getElementById('modal-courier-cannot-delete');
+        modal.classList.remove('hidden');
+        setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    }
+
+    function closeCannotDeleteModal() {
+        const modal = document.getElementById('modal-courier-cannot-delete');
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 200);
+    }
+
+    function openDeleteCourierModal() {
+        const modal = document.getElementById('modal-delete-courier-confirm');
+        modal.classList.remove('hidden');
+        setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    }
+
+    function closeDeleteCourierModal() {
+        const modal = document.getElementById('modal-delete-courier-confirm');
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 200);
+    }
+
+    function submitDeleteCourier() {
+        if (currentDeleteCourierId) {
+            document.getElementById('deleteCourierForm').submit();
+        }
+    }
+
+    // Detail Order Modal AJAX Logic (Point 5: Robust JSON Parsing)
     function openOrderDetailModal(orderId) {
         const modal = document.getElementById('detail-modal');
         const codeEl = document.getElementById('modalDetailOrderCode');
@@ -506,50 +788,75 @@
         setTimeout(() => modal.classList.remove('opacity-0'), 10);
         contentEl.innerHTML = '<div class="py-8 text-center text-slate-400"><span class="material-symbols-outlined animate-spin text-2xl">sync</span><p class="mt-1">Mengambil rincian...</p></div>';
 
-        fetch('{{ url("/owner/orders") }}/' + orderId + '/detail')
+        fetch('{{ url("/owner/orders") }}/' + orderId + '/detail', {
+            headers: { 'Accept': 'application/json' }
+        })
             .then(res => res.json())
             .then(res => {
                 if(!res.success) throw new Error('Gagal memuat');
                 const d = res.data;
-                codeEl.innerText = 'Kode: #' + d.kode + ' • Waktu: ' + d.created_at;
+                codeEl.innerText = 'Kode: #' + (d.kode || '-') + ' • Waktu: ' + (d.created_at || '-');
 
-                let itemsHtml = d.items.map(it => `
+                const rawItems = d.items || d.order_items || d.orderItems || [];
+                let itemsHtml = rawItems.map(it => `
                     <div class="flex items-center justify-between py-1.5 border-b border-slate-100">
                         <div>
-                            <span class="font-bold text-slate-800">${it.jumlah}x</span> ${it.nama_produk}
-                            <div class="text-[10px] text-slate-400">@ Rp ${parseInt(it.harga_satuan).toLocaleString('id-ID')}</div>
+                            <span class="font-bold text-slate-800">${it.jumlah}x</span> ${it.nama_produk || (it.product ? it.product.nama : 'Produk Kopi')}
+                            <div class="text-[10px] text-slate-400">@ Rp ${parseInt(it.harga_satuan || 0).toLocaleString('id-ID')}</div>
                         </div>
-                        <span class="font-semibold text-slate-700">Rp ${parseInt(it.subtotal).toLocaleString('id-ID')}</span>
+                        <span class="font-semibold text-slate-700">Rp ${parseInt(it.subtotal || 0).toLocaleString('id-ID')}</span>
                     </div>
                 `).join('');
 
-                let timelineHtml = d.history.map(h => `
+                const rawHistory = d.history || d.status_histories || d.statusHistories || [];
+                let timelineHtml = rawHistory.map(h => `
                     <div class="flex items-start gap-2 text-[11px]">
                         <span class="w-2 h-2 rounded-full bg-blue-900 mt-1 shrink-0"></span>
                         <div class="flex-1">
-                            <span class="font-bold text-slate-800 uppercase">${h.status_baru}</span>
-                            <span class="text-slate-500"> - ${h.keterangan || 'Diperbarui oleh sistem/user'}</span>
-                            <div class="text-[9px] text-slate-400">${h.waktu}</div>
+                            <span class="font-bold text-slate-800 uppercase">${h.status_baru || '-'}</span>
+                            <span class="text-slate-500"> - ${h.keterangan || h.catatan || 'Status diperbarui'}</span>
+                            <div class="text-[9px] text-slate-400">${h.waktu || '-'}</div>
                         </div>
                     </div>
                 `).join('');
+
+                const customerName = (d.customer && d.customer.name) || d.nama_penerima || d.nama_pelanggan || (d.user && d.user.name) || 'Pelanggan';
+                const customerPhone = (d.customer && d.customer.telepon) || d.telepon || (d.user && d.user.no_telepon) || '-';
+                const deliveryAddress = d.alamat_pengiriman || d.alamat || d.alamat_lokasi_asal || '-';
+                const paymentStatus = (d.payment && d.payment.status) || 'menunggu_pembayaran';
+                const isPaid = ['berhasil', 'lunas'].includes(paymentStatus) || ['diproses', 'dikirim', 'selesai'].includes(d.status);
+                const paymentMethodLabel = d.sumber_transaksi === 'pos' ? 'Lunas (POS Lapak)' : 'Lunas (QRIS)';
 
                 contentEl.innerHTML = `
                     <!-- Info Pelanggan & Alamat -->
                     <div class="p-3 bg-slate-50 rounded-2xl flex flex-col gap-1.5">
                         <div class="flex justify-between items-center">
-                            <span class="font-bold text-slate-900">${d.customer.name}</span>
+                            <span class="font-bold text-slate-900">${customerName}</span>
                             <span class="px-2 py-0.5 rounded text-[10px] font-extrabold ${d.status === 'selesai' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-900'} uppercase">${d.status}</span>
                         </div>
                         <div class="text-[11px] text-slate-600">
-                            <strong>Telepon:</strong> ${d.telepon_penerima || d.customer.telepon || '-'}
+                            <strong>Telepon:</strong> ${customerPhone}
                         </div>
                         <div class="text-[11px] text-slate-600">
-                            <strong>Metode Pemenuhan:</strong> ${d.metode_pemenuhan === 'ambil_sendiri' ? 'Ambil Sendiri di Lapak' : 'Pesan Antar ke Alamat'}
+                            <strong>Metode Pemenuhan:</strong> ${d.metode_pemenuhan === 'ambil_sendiri' ? 'Ambil Sendiri di Lapak (Pickup)' : 'Pesan Antar ke Alamat (Delivery)'}
                         </div>
-                        ${d.alamat_pengiriman ? `
+                        ${deliveryAddress ? `
                             <div class="text-[11px] text-slate-600 mt-1 pt-1 border-t border-slate-200">
-                                <strong>Alamat Antar:</strong> ${d.alamat_pengiriman}
+                                <strong>Alamat:</strong> ${deliveryAddress}
+                            </div>
+                        ` : ''}
+                        ${(d.lat && d.lng) ? `
+                            <div class="mt-2">
+                                <a href="https://www.google.com/maps/dir/?api=1&destination=${d.lat},${d.lng}" target="_blank" rel="noopener" class="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs">
+                                    <span class="material-symbols-outlined text-base">pin_drop</span>
+                                    <span>Buka Titik Peta Tujuan di Google Maps (${d.lat}, ${d.lng})</span>
+                                </a>
+                            </div>
+                        ` : ''}
+                        ${d.courier ? `
+                            <div class="text-[11px] text-indigo-800 bg-indigo-50 p-2 rounded-xl mt-1 flex items-center justify-between">
+                                <span><strong>Kurir Bertugas:</strong> ${d.courier.name}</span>
+                                <span>${d.courier.telepon || ''}</span>
                             </div>
                         ` : ''}
                         ${d.catatan ? `
@@ -561,37 +868,41 @@
 
                     <!-- Rincian Produk -->
                     <div>
-                        <h4 class="font-bold text-slate-900 mb-1">Rincian Menu Kopi:</h4>
-                        <div class="flex flex-col">${itemsHtml}</div>
+                        <h4 class="font-bold text-slate-900 mb-1 text-xs">Rincian Menu Kopi:</h4>
+                        <div class="flex flex-col">${itemsHtml || '<div class="text-xs text-slate-400 py-2">Tidak ada item</div>'}</div>
                     </div>
 
                     <!-- Breakdown Biaya -->
                     <div class="p-3 bg-slate-50 rounded-2xl flex flex-col gap-1 text-[11px]">
-                        <div class="flex justify-between">
-                            <span class="text-slate-600">Subtotal Produk</span>
-                            <span class="font-medium text-slate-800">Rp ${parseInt(d.subtotal).toLocaleString('id-ID')}</span>
+                        <div class="flex justify-between text-slate-600">
+                            <span>Subtotal Menu</span>
+                            <span>Rp ${parseInt(d.subtotal || 0).toLocaleString('id-ID')}</span>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-600">Biaya Pengiriman (Ongkir)</span>
-                            <span class="font-medium text-slate-800">Rp ${parseInt(d.ongkir).toLocaleString('id-ID')}</span>
+                        <div class="flex justify-between text-slate-600">
+                            <span>Biaya Pengiriman (Ongkir)</span>
+                            <span>${d.ongkir && d.ongkir > 0 ? ('Rp ' + parseInt(d.ongkir).toLocaleString('id-ID')) : 'Gratis / Rp 0'}</span>
                         </div>
-                        <div class="flex justify-between pt-1 border-t border-slate-200 text-xs font-extrabold text-blue-900">
+                        <div class="flex justify-between font-extrabold text-slate-900 pt-1.5 border-t border-slate-200 text-xs">
                             <span>Total Pembayaran</span>
-                            <span>Rp ${parseInt(d.total).toLocaleString('id-ID')}</span>
+                            <span>Rp ${parseInt(d.total || 0).toLocaleString('id-ID')}</span>
+                        </div>
+                        <div class="flex justify-between items-center pt-1 text-[10px]">
+                            <span class="text-slate-500">Status Pembayaran:</span>
+                            <span class="font-bold ${isPaid ? 'text-emerald-700' : (d.status === 'dibatalkan' ? 'text-rose-700' : 'text-amber-700')} uppercase">${isPaid ? paymentMethodLabel : (d.status === 'dibatalkan' ? 'Dibatalkan' : 'Menunggu Pembayaran')}</span>
                         </div>
                     </div>
 
                     <!-- Riwayat Status Timeline -->
                     <div>
-                        <h4 class="font-bold text-slate-900 mb-2">Riwayat Jejak Status:</h4>
+                        <h4 class="font-bold text-slate-900 mb-2 text-xs">Riwayat Jejak Status:</h4>
                         <div class="flex flex-col gap-2 p-3 bg-slate-50 rounded-2xl">
-                            ${timelineHtml || '<div class="text-slate-400 text-center py-2">Belum ada riwayat audit trail</div>'}
+                            ${timelineHtml || '<div class="text-slate-400 text-center py-2 text-xs">Belum ada riwayat audit trail</div>'}
                         </div>
                     </div>
                 `;
             })
             .catch(err => {
-                contentEl.innerHTML = '<div class="p-4 text-center text-rose-600 font-semibold">Gagal mengambil detail pesanan. Silakan coba kembali.</div>';
+                contentEl.innerHTML = '<div class="p-4 text-center text-rose-600 font-semibold text-xs">Gagal mengambil detail pesanan. Silakan coba kembali.</div>';
             });
     }
 
@@ -600,5 +911,22 @@
         modal.classList.add('opacity-0');
         setTimeout(() => modal.classList.add('hidden'), 200);
     }
+
+    // Auto-open modal or scroll on page load (Point 3 & Point 6)
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('modal') === 'couriers') {
+            openCouriersModal();
+        }
+
+        if (window.location.hash === '#filter-pesanan' || (urlParams.has('status') && urlParams.get('status') !== 'semua') || urlParams.has('search')) {
+            const filterEl = document.getElementById('filter-pesanan');
+            if (filterEl) {
+                setTimeout(() => {
+                    filterEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
+        }
+    });
 </script>
 @endpush

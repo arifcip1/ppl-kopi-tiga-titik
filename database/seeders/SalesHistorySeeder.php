@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderStatusHistory;
+use App\Models\Payment;
 use App\Models\Product;
 use App\Models\SalesHistory;
 use App\Models\User; // <-- Tambahkan model User
@@ -96,11 +98,42 @@ class SalesHistorySeeder extends Seeder
                 }
             }
 
-            // 4. Update nominal harga total di Nota Order
+            // 4. Update nominal harga total di Nota Order (pertahankan created_at & updated_at historis)
+            $totalOrder = $subtotalOrder + $order->ongkir;
+            $order->timestamps = false;
             $order->update([
                 'subtotal' => $subtotalOrder,
-                'total' => $subtotalOrder + $order->ongkir,
+                'total' => $totalOrder,
+                'created_at' => $date->copy()->setHour(10),
+                'updated_at' => $date->copy()->setHour(10),
             ]);
+            $order->timestamps = true;
+
+            // 5. Buat catatan pembayaran berhasil (Lunas) agar sinkron dengan status pesanan 'selesai'
+            Payment::updateOrCreate(
+                ['order_id' => $order->id],
+                [
+                    'referensi_provider' => 'SIMULASI-PAY-' . $order->id,
+                    'metode_pembayaran' => $sumberTransaksi === 'pos' ? 'tunai' : 'qris',
+                    'status' => 'berhasil',
+                    'jumlah' => $totalOrder,
+                    'waktu_verifikasi' => $date->copy()->setHour(10),
+                    'created_at' => $date->copy()->setHour(10),
+                    'updated_at' => $date->copy()->setHour(10),
+                ]
+            );
+
+            // 6. Buat jejak audit status selesai
+            OrderStatusHistory::firstOrCreate(
+                ['order_id' => $order->id, 'status_baru' => 'selesai'],
+                [
+                    'diubah_oleh' => null,
+                    'waktu_perubahan' => $date->copy()->setHour(10),
+                    'keterangan' => 'Transaksi selesai dan lunas.',
+                    'created_at' => $date->copy()->setHour(10),
+                    'updated_at' => $date->copy()->setHour(10),
+                ]
+            );
 
             $date->addDay();
             $day++;

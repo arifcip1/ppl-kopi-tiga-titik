@@ -56,6 +56,31 @@ class ExpireOrdersCommand extends Command
 
         $this->info("Total {$count} pesanan kedaluwarsa berhasil diproses.");
 
+        // Selesaikan otomatis pesanan ambil_sendiri yang melewati batas_pengambilan 24 jam (PRD Bab 8 / BR-41)
+        $overduePickupOrders = Order::query()
+            ->where('status', 'diproses')
+            ->where('metode_pemenuhan', 'ambil_sendiri')
+            ->whereNotNull('batas_pengambilan')
+            ->where('batas_pengambilan', '<=', $now)
+            ->get();
+
+        $pickupCount = 0;
+        foreach ($overduePickupOrders as $pickupOrder) {
+            $pickupOrder->update(['status' => 'selesai']);
+            \App\Models\OrderStatusHistory::create([
+                'order_id' => $pickupOrder->id,
+                'status_baru' => 'selesai',
+                'diubah_oleh' => null,
+                'waktu_perubahan' => $now,
+                'keterangan' => 'Batas waktu pengambilan 24 jam terlewati, pesanan diselesaikan otomatis oleh sistem.',
+            ]);
+            $pickupCount++;
+        }
+
+        if ($pickupCount > 0) {
+            $this->info("Total {$pickupCount} pesanan ambil sendiri melewati 24 jam berhasil diselesaikan otomatis.");
+        }
+
         return Command::SUCCESS;
     }
 }
