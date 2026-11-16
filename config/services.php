@@ -47,4 +47,18 @@ return [
         'profile'  => env('OPENROUTESERVICE_PROFILE', 'driving-car'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Midtrans Payment Gateway - QRIS Sandbox (PPL-27 / F6)
+    |--------------------------------------------------------------------------
+    */
+    'midtrans' => [
+        'server_key'    => env('MIDTRANS_SERVER_KEY', 'SB-Mid-server-default-test-key'),
+        'client_key'    => env('MIDTRANS_CLIENT_KEY', 'SB-Mid-client-default-test-key'),
+        'merchant_id'   => env('MIDTRANS_MERCHANT_ID', 'G123456789'),
+        'is_production' => (bool) env('MIDTRANS_IS_PRODUCTION', false),
+        'is_sanitized'  => true,
+        'is_3ds'        => true,
+    ],
+
 ];

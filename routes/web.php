@@ -7,6 +7,7 @@ use App\Http\Controllers\CourierDashboardController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OwnerDashboardController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShippingController;
 use Illuminate\Support\Facades\Route;
@@ -95,9 +96,18 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
     });
 
-    Route::get('/pembayaran-qris', fn() => view('Pembayaran QRIS Page'))->name('payment');
+    // 4. PEMBAYARAN QRIS MIDTRANS SANDBOX (F6 - PPL-27 / PPL-23)
+    Route::get('/pembayaran-qris/{kode?}', [PaymentController::class, 'show'])->name('payment');
+    Route::get('/api/orders/{identifier}/payment-status', [PaymentController::class, 'status'])->name('api.orders.payment-status');
+    Route::get('/api/orders/{identifier}/payment', [PaymentController::class, 'status'])->name('api.orders.payment');
+    Route::post('/api/orders/{identifier}/simulate-payment', [PaymentController::class, 'simulateSuccess'])->name('api.orders.simulate-payment');
+
     Route::get('/profil-pelanggan', fn() => view('Profil Pelanggan Page'))->name('profile');
 });
+
+// Endpoint Webhook Notifikasi Server-to-Server Midtrans Sandbox (FR-6.4 / Tanpa Autentikasi Sesi)
+Route::post('/api/payments/webhook', [PaymentController::class, 'webhook'])->name('api.payments.webhook');
+Route::post('/payments/webhook', [PaymentController::class, 'webhook'])->name('payments.webhook');
 
 // =========================================================================
 // 3. FITUR KHUSUS KURIR (FR-1.5, FR-8.7, FR-8.9 - PPL 27/28)
