@@ -48,7 +48,7 @@
                 <div class="text-2xl font-extrabold text-slate-900 font-['Plus_Jakarta_Sans'] mt-1">
                     {{ number_format($summary['total_botol'] ?? 0) }} <span class="text-xs font-semibold text-slate-500">Botol</span>
                 </div>
-                <span class="text-[10px] text-slate-500 mt-0.5 block">Akumulasi Online Midtrans + POS Lapak</span>
+                <span class="text-[10px] text-slate-500 mt-0.5 block"></span>
             </div>
             <div class="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 text-blue-900 flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined text-2xl">local_cafe</span>
@@ -62,7 +62,7 @@
                 <div class="text-2xl font-extrabold text-emerald-700 font-['Plus_Jakarta_Sans'] mt-1">
                     Rp {{ number_format($summary['total_omzet'] ?? 0, 0, ',', '.') }}
                 </div>
-                <span class="text-[10px] text-emerald-600 font-medium mt-0.5 block">✓ Bersih, ongkir tidak dihitung omzet</span>
+                <span class="text-[10px] text-emerald-600 font-medium mt-0.5 block"></span>
             </div>
             <div class="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined text-2xl">payments</span>
@@ -76,7 +76,7 @@
                 <div class="text-xl font-extrabold text-slate-900 font-['Plus_Jakarta_Sans'] mt-1">
                     {{ $summary['varian_terlaris'] ?? '-' }}
                 </div>
-                <span class="text-[10px] text-amber-600 font-semibold mt-0.5 block">🔥 Kontributor penjualan tertinggi</span>
+                <span class="text-[10px] text-amber-600 font-semibold mt-0.5 block"></span>
             </div>
             <div class="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined text-2xl">local_fire_department</span>
@@ -88,8 +88,8 @@
     <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col gap-3">
         <div class="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
-                <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Grafik Tren Penjualan Botol Kopi</h3>
-                <p class="text-xs text-slate-500 mt-0.5">Pantau fluktuasi permintaan produk harian</p>
+                <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Grafik Tren Penjualan Kopi</h3>
+                <p class="text-xs text-slate-500 mt-0.5"></p>
             </div>
             <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-lg uppercase">
                 Mode Periode: {{ ucfirst($periode) }}
@@ -106,7 +106,7 @@
         <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
             <div>
                 <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Daftar Rekapitulasi Transaksi</h3>
-                <p class="text-xs text-slate-500 mt-0.5">Rincian penjualan per tanggal dan kanal transaksi</p>
+                <p class="text-xs text-slate-500 mt-0.5"></p>
             </div>
             <span class="text-xs text-slate-400 font-medium">Menampilkan transaksi terbaru</span>
         </div>
