@@ -113,35 +113,11 @@ class OrderStatusService
 
     /**
      * Mencatat agregasi penjualan produk ke tabel sales_history saat pesanan selesai.
-     * Mencegah pencatatan ganda jika pesanan online sudah dicatat saat verifikasi pembayaran Midtrans.
+     * Mencegah pencatatan ganda melalui OrderStockService::recordSalesHistory.
      */
     protected function syncSalesHistory(Order $order): void
     {
-        $alreadyRecordedByMidtrans = OrderStatusHistory::where('order_id', $order->id)
-            ->where('keterangan', 'Pembayaran QRIS Midtrans berhasil diverifikasi.')
-            ->exists();
-
-        if ($alreadyRecordedByMidtrans) {
-            return;
-        }
-
-        $order->loadMissing('orderItems');
-        $tanggal = today()->toDateString();
-
-        foreach ($order->orderItems as $item) {
-            if (!$item->product_id) {
-                continue;
-            }
-
-            $record = SalesHistory::firstOrNew([
-                'product_id' => $item->product_id,
-                'tanggal'    => $tanggal,
-                'sumber'     => 'transaksi',
-            ]);
-
-            $record->jumlah_terjual = ($record->jumlah_terjual ?? 0) + (int) $item->jumlah;
-            $record->save();
-        }
+        app(OrderStockService::class)->recordSalesHistory($order);
     }
 }
 

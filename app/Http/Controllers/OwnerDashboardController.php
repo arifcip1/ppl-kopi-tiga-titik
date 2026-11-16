@@ -7,7 +7,10 @@ use App\Models\Product;
 use App\Models\ShippingLocation;
 use App\Models\User;
 use App\Services\CourierManagementService;
+use App\Services\ForecastService;
 use App\Services\OrderStatusService;
+use App\Services\OrderStockService;
+use App\Services\SalesReportService;
 use App\Services\WebNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -15,8 +18,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-use App\Services\ForecastService;
-use App\Services\SalesReportService;
 
 class OwnerDashboardController extends Controller
 {
@@ -24,7 +25,8 @@ class OwnerDashboardController extends Controller
         protected CourierManagementService $courierService,
         protected OrderStatusService $statusService,
         protected WebNotificationService $notificationService,
-        protected SalesReportService $reportService
+        protected SalesReportService $reportService,
+        protected OrderStockService $orderStockService
     ) {}
 
     /**
@@ -240,13 +242,15 @@ class OwnerDashboardController extends Controller
             'subtotal'     => (int) $it->subtotal,
         ])->values()->all();
 
-        $orderData['history'] = $order->statusHistories->map(fn($h) => [
-            'status_sebelumnya' => $h->status_sebelumnya,
-            'status_baru'       => $h->status_baru,
-            'keterangan'        => $h->catatan ?? $h->keterangan,
-            'waktu'             => $h->created_at ? $h->created_at->translatedFormat('d M Y, H:i') . ' WIB' : '-',
-            'actor'             => optional($h->user)->name ?? 'Sistem',
-        ])->values()->all();
+        $orderData['history'] = $order->statusHistories
+            ->filter(fn($h) => !str_contains($h->keterangan ?? '', '[sales_recorded]'))
+            ->map(fn($h) => [
+                'status_sebelumnya' => $h->status_sebelumnya,
+                'status_baru'       => $h->status_baru,
+                'keterangan'        => $h->catatan ?? $h->keterangan,
+                'waktu'             => $h->created_at ? $h->created_at->translatedFormat('d M Y, H:i') . ' WIB' : '-',
+                'actor'             => optional($h->user)->name ?? 'Sistem',
+            ])->values()->all();
 
         $orderData['customer'] = [
             'name'    => $order->nama_penerima ?? $order->nama_pelanggan ?? optional($order->user)->name ?? 'Pelanggan',
@@ -326,6 +330,8 @@ class OwnerDashboardController extends Controller
                 Auth::user(),
                 'Pesanan diserahkan langsung kepada pembeli di lapak.'
             );
+
+            $this->orderStockService->recordSalesHistory($updatedOrder);
 
             $msg = 'Pesanan ambil sendiri #' . $updatedOrder->kode . ' berhasil diserahkan dan ditandai selesai!';
 

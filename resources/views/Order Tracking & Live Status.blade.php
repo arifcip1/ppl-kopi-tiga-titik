@@ -212,6 +212,7 @@
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Catatan Riwayat Aktivitas</span>
                         <div class="space-y-1.5">
                             @foreach($order->statusHistories as $log)
+                                @if(!str_contains($log->keterangan ?? '', '[sales_recorded]'))
                                 <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 text-xs flex items-center justify-between gap-2">
                                     <div class="flex items-center gap-2 min-w-0">
                                         <span class="material-symbols-outlined text-sm text-blue-900 shrink-0">history</span>
@@ -224,6 +225,7 @@
                                     </div>
                                     <span class="text-[10px] text-slate-400 shrink-0">{{ $log->created_at ? $log->created_at->format('d/m H:i') : '' }}</span>
                                 </div>
+                                @endif
                             @endforeach
                         </div>
                     </div>

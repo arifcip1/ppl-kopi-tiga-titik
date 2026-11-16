@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\OrderStatusHistory;
 use App\Services\OrderStatusService;
+use App\Services\OrderStockService;
 use App\Services\WebNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -18,7 +19,8 @@ class CourierDashboardController extends Controller
 {
     public function __construct(
         protected OrderStatusService $statusService,
-        protected WebNotificationService $notificationService
+        protected WebNotificationService $notificationService,
+        protected OrderStockService $orderStockService
     ) {}
 
     /**
@@ -179,6 +181,8 @@ class CourierDashboardController extends Controller
                 Auth::user(),
                 'Pesanan telah berhasil diantar dan diterima oleh pelanggan melalui Kurir: ' . Auth::user()->name
             );
+
+            $this->orderStockService->recordSalesHistory($updatedOrder);
 
             $successMsg = 'Pesanan ' . $updatedOrder->kode . ' berhasil diselesaikan! Antaran Anda telah tercatat.';
 

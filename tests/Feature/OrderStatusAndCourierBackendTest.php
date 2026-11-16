@@ -427,5 +427,141 @@ class OrderStatusAndCourierBackendTest extends TestCase
         $dashboardResponse->assertStatus(200);
         $dashboardResponse->assertSee('Rp 30.000');
     }
+
+    /**
+     * 13. Test Perbaikan: Kurir menyelesaikan pesanan mencatat botol terjual ke sales_history (sumber='transaksi').
+     */
+    public function test_courier_completing_order_records_sales_history_and_updates_riwayat_penjualan(): void
+    {
+        $order = Order::factory()->create([
+            'user_id'          => $this->customer->id,
+            'courier_id'       => $this->courier1->id,
+            'status'           => 'dikirim',
+            'metode_pemenuhan' => 'pengiriman',
+            'subtotal'         => 20000,
+            'ongkir'           => 0,
+            'total'            => 20000,
+            'sumber_transaksi' => 'online',
+        ]);
+
+        OrderItem::create([
+            'order_id'     => $order->id,
+            'product_id'   => $this->product->id,
+            'nama_produk'  => $this->product->nama,
+            'jumlah'       => 2,
+            'harga_satuan' => 10000,
+            'subtotal'     => 20000,
+        ]);
+
+        $response = $this->actingAs($this->courier1)->post(route('kurir.orders.complete', $order->id));
+        $response->assertRedirect(route('kurir.tugas-baru'));
+
+        // Pastikan tabel sales_history terisi dengan sumber 'transaksi'
+        $this->assertDatabaseHas('sales_history', [
+            'product_id'     => $this->product->id,
+            'jumlah_terjual' => 2,
+            'sumber'         => 'transaksi',
+        ]);
+
+        // Pastikan halaman riwayat penjualan owner menampilkan data yang selesai
+        $riwayatResponse = $this->actingAs($this->owner)->get(route('owner.riwayat-penjualan'));
+        $riwayatResponse->assertStatus(200);
+        $riwayatResponse->assertSee($this->product->nama);
+        $riwayatResponse->assertViewHas('summary', fn($summary) => $summary['total_botol'] === 2);
+    }
+
+    /**
+     * 14. Test Perbaikan: Owner menyelesaikan pesanan ambil sendiri mencatat ke sales_history (sumber='transaksi').
+     */
+    public function test_owner_completing_pickup_records_sales_history_and_updates_riwayat_penjualan(): void
+    {
+        $order = Order::factory()->create([
+            'user_id'          => $this->customer->id,
+            'status'           => 'diproses',
+            'metode_pemenuhan' => 'ambil_sendiri',
+            'subtotal'         => 30000,
+            'ongkir'           => 0,
+            'total'            => 30000,
+            'sumber_transaksi' => 'online',
+        ]);
+
+        OrderItem::create([
+            'order_id'     => $order->id,
+            'product_id'   => $this->product->id,
+            'nama_produk'  => $this->product->nama,
+            'jumlah'       => 3,
+            'harga_satuan' => 10000,
+            'subtotal'     => 30000,
+        ]);
+
+        $response = $this->actingAs($this->owner)->post(route('owner.orders.complete-pickup', $order->id));
+        $response->assertRedirect();
+
+        // Pastikan tabel sales_history terisi dengan sumber 'transaksi'
+        $this->assertDatabaseHas('sales_history', [
+            'product_id'     => $this->product->id,
+            'jumlah_terjual' => 3,
+            'sumber'         => 'transaksi',
+        ]);
+
+        // Pastikan halaman riwayat penjualan owner menampilkan data
+        $riwayatResponse = $this->actingAs($this->owner)->get(route('owner.riwayat-penjualan'));
+        $riwayatResponse->assertStatus(200);
+        $riwayatResponse->assertSee($this->product->nama);
+        $riwayatResponse->assertViewHas('summary', fn($summary) => $summary['total_botol'] === 3);
+    }
+
+    /**
+     * 15. Test Perbaikan: Tidak ada pencatatan ganda jika pesanan sudah dicatat sebelumnya oleh Midtrans.
+     */
+    public function test_sales_history_is_not_duplicated_if_already_recorded_by_midtrans_service(): void
+    {
+        $order = Order::factory()->create([
+            'user_id'          => $this->customer->id,
+            'courier_id'       => $this->courier1->id,
+            'status'           => 'dikirim',
+            'metode_pemenuhan' => 'pengiriman',
+            'subtotal'         => 20000,
+            'ongkir'           => 0,
+            'total'            => 20000,
+            'sumber_transaksi' => 'online',
+        ]);
+
+        OrderItem::create([
+            'order_id'     => $order->id,
+            'product_id'   => $this->product->id,
+            'nama_produk'  => $this->product->nama,
+            'jumlah'       => 2,
+            'harga_satuan' => 10000,
+            'subtotal'     => 20000,
+        ]);
+
+        // Simulasikan bahwa pesanan ini sudah diverifikasi oleh webhook Midtrans
+        \App\Models\OrderStatusHistory::create([
+            'order_id'        => $order->id,
+            'status_baru'     => 'diproses',
+            'diubah_oleh'     => null,
+            'waktu_perubahan' => now(),
+            'keterangan'      => 'Pembayaran QRIS Midtrans berhasil diverifikasi.',
+        ]);
+
+        \App\Models\SalesHistory::create([
+            'product_id'     => $this->product->id,
+            'tanggal'        => today()->toDateString(),
+            'jumlah_terjual' => 2,
+            'sumber'         => 'transaksi',
+        ]);
+
+        // Kurir menyelesaikan pesanan
+        $this->actingAs($this->courier1)->post(route('kurir.orders.complete', $order->id));
+
+        // Jumlah terjual harus tetap 2, TIDAK bertambah menjadi 4
+        $salesRecord = \App\Models\SalesHistory::where('product_id', $this->product->id)
+            ->whereDate('tanggal', today())
+            ->where('sumber', 'transaksi')
+            ->first();
+
+        $this->assertEquals(2, $salesRecord->jumlah_terjual);
+    }
 }
 
