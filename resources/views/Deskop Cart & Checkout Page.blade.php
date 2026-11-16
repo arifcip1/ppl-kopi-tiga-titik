@@ -719,13 +719,186 @@
         let lapakMarker;
         let currentOngkir = 0;
         let isOutsideMojokerto = false;
+        let isProgrammaticAddressUpdate = false;
+        let reverseGeocodeAbortController = null;
+        let forwardGeocodeAbortController = null;
+        let searchDebounceTimer = null;
 
         // Inisialisasi saat DOM siap
         document.addEventListener('DOMContentLoaded', function () {
             initLeafletMap();
             // Jalankan perhitungan awal ongkir untuk lokasi default
             fetchShippingQuote(DEFAULT_LAT, DEFAULT_LNG);
+
+            // Pasang pendengar input alamat untuk update otomatis peta Leaflet saat alamat diketik
+            const inputAlamat = document.getElementById('alamat');
+            if (inputAlamat) {
+                inputAlamat.addEventListener('input', function () {
+                    if (isProgrammaticAddressUpdate) return;
+                    clearTimeout(searchDebounceTimer);
+                    searchDebounceTimer = setTimeout(() => {
+                        searchAddressGeocode(inputAlamat.value);
+                    }, 700);
+                });
+            }
         });
+
+        // Helper memformat komponen alamat dari respon Nominatim OpenStreetMap
+        function formatReverseGeocode(data) {
+            if (!data) return '';
+            const addr = data.address || {};
+            const parts = [];
+
+            // 1. Nama Bangunan / Fasilitas / POI
+            const poi = addr.building || addr.amenity || addr.shop || addr.office || addr.leisure || data.name;
+            if (poi && poi !== 'unnamed') {
+                parts.push(poi);
+            }
+
+            // 2. Nama Jalan & Nomor Rumah
+            if (addr.road) {
+                let roadPart = addr.road;
+                if (addr.house_number) {
+                    roadPart += ' No. ' + addr.house_number;
+                }
+                if (!parts.includes(roadPart)) {
+                    parts.push(roadPart);
+                }
+            }
+
+            // 3. Kelurahan / Desa / Lingkungan
+            const village = addr.suburb || addr.village || addr.neighbourhood || addr.quarter;
+            if (village && !parts.includes(village)) {
+                parts.push(village);
+            }
+
+            // 4. Kecamatan / Distrik
+            const district = addr.city_district || addr.district || addr.subdistrict;
+            if (district && !parts.includes(district)) {
+                parts.push(district);
+            }
+
+            // 5. Kota / Kabupaten
+            const city = addr.city || addr.town || addr.county || addr.municipality;
+            if (city && !parts.includes(city)) {
+                parts.push(city);
+            }
+
+            if (parts.length >= 2) {
+                return parts.join(', ');
+            }
+
+            return data.display_name || '';
+        }
+
+        // Reverse Geocoding: Dari Koordinat Peta/GPS -> Perbarui Kolom Alamat (#alamat)
+        function reverseGeocodeAndFillAddress(lat, lng) {
+            const inputAlamat = document.getElementById('alamat');
+            if (!inputAlamat) return;
+
+            if (reverseGeocodeAbortController) {
+                reverseGeocodeAbortController.abort();
+            }
+            reverseGeocodeAbortController = new AbortController();
+
+            const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+
+            fetch(url, {
+                headers: { 'Accept-Language': 'id,en;q=0.9' },
+                signal: reverseGeocodeAbortController.signal
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Reverse geocode failed');
+                return res.json();
+            })
+            .then(data => {
+                if (!data) return;
+                const formatted = formatReverseGeocode(data);
+                if (formatted) {
+                    isProgrammaticAddressUpdate = true;
+                    inputAlamat.value = formatted;
+                    setTimeout(() => {
+                        isProgrammaticAddressUpdate = false;
+                    }, 600);
+
+                    if (customerMarker) {
+                        customerMarker.setPopupContent(`<b>Titik Pengantaran:</b><br>${formatted}`);
+                    }
+                }
+            })
+            .catch(err => {
+                if (err.name !== 'AbortError') {
+                    console.warn('[Geocoding] Reverse geocoding gagal:', err);
+                }
+            });
+        }
+
+        // Forward Geocoding: Dari Teks Kolom Alamat (#alamat) -> Pindahkan Posisi Marker & Peta Otomatis
+        async function searchAddressGeocode(rawQuery) {
+            if (!rawQuery || rawQuery.trim().length < 4) return;
+            const cleanRaw = rawQuery.trim();
+
+            if (forwardGeocodeAbortController) {
+                forwardGeocodeAbortController.abort();
+            }
+            forwardGeocodeAbortController = new AbortController();
+
+            // 1. Bersihkan tanda kurung catatan (misal "(Pagar hitam samping warung kelontong)")
+            const cleanNoParen = cleanRaw.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+            // 2. Bersihkan pola RT/RW
+            const cleanNoRTRW = cleanNoParen.replace(/\b(rt|rw)\s*\d+([/-]\d+)?\b/gi, ' ').replace(/,\s*,/g, ',').replace(/\s+/g, ' ').trim();
+            // 3. Bersihkan pola No. XX
+            const cleanNoNumber = cleanNoRTRW.replace(/\b(no\.?|nomor)\s*\d+[a-z]?\b/gi, ' ').replace(/,\s*,/g, ',').replace(/\s+/g, ' ').trim();
+
+            const candidates = [];
+            if (cleanNoRTRW.length >= 3) candidates.push(cleanNoRTRW);
+            if (cleanNoNumber.length >= 3 && cleanNoNumber !== cleanNoRTRW) candidates.push(cleanNoNumber);
+
+            // Ambil segmen pertama jika mengandung koma (misal "Jl. Kuwung, Mergelo")
+            const firstSegment = cleanNoNumber.split(',')[0].trim();
+
+            // Prioritaskan / tambahkan konteks Mojokerto jika belum ada kata Mojokerto
+            if (!/mojokerto/i.test(cleanRaw)) {
+                if (firstSegment.length >= 3) {
+                    candidates.push(`${firstSegment}, Kota Mojokerto`);
+                }
+                candidates.push(`${cleanNoNumber || cleanNoRTRW}, Kota Mojokerto`);
+            } else {
+                if (firstSegment.length >= 3 && !candidates.includes(firstSegment)) {
+                    candidates.push(firstSegment + ', Kota Mojokerto');
+                }
+            }
+
+            const uniqueCandidates = [...new Set(candidates.filter(c => c && c.length >= 3))];
+
+            for (const query of uniqueCandidates) {
+                try {
+                    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(query)}&limit=1&countrycodes=id&viewbox=112.38,-7.42,112.48,-7.53`;
+                    const res = await fetch(url, {
+                        headers: { 'Accept-Language': 'id,en;q=0.9' },
+                        signal: forwardGeocodeAbortController.signal
+                    });
+                    if (!res.ok) continue;
+                    const results = await res.json();
+                    if (Array.isArray(results) && results.length > 0) {
+                        const item = results[0];
+                        const lat = parseFloat(item.lat);
+                        const lng = parseFloat(item.lon);
+
+                        if (!isNaN(lat) && !isNaN(lng) && map && customerMarker) {
+                            map.setView([lat, lng], 17);
+                            customerMarker.setLatLng([lat, lng]);
+                            updateCoordinates(lat, lng);
+                            fetchShippingQuote(lat, lng);
+                            customerMarker.bindPopup(`<b>Titik Pengantaran Ditemukan:</b><br>${item.display_name}`).openPopup();
+                            return; // Selesai karena sudah menemukan titik terdekat yang cocok
+                        }
+                    }
+                } catch (e) {
+                    if (e.name === 'AbortError') return;
+                }
+            }
+        }
 
         function initLeafletMap() {
             const mapContainer = document.getElementById('map');
@@ -788,20 +961,22 @@
 
             customerMarker.bindPopup("<b>Titik Pengantaran Anda</b><br>Geser pin ke lokasi rumah / kantor Anda.").openPopup();
 
-            // 6. Event Listener: Selesai drag marker
+            // 6. Event Listener: Selesai drag marker (Sinkronkan koordinat dan perbarui teks alamat)
             customerMarker.on('dragend', function (event) {
                 const position = customerMarker.getLatLng();
                 updateCoordinates(position.lat, position.lng);
                 fetchShippingQuote(position.lat, position.lng);
+                reverseGeocodeAndFillAddress(position.lat, position.lng);
             });
 
-            // 7. Event Listener: Klik langsung pada area peta
+            // 7. Event Listener: Klik langsung pada area peta (Sinkronkan koordinat dan perbarui teks alamat)
             map.on('click', function (event) {
                 const lat = event.latlng.lat;
                 const lng = event.latlng.lng;
                 customerMarker.setLatLng([lat, lng]);
                 updateCoordinates(lat, lng);
                 fetchShippingQuote(lat, lng);
+                reverseGeocodeAndFillAddress(lat, lng);
             });
 
             // Invalidate size setelah delay kecil agar render tile optimal
@@ -1062,6 +1237,10 @@
                 const lat = parseFloat(document.getElementById('input_lat')?.value || DEFAULT_LAT);
                 const lng = parseFloat(document.getElementById('input_lng')?.value || DEFAULT_LNG);
                 fetchShippingQuote(lat, lng);
+
+                if (alamatTextarea && alamatTextarea.value.startsWith('Ambil Sendiri di')) {
+                    reverseGeocodeAndFillAddress(lat, lng);
+                }
             }
         }
 
@@ -1089,6 +1268,7 @@
                         updateCoordinates(lat, lng);
                         fetchShippingQuote(lat, lng);
                         customerMarker.bindPopup("<b>Lokasi Anda Ditemukan!</b><br>Titik pengantaran berhasil diperbarui.").openPopup();
+                        reverseGeocodeAndFillAddress(lat, lng);
                     }
 
                     btn.disabled = false;

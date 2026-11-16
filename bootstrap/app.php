@@ -21,6 +21,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
+
+        // Pengecualian CSRF untuk Endpoint Webhook Server-to-Server Midtrans (PPL-27 / FR-6.4)
+        $middleware->validateCsrfTokens(except: [
+            'api/payments/webhook',
+            'payments/webhook',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Standarisasi error validasi format JSON sesuai Kontrak Bab 13 & BR-41
