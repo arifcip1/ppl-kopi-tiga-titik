@@ -161,6 +161,14 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/owner/prediksi', [OwnerDashboardController::class, 'prediksi'])->name('owner.prediksi');
     Route::get('/owner/riwayat-penjualan', [OwnerDashboardController::class, 'riwayatPenjualan'])->name('owner.riwayat-penjualan');
     Route::get('/owner/riwayat-penjualan/export', [ExportController::class, 'exportSales'])->name('owner.export.sales');
+
+    // PPL-31: UI POS Kasir Offline (Lapak Fisik)
+    Route::get('/owner/pos', function () {
+        return view('owner.pos', [
+            'products' => \App\Models\Product::where('aktif', true)->orderBy('nama')->get(),
+        ]);
+    })->name('owner.pos');
+
     Route::get('/owner/profil', fn() => view('Profil Owner Page'));
     Route::get('/profil-owner', fn() => view('Profil Owner Page'));
 });
