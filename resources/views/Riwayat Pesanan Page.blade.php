@@ -134,17 +134,23 @@
                             </div>
                         </div>
 
-                        <!-- Footer: Total & Tombol Aksi -->
-                        <div class="flex items-center justify-between pt-1">
-                            <div>
+                        <!-- Footer: Total & Tombol Aksi (FR-13 - PPL 24) -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between pt-1 gap-2.5">
+                            <div class="flex items-center justify-between sm:block">
                                 <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total Tagihan</span>
-                                <span class="text-base font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">{{ $order->total_formatted }}</span>
+                                <span class="text-sm sm:text-base font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">{{ $order->total_formatted }}</span>
                             </div>
 
-                            <a href="{{ route('tracking.detail', $order->kode) }}" class="px-4 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs">
-                                <span>Lacak Status Live</span>
-                                <span class="material-symbols-outlined text-base">arrow_forward</span>
-                            </a>
+                            <div class="flex items-center gap-2">
+                                <a href="{{ route('orders.nota', $order->kode) }}" class="flex-1 sm:flex-none px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-colors shadow-2xs" title="Lihat Nota Digital">
+                                    <span class="material-symbols-outlined text-sm">receipt_long</span>
+                                    <span>Nota</span>
+                                </a>
+                                <a href="{{ route('tracking.detail', $order->kode) }}" class="flex-1 sm:flex-none px-3.5 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs">
+                                    <span>Lacak Live</span>
+                                    <span class="material-symbols-outlined text-base">arrow_forward</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 @endforeach
@@ -214,15 +220,19 @@
                             </div>
                         </div>
 
-                        <!-- Footer: Aksi -->
-                        <div class="grid grid-cols-2 gap-2 pt-1">
-                            <a href="{{ route('tracking.detail', $order->kode) }}" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors">
-                                <span class="material-symbols-outlined text-sm">visibility</span>
-                                <span>Detail Pesanan</span>
+                        <!-- Footer: Aksi (FR-13 - PPL 24) -->
+                        <div class="grid grid-cols-3 gap-1.5 sm:gap-2 pt-1">
+                            <a href="{{ route('orders.nota', $order->kode) }}" class="py-2 sm:py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1 transition-colors shadow-2xs" title="Cetak / Unduh Nota Digital">
+                                <span class="material-symbols-outlined text-xs sm:text-sm">receipt_long</span>
+                                <span>Nota</span>
                             </a>
-                            <a href="{{ url('/katalog') }}" class="py-2.5 bg-white hover:bg-blue-50 border border-blue-900 text-blue-900 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs">
-                                <span class="material-symbols-outlined text-sm">replay</span>
-                                <span>Pesan Lagi</span>
+                            <a href="{{ route('tracking.detail', $order->kode) }}" class="py-2 sm:py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1 transition-colors">
+                                <span class="material-symbols-outlined text-xs sm:text-sm">visibility</span>
+                                <span>Detail</span>
+                            </a>
+                            <a href="{{ url('/katalog') }}" class="py-2 sm:py-2.5 bg-white hover:bg-blue-50 border border-blue-900 text-blue-900 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1 transition-colors shadow-2xs">
+                                <span class="material-symbols-outlined text-xs sm:text-sm">replay</span>
+                                <span>Beli Lagi</span>
                             </a>
                         </div>
                     </div>

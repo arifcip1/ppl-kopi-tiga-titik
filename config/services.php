@@ -61,4 +61,16 @@ return [
         'is_3ds'        => true,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Kontak Resmi Penjual - Kopi Tiga Titik Mojokerto (FR-13 / PPL-24)
+    |--------------------------------------------------------------------------
+    */
+    'seller' => [
+        'whatsapp' => env('SELLER_WHATSAPP_NUMBER', '6281234567890'),
+        'whatsapp_display' => env('SELLER_WHATSAPP_DISPLAY', '0812-3456-7890'),
+        'nama_toko' => env('SELLER_STORE_NAME', 'Kopi Tiga Titik Mojokerto'),
+        'alamat_lapak' => env('SELLER_STORE_ADDRESS', 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto'),
+    ],
+
 ];

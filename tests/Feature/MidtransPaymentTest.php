@@ -449,4 +449,82 @@ class MidtransPaymentTest extends TestCase
         $this->assertEquals('diproses', $order->status);
         $this->assertEquals('berhasil', $order->payment->status);
     }
+
+    public function test_customer_can_view_own_digital_receipt(): void
+    {
+        $order = $this->createOrderForCustomer($this->customer, 2, 5000);
+
+        $response = $this->actingAs($this->customer)
+            ->get(route('orders.nota', $order->kode));
+
+        $response->assertStatus(200);
+        $response->assertSee($order->kode);
+        $response->assertSee('Nota Digital');
+        $response->assertSee(number_format($order->total, 0, ',', '.'));
+    }
+
+    public function test_customer_can_fetch_digital_receipt_via_api(): void
+    {
+        $order = $this->createOrderForCustomer($this->customer, 1, 0);
+
+        $response = $this->actingAs($this->customer)
+            ->getJson(route('api.orders.nota', $order->kode));
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'order' => [
+                        'kode' => $order->kode,
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_unauthorized_customer_cannot_view_another_customer_receipt(): void
+    {
+        $order = $this->createOrderForCustomer($this->customer, 1, 0);
+
+        // Pelanggan lain mencoba mengakses nota
+        $response = $this->actingAs($this->otherCustomer)
+            ->get(route('orders.nota', $order->kode));
+
+        $response->assertStatus(403);
+
+        // Pelanggan lain via API
+        $apiResponse = $this->actingAs($this->otherCustomer)
+            ->getJson(route('api.orders.nota', $order->kode));
+
+        $apiResponse->assertStatus(403);
+    }
+
+    public function test_admin_can_view_customer_receipt(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $order = $this->createOrderForCustomer($this->customer, 2, 0);
+
+        $response = $this->actingAs($admin)
+            ->get(route('orders.nota', $order->kode));
+
+        $response->assertStatus(200);
+        $response->assertSee($order->kode);
+    }
+
+    public function test_pickup_order_digital_receipt_displays_pickup_deadline(): void
+    {
+        $order = $this->createOrderForCustomer($this->customer, 1, 0);
+        $order->update([
+            'metode_pemenuhan' => 'ambil_sendiri',
+            'status' => 'diproses',
+            'batas_pengambilan' => now()->addHours(24),
+        ]);
+
+        $response = $this->actingAs($this->customer)
+            ->get(route('orders.nota', $order->kode));
+
+        $response->assertStatus(200);
+        $response->assertSee('Ambil Sendiri di Lapak');
+        $response->assertSee('Batas Waktu Pengambilan');
+        $response->assertSee('Bebas Ongkir');
+    }
 }

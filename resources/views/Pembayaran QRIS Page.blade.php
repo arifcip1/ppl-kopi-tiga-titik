@@ -1,105 +1,103 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Pembayaran QRIS ({{ $order->kode ?? 'Pesanan' }}) - Kopi Tiga Titik</title>
+@extends('layouts.pelanggan')
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+@section('title', 'Pembayaran QRIS #' . ($order->kode ?? 'Pesanan') . ' - Kopi Tiga Titik')
+@section('active_menu', 'keranjang')
+@section('page_title', 'Pembayaran QRIS')
+@section('role_badge', 'PELANGGAN')
+@section('page_subtitle', 'Selesaikan pembayaran tagihan via scan QRIS Midtrans Sandbox sebelum batas waktu berakhir')
 
-    <!-- Tailwind CSS via Vite -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="bg-slate-100 min-h-screen flex justify-center items-start py-4 sm:py-6 antialiased font-sans">
-<div class="w-full max-w-md min-h-screen bg-slate-50 shadow-2xl relative flex flex-col justify-start pb-12 sm:rounded-3xl overflow-hidden border border-slate-200">
-
-    <!-- Top Header -->
-    <div class="bg-blue-900 text-white px-4 py-3.5 shadow-md flex items-center justify-between sticky top-0 z-30">
-        <a href="{{ url('/checkout') }}" class="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer" title="Kembali">
-            <span class="material-symbols-outlined text-xl">arrow_back</span>
+@section('header_actions')
+    <div class="flex items-center gap-1.5 sm:gap-2">
+        <a href="{{ url('/checkout') }}" class="px-2.5 sm:px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1 sm:gap-1.5 transition-colors shadow-2xs" title="Kembali ke Form Checkout">
+            <span class="material-symbols-outlined text-sm sm:text-base">arrow_back</span>
+            <span class="hidden sm:inline">Checkout</span>
         </a>
-        <div class="text-center">
-            <h1 class="text-base font-bold font-['Plus_Jakarta_Sans'] leading-tight">Pembayaran QRIS</h1>
-            <p class="text-[11px] text-blue-200 leading-none mt-0.5">
-                {{ $order->nama_lokasi_asal ?? $lokasiLapak->nama_lokasi ?? 'Lapak Jl. Kuwung' }} • Mojokerto
-            </p>
-        </div>
-        <a href="https://wa.me/6281234567890?text={{ urlencode('Halo Admin Kopi Tiga Titik, saya butuh bantuan untuk pesanan ' . ($order->kode ?? '')) }}" target="_blank" class="w-9 h-9 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer" title="Bantuan WhatsApp">
-            <span class="material-symbols-outlined text-xl">help</span>
+
+        @php
+            $sellerWaNumber = config('services.seller.whatsapp', '6281234567890');
+            $sellerWaDisplay = config('services.seller.whatsapp_display', '0812-3456-7890');
+        @endphp
+        <a href="https://wa.me/{{ $sellerWaNumber }}?text={{ urlencode('Halo Admin Kopi Tiga Titik, saya butuh bantuan untuk pembayaran pesanan #' . ($order->kode ?? '')) }}" 
+           target="_blank" 
+           rel="noopener noreferrer" 
+           class="px-2.5 sm:px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-colors shadow-2xs" 
+           title="Bantuan WhatsApp Penjual">
+            <span class="material-symbols-outlined text-sm sm:text-base text-emerald-600">chat</span>
+            <span class="hidden sm:inline">Bantuan</span>
         </a>
     </div>
+@endsection
 
-    <!-- Main Content -->
-    <div class="px-4 pt-3.5 flex flex-col gap-3.5">
+@section('content')
 
-        <!-- Countdown Timer Banner (10 Menit TTL - FR-6.8) -->
-        <div id="timer-banner" class="p-3.5 bg-rose-50 rounded-2xl border border-rose-200 flex flex-col gap-2 transition-all">
-            <div class="flex justify-between items-center text-xs">
-                <div class="flex items-center gap-1.5 font-bold text-rose-900">
-                    <span class="material-symbols-outlined text-rose-600 text-base animate-pulse">timer</span>
-                    <span>Bayar Sebelum Habis</span>
-                </div>
-                <span id="countdown-display" class="px-2.5 py-0.5 bg-rose-700 text-white font-mono font-bold text-xs rounded-full shadow-2xs">
-                    --:--
+<!-- Header Status Bar Pesanan (Konsisten dengan Desain Order Tracking & Nota Digital) -->
+<div class="p-4 md:p-5 bg-white rounded-2xl shadow-xs border border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+    <div class="flex items-center gap-3">
+        <a href="{{ url('/checkout') }}" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-colors" title="Kembali ke Checkout">
+            <span class="material-symbols-outlined text-lg">arrow_back</span>
+        </a>
+        <div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] text-base tracking-tight">#{{ $order->kode }}</span>
+                <span class="px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-full">
+                    {{ $order->orderItems->sum('jumlah') ?? 0 }} Botol
+                </span>
+                <span class="px-2 py-0.5 bg-blue-50 text-blue-900 text-[10px] font-bold rounded-full border border-blue-200">
+                    {{ $order->nama_lokasi_asal ?? $lokasiLapak->nama_lokasi ?? 'Lapak Jl. Kuwung' }}
                 </span>
             </div>
-            <p class="text-[11px] text-rose-700 leading-tight">
-                Pesanan otomatis dibatalkan jika melebihi batas waktu pembayaran 10 menit.
+            <p class="text-[11px] text-slate-500 mt-0.5">
+                Dibuat pada {{ $order->created_at ? $order->created_at->translatedFormat('d F Y, H:i') . ' WIB' : now()->translatedFormat('d F Y, H:i') . ' WIB' }}
             </p>
-            <div class="w-full h-1.5 bg-rose-200 rounded-full overflow-hidden">
-                <div id="countdown-progress" class="h-full bg-rose-600 rounded-full transition-all duration-1000" style="width: 100%;"></div>
-            </div>
         </div>
+    </div>
 
-        <!-- Total yang Harus Dibayar Card -->
-        <div class="p-4 bg-white rounded-2xl shadow-xs border border-slate-200/80 flex flex-col gap-2">
-            <div class="flex justify-between items-center">
-                <div>
-                    <div class="text-[11px] text-slate-500 font-medium">Total Tagihan ({{ $order->kode ?? 'Pesanan' }})</div>
-                    <div class="text-2xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">
-                        Rp {{ number_format($order->total ?? 0, 0, ',', '.') }}
-                    </div>
-                </div>
-                <button type="button" onclick="copyNominal({{ $order->total ?? 0 }})" class="px-3 py-1.5 bg-blue-50 text-blue-900 hover:bg-blue-100 active:scale-95 rounded-xl font-bold text-xs flex items-center gap-1 border border-blue-200 transition-all cursor-pointer">
-                    <span class="material-symbols-outlined text-sm">content_copy</span>
-                    <span id="btn-copy-text">Salin</span>
-                </button>
-            </div>
-            <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500">
-                <span class="material-symbols-outlined text-xs text-blue-900">info</span>
-                <span>Pastikan transfer tepat sesuai nominal termasuk ongkos kirim.</span>
-            </div>
+    <div class="flex items-center gap-2 self-stretch sm:self-auto justify-between">
+        <div class="px-3 py-1 rounded-full border text-xs font-extrabold flex items-center gap-1.5 bg-amber-50 text-amber-800 border-amber-200">
+            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            <span>Menunggu Pembayaran</span>
         </div>
+    </div>
+</div>
 
-        <!-- QRIS Frame Card -->
-        <div class="p-5 bg-white rounded-2xl shadow-xs border border-slate-200/80 flex flex-col items-center gap-3 text-center">
-            <div class="w-full flex justify-between items-center border-b border-slate-100 pb-2.5">
-                <div class="flex items-center gap-1.5">
-                    <span class="text-base font-black text-slate-900 tracking-tight">QRIS</span>
-                    <span class="px-1.5 py-0.2 bg-red-600 text-white text-[8px] font-bold rounded">SANDBOX</span>
+<!-- Grid 2-Kolom Desktop Responsif (Menyatu dengan Desain Pelanggan) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+    <!-- KOLOM KIRI (lg:col-span-7): QR Code, Instruksi Pemindaian & Aksi Pembayaran -->
+    <div class="lg:col-span-7 flex flex-col gap-4 order-2 lg:order-1">
+
+        <!-- Kartu Utama QRIS Midtrans Sandbox -->
+        <div class="p-5 sm:p-7 bg-white rounded-3xl shadow-xs border border-slate-200/80 flex flex-col items-center gap-4 text-center">
+            
+            <!-- Header Kartu QRIS -->
+            <div class="w-full flex justify-between items-center border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-base sm:text-lg font-black text-slate-900 tracking-tight">QRIS</span>
+                    <span class="px-2 py-0.5 bg-red-600 text-white text-[9px] font-bold rounded-md tracking-wider">SANDBOX</span>
                 </div>
-                <div class="flex items-center gap-1 text-[10px] font-bold text-slate-600">
+                <div class="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-slate-600">
                     <span class="w-4 h-4 rounded-full border border-blue-900 text-blue-900 flex items-center justify-center text-[8px] font-black">G</span>
                     <span>GPN / MIDTRANS</span>
                 </div>
             </div>
 
-            <div>
-                <h3 class="text-sm font-bold text-slate-900 uppercase font-['Plus_Jakarta_Sans']">KOPI TIGA TITIK MOJOKERTO</h3>
-                <p class="text-[11px] text-slate-500 font-mono mt-0.5">Order Ref: {{ $order->kode ?? 'KTT' }}</p>
+            <!-- Identitas Merchant & Logo Resmi -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-center p-1.5 shrink-0 overflow-hidden">
+                    <img src="{{ asset('images/logo.png') }}" alt="Logo Kopi Tiga Titik" class="w-full h-full object-contain" onerror="this.onerror=null; this.src='https://placehold.co/100x100/1e3a8a/ffffff?text=KTT'" />
+                </div>
+                <div class="text-left">
+                    <h3 class="text-xs sm:text-sm font-bold text-slate-900 uppercase font-['Plus_Jakarta_Sans'] leading-tight">KOPI TIGA TITIK MOJOKERTO</h3>
+                    <p class="text-[10px] sm:text-[11px] text-slate-500 font-mono">Order Ref: {{ $order->kode ?? 'KTT' }}</p>
+                </div>
             </div>
 
             <!-- Stylized QR Code Box -->
-            <div class="w-64 h-64 bg-white border-2 border-slate-900/10 rounded-2xl p-3 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group">
+            <div class="w-64 h-64 sm:w-72 sm:h-72 bg-white border-2 border-slate-900/10 rounded-3xl p-3.5 shadow-inner flex flex-col items-center justify-center relative overflow-hidden group">
                 @php
                     $qrCodeUrl = $qrisData['qr_url'] ?? null;
                     $qrString = $qrisData['qr_string'] ?? ($order->kode ?? 'KTT-QRIS');
-                    $fallbackQrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' . urlencode($qrString);
+                    $fallbackQrApi = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' . urlencode($qrString);
                 @endphp
 
                 @if(!empty($qrCodeUrl))
@@ -109,102 +107,198 @@
                 @endif
             </div>
 
-            <p class="text-xs text-slate-500 leading-tight">
-                Scan QRIS menggunakan BCA, Mandiri, GoPay, OVO, ShopeePay, Dana, atau mobile banking apa pun
-            </p>
+            <div class="max-w-md">
+                <p class="text-xs text-slate-600 leading-relaxed font-medium">
+                    Buka aplikasi m-banking (BCA, Mandiri, BRI, BNI) atau e-wallet (GoPay, OVO, ShopeePay, Dana), lalu scan QRIS di atas untuk membayar tagihan.
+                </p>
+            </div>
 
             <!-- Payment Providers Badges -->
             <div class="flex flex-wrap justify-center gap-1.5 pt-1">
-                <span class="px-2 py-0.5 bg-blue-50 text-blue-900 rounded text-[10px] font-bold border border-blue-100">BCA</span>
-                <span class="px-2 py-0.5 bg-blue-50 text-blue-900 rounded text-[10px] font-bold border border-blue-100">MANDIRI</span>
-                <span class="px-2 py-0.5 bg-blue-50 text-blue-900 rounded text-[10px] font-bold border border-blue-100">GOPAY</span>
-                <span class="px-2 py-0.5 bg-blue-50 text-blue-900 rounded text-[10px] font-bold border border-blue-100">OVO</span>
-                <span class="px-2 py-0.5 bg-blue-50 text-blue-900 rounded text-[10px] font-bold border border-blue-100">DANA</span>
-                <span class="px-2 py-0.5 bg-rose-50 text-rose-700 rounded text-[10px] font-bold border border-rose-100">SHOPEEPAY</span>
+                <span class="px-2.5 py-1 bg-blue-50 text-blue-900 rounded-lg text-[10px] font-bold border border-blue-100">BCA</span>
+                <span class="px-2.5 py-1 bg-blue-50 text-blue-900 rounded-lg text-[10px] font-bold border border-blue-100">MANDIRI</span>
+                <span class="px-2.5 py-1 bg-blue-50 text-blue-900 rounded-lg text-[10px] font-bold border border-blue-100">GOPAY</span>
+                <span class="px-2.5 py-1 bg-blue-50 text-blue-900 rounded-lg text-[10px] font-bold border border-blue-100">OVO</span>
+                <span class="px-2.5 py-1 bg-blue-50 text-blue-900 rounded-lg text-[10px] font-bold border border-blue-100">DANA</span>
+                <span class="px-2.5 py-1 bg-rose-50 text-rose-700 rounded-lg text-[10px] font-bold border border-rose-100">SHOPEEPAY</span>
             </div>
         </div>
 
-        <!-- Collapsible Order Details -->
-        <div class="bg-white rounded-2xl shadow-xs border border-slate-200/80 overflow-hidden">
-            <button type="button" onclick="toggleDetails()" class="w-full p-3.5 flex justify-between items-center text-xs font-bold text-slate-800 hover:bg-slate-50 transition-colors cursor-pointer">
-                <div class="flex items-center gap-2">
-                    <span class="material-symbols-outlined text-blue-900 text-base">shopping_bag</span>
-                    <span>Rincian Pesanan ({{ $order->orderItems->sum('jumlah') ?? 0 }} Botol)</span>
-                </div>
-                <span id="details-arrow" class="material-symbols-outlined text-slate-400 text-sm transition-transform duration-200">expand_more</span>
-            </button>
-
-            <div id="details-content" class="px-4 pb-3.5 pt-1 border-t border-slate-100 hidden flex flex-col gap-2 text-xs">
-                @foreach($order->orderItems as $item)
-                    <div class="flex justify-between items-center text-slate-700">
-                        <span>{{ $item->nama_produk }} x {{ $item->jumlah }}</span>
-                        <span class="font-semibold">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</span>
-                    </div>
-                @endforeach
-                @if($order->ongkir > 0)
-                    <div class="flex justify-between items-center text-slate-700 border-t border-dashed border-slate-100 pt-1.5">
-                        <span>Ongkos Kirim (Delivery)</span>
-                        <span class="font-semibold">Rp {{ number_format($order->ongkir, 0, ',', '.') }}</span>
-                    </div>
-                @else
-                    <div class="flex justify-between items-center text-emerald-700 border-t border-dashed border-slate-100 pt-1.5">
-                        <span>Ongkos Kirim</span>
-                        <span class="font-semibold">Gratis (Rp 0)</span>
-                    </div>
-                @endif
-                <div class="flex justify-between items-center text-slate-900 font-extrabold border-t border-slate-200 pt-2">
-                    <span>Total Pembayaran</span>
-                    <span class="text-blue-900">Rp {{ number_format($order->total, 0, ',', '.') }}</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Submit Button / Check Status -->
+        <!-- Tombol Aksi Verifikasi Pembayaran -->
         <button type="button" 
                 id="btn-check-payment" 
                 onclick="checkPaymentStatus(true)" 
-                class="w-full py-3.5 bg-blue-900 hover:bg-blue-800 active:scale-98 text-white rounded-2xl font-bold text-xs flex justify-center items-center gap-2 shadow-md transition-all cursor-pointer">
+                class="w-full py-3.5 bg-blue-900 hover:bg-blue-800 active:scale-98 text-white rounded-2xl font-bold text-xs sm:text-sm flex justify-center items-center gap-2 shadow-md transition-all cursor-pointer">
             <span id="btn-check-icon" class="material-symbols-outlined text-base">sync</span>
             <span id="btn-check-text">Saya Sudah Membayar (Cek Status)</span>
         </button>
 
-        <!-- Tombol Pengujian Sandbox (Simulator Resmi Midtrans & Simulasi Instan) -->
+        <!-- Mode Pengujian Sandbox (Uji Coba) -->
         @if(!config('services.midtrans.is_production', false))
-            <div class="p-3.5 bg-amber-50/90 rounded-2xl border border-amber-200 text-center flex flex-col gap-2">
-                <div class="flex items-center justify-center gap-1.5 text-amber-900 font-bold text-xs">
+            <div class="p-4 sm:p-5 bg-amber-50/90 rounded-3xl border border-amber-200 text-center flex flex-col gap-2.5 shadow-xs">
+                <div class="flex items-center justify-center gap-1.5 text-amber-900 font-bold text-xs sm:text-sm">
                     <span class="material-symbols-outlined text-base text-amber-700">science</span>
-                    <span>Mode Pengujian Midtrans Sandbox</span>
+                    <span>Mode Pengujian Midtrans Sandbox (Uji Coba)</span>
                 </div>
-                <p class="text-[11px] text-amber-800 leading-relaxed">
-                    Uji pembayaran melalui <strong>Simulator QRIS Resmi Midtrans</strong> (tempel URL QRIS yang tersalin otomatis) atau gunakan tombol verifikasi instan:
+                <p class="text-[11px] sm:text-xs text-amber-800 leading-relaxed max-w-lg mx-auto">
+                    Uji pembayaran melalui <strong>Simulator QRIS Resmi Midtrans</strong> (tempel URL QRIS yang tersalin otomatis) atau gunakan tombol simulasi instan lunas di bawah:
                 </p>
 
-                @if(!empty($qrCodeUrl))
-                    <button type="button"
-                            onclick="copyQrUrlAndOpenSimulator('{{ $qrCodeUrl }}')"
-                            class="w-full py-2.5 bg-white hover:bg-blue-50 text-blue-900 border border-blue-300 rounded-xl font-bold text-xs flex justify-center items-center gap-1.5 shadow-2xs transition-all cursor-pointer">
-                        <span class="material-symbols-outlined text-sm">open_in_new</span>
-                        <span id="btn-open-simulator-text">Salin URL QRIS & Buka Simulator Midtrans</span>
-                    </button>
-                @endif
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                    @if(!empty($qrCodeUrl))
+                        <button type="button"
+                                onclick="copyQrUrlAndOpenSimulator('{{ $qrCodeUrl }}')"
+                                class="w-full py-2.5 px-3 bg-white hover:bg-blue-50 text-blue-900 border border-blue-300 rounded-xl font-bold text-xs flex justify-center items-center gap-1.5 shadow-2xs transition-all cursor-pointer">
+                            <span class="material-symbols-outlined text-sm">open_in_new</span>
+                            <span id="btn-open-simulator-text" class="truncate">Salin URL & Buka Simulator</span>
+                        </button>
+                    @endif
 
-                <button type="button" 
-                        id="btn-simulate-payment" 
-                        onclick="simulateSuccessPayment()" 
-                        class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-xl font-bold text-xs flex justify-center items-center gap-1.5 shadow-xs transition-all cursor-pointer">
-                    <span class="material-symbols-outlined text-sm">bolt</span>
-                    <span id="btn-simulate-text">Simulasikan Pembayaran Berhasil (Lunas)</span>
-                </button>
+                    <button type="button" 
+                            id="btn-simulate-payment" 
+                            onclick="simulateSuccessPayment()" 
+                            class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-xl font-bold text-xs flex justify-center items-center gap-1.5 shadow-xs transition-all cursor-pointer">
+                        <span class="material-symbols-outlined text-sm">bolt</span>
+                        <span id="btn-simulate-text" class="truncate">Simulasikan Lunas Instan</span>
+                    </button>
+                </div>
             </div>
         @endif
 
-        <!-- WhatsApp Help Link (Hubungi Penjual - FR-13) -->
-        <div class="text-center text-xs text-slate-500 flex items-center justify-center gap-1.5 pt-1">
-            <span class="material-symbols-outlined text-sm text-emerald-600">chat</span>
-            <span>Butuh bantuan?</span>
-            <a href="https://wa.me/6281234567890?text={{ urlencode('Halo Admin Kopi Tiga Titik, saya ingin konfirmasi pembayaran pesanan: ' . ($order->kode ?? '')) }}" target="_blank" class="font-bold text-blue-900 hover:underline inline-flex items-center gap-0.5">
-                <span>WhatsApp Lapak (0812-3456-7890)</span>
-                <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+    </div>
+
+    <!-- KOLOM KANAN (lg:col-span-5): Countdown, Total Tagihan, Pemenuhan & Rincian Pesanan -->
+    <div class="lg:col-span-5 flex flex-col gap-4 order-1 lg:order-2 lg:sticky lg:top-24">
+
+        <!-- Countdown Timer Banner (10 Menit TTL - FR-6.8) -->
+        <div id="timer-banner" class="p-4 sm:p-5 bg-rose-50 rounded-3xl border border-rose-200 flex flex-col gap-2.5 transition-all shadow-xs">
+            <div class="flex justify-between items-center text-xs">
+                <div class="flex items-center gap-1.5 font-bold text-rose-900">
+                    <span class="material-symbols-outlined text-rose-600 text-lg animate-pulse">timer</span>
+                    <span>Bayar Sebelum Habis</span>
+                </div>
+                <span id="countdown-display" class="px-3 py-0.5 bg-rose-700 text-white font-mono font-bold text-xs sm:text-sm rounded-full shadow-2xs">
+                    --:--
+                </span>
+            </div>
+            <p class="text-[11px] sm:text-xs text-rose-700 leading-tight">
+                Pesanan otomatis dibatalkan jika melebihi batas waktu pembayaran 10 menit.
+            </p>
+            <div class="w-full h-1.5 bg-rose-200 rounded-full overflow-hidden">
+                <div id="countdown-progress" class="h-full bg-rose-600 rounded-full transition-all duration-1000" style="width: 100%;"></div>
+            </div>
+        </div>
+
+        <!-- Total Tagihan Card -->
+        <div class="p-5 bg-white rounded-3xl shadow-xs border border-slate-200/80 flex flex-col gap-3">
+            <div class="flex justify-between items-center">
+                <div>
+                    <div class="text-[11px] sm:text-xs text-slate-500 font-medium">Total Tagihan ({{ $order->kode ?? 'Pesanan' }})</div>
+                    <div class="text-2xl sm:text-3xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">
+                        Rp {{ number_format($order->total ?? 0, 0, ',', '.') }}
+                    </div>
+                </div>
+                <button type="button" onclick="copyNominal({{ $order->total ?? 0 }})" class="px-3 py-1.5 bg-blue-50 text-blue-900 hover:bg-blue-100 active:scale-95 rounded-xl font-bold text-xs flex items-center gap-1 border border-blue-200 transition-all cursor-pointer">
+                    <span class="material-symbols-outlined text-sm">content_copy</span>
+                    <span id="btn-copy-text">Salin</span>
+                </button>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-500">
+                <span class="material-symbols-outlined text-xs text-blue-900 shrink-0">info</span>
+                <span>Pastikan transfer tepat sesuai nominal termasuk ongkos kirim.</span>
+            </div>
+        </div>
+
+        <!-- Metode Pemenuhan: Ambil Sendiri vs Delivery (FR-13 - PPL 24) -->
+        @if(($order->metode_pemenuhan ?? '') === 'ambil_sendiri')
+            <div class="p-5 bg-amber-50/90 rounded-3xl border border-amber-200 flex flex-col gap-2.5 text-xs shadow-xs">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 font-bold text-amber-950 font-['Plus_Jakarta_Sans']">
+                        <span class="material-symbols-outlined text-amber-700 text-base">storefront</span>
+                        <span>Pilihan: Ambil Sendiri di Lapak</span>
+                    </div>
+                    <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full border border-emerald-200">Bebas Ongkir Rp 0</span>
+                </div>
+                <div class="text-[11px] sm:text-xs text-amber-900 leading-snug">
+                    <span class="font-medium text-slate-700">Titik Pengambilan:</span>
+                    <strong class="text-slate-900 block mt-0.5">{{ $order->nama_lokasi_asal ?? 'Lapak Kopi Tiga Titik' }}</strong>
+                    <p class="text-slate-600 mt-0.5">{{ $order->alamat_lokasi_asal ?? 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto' }}</p>
+                </div>
+                <div class="pt-2 border-t border-amber-200/80 flex items-start gap-1.5 text-[10px] sm:text-[11px] text-amber-900 font-medium">
+                    <span class="material-symbols-outlined text-xs text-amber-700 mt-0.5 shrink-0">timer</span>
+                    <span><strong>Batas Pengambilan:</strong> Maksimal 24 jam setelah pembayaran lunas diverifikasi.</span>
+                </div>
+            </div>
+        @else
+            <div class="p-5 bg-blue-50/70 rounded-3xl border border-blue-200/80 flex flex-col gap-2 text-xs shadow-xs">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 font-bold text-blue-950 font-['Plus_Jakarta_Sans']">
+                        <span class="material-symbols-outlined text-blue-900 text-base">local_shipping</span>
+                        <span>Pengantaran: Kurir Toko (Delivery)</span>
+                    </div>
+                    <span class="px-2 py-0.5 bg-blue-100 text-blue-900 text-[10px] font-bold rounded-full">Ongkir Rp {{ number_format($order->ongkir ?? 0, 0, ',', '.') }}</span>
+                </div>
+                <p class="text-[11px] sm:text-xs text-slate-600 leading-snug truncate">
+                    Tujuan: <strong class="text-slate-900">{{ $order->nama_penerima ?? Auth::user()->name }}</strong> ({{ $order->alamat ?? '-' }})
+                </p>
+            </div>
+        @endif
+
+        <!-- Rincian Pesanan Card -->
+        <div class="bg-white rounded-3xl shadow-xs border border-slate-200/80 overflow-hidden">
+            <button type="button" onclick="toggleDetails()" class="w-full p-4 flex justify-between items-center text-xs sm:text-sm font-bold text-slate-800 hover:bg-slate-50 transition-colors cursor-pointer">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-blue-900 text-base sm:text-lg">shopping_bag</span>
+                    <span>Rincian Pesanan ({{ $order->orderItems->sum('jumlah') ?? 0 }} Botol)</span>
+                </div>
+                <span id="details-arrow" class="material-symbols-outlined text-slate-400 text-base transition-transform duration-200">expand_more</span>
+            </button>
+
+            <div id="details-content" class="px-5 pb-4 pt-1 border-t border-slate-100 hidden flex flex-col gap-2 text-xs">
+                @foreach($order->orderItems as $item)
+                    <div class="flex justify-between items-center text-slate-700 py-1">
+                        <div>
+                            <span class="font-bold text-slate-900">{{ $item->nama_produk }}</span>
+                            <span class="text-[11px] text-slate-400 block">x {{ $item->jumlah }} botol</span>
+                        </div>
+                        <span class="font-semibold font-mono text-slate-800">Rp {{ number_format($item->subtotal, 0, ',', '.') }}</span>
+                    </div>
+                @endforeach
+                @if($order->ongkir > 0)
+                    <div class="flex justify-between items-center text-slate-700 border-t border-dashed border-slate-100 pt-2">
+                        <span>Ongkos Kirim (Delivery)</span>
+                        <span class="font-semibold font-mono text-slate-800">Rp {{ number_format($order->ongkir, 0, ',', '.') }}</span>
+                    </div>
+                @else
+                    <div class="flex justify-between items-center text-emerald-700 border-t border-dashed border-slate-100 pt-2">
+                        <span>Ongkos Kirim</span>
+                        <span class="font-semibold">Bebas Ongkir (Rp 0)</span>
+                    </div>
+                @endif
+                <div class="flex justify-between items-center text-slate-900 font-extrabold border-t border-slate-200 pt-2.5">
+                    <span>Total Pembayaran</span>
+                    <span class="text-blue-900 text-sm font-bold font-mono">Rp {{ number_format($order->total, 0, ',', '.') }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tombol Hubungi Penjual via WhatsApp (FR-13 - PPL 24) -->
+        <div class="p-4 bg-white rounded-3xl border border-slate-200/80 flex items-center justify-between gap-3 shadow-xs">
+            <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100">
+                    <span class="material-symbols-outlined text-lg">chat</span>
+                </div>
+                <div class="min-w-0">
+                    <div class="text-xs font-bold text-slate-900 truncate">Butuh Bantuan Penjual?</div>
+                    <div class="text-[10px] text-slate-500 font-mono">{{ $sellerWaDisplay ?? '0812-3456-7890' }}</div>
+                </div>
+            </div>
+            <a href="https://wa.me/{{ $sellerWaNumber ?? '6281234567890' }}?text={{ urlencode('Halo Barista Kopi Tiga Titik, saya ingin konfirmasi pembayaran pesanan: #' . ($order->kode ?? '')) }}" 
+               target="_blank" 
+               rel="noopener noreferrer" 
+               class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-xs transition-all shrink-0">
+                <span class="material-symbols-outlined text-sm">open_in_new</span>
+                <span>Chat WhatsApp</span>
             </a>
         </div>
 
@@ -212,6 +306,9 @@
 
 </div>
 
+@endsection
+
+@push('scripts')
 <script>
     const orderKode = "{{ $order->kode ?? '' }}";
     const orderId = "{{ $order->id ?? '' }}";
@@ -219,15 +316,23 @@
     const totalTtlSeconds = 600; // 10 menit
     let pollInterval = null;
 
+    // Di layar desktop (>= 1024px), buka rincian pesanan secara otomatis
+    if (window.innerWidth >= 1024) {
+        const content = document.getElementById('details-content');
+        const arrow = document.getElementById('details-arrow');
+        if (content) content.classList.remove('hidden');
+        if (arrow) arrow.style.transform = 'rotate(180deg)';
+    }
+
     // Salin URL Gambar QRIS Midtrans & Buka Halaman Simulator Resmi Midtrans
     function copyQrUrlAndOpenSimulator(qrUrl) {
         const label = document.getElementById('btn-open-simulator-text');
         if (navigator.clipboard && qrUrl) {
             navigator.clipboard.writeText(qrUrl).then(() => {
                 if (label) {
-                    label.textContent = 'URL QRIS Tersalin! Membuka Simulator...';
+                    label.textContent = 'URL Tersalin! Membuka...';
                     setTimeout(() => {
-                        label.textContent = 'Salin URL QRIS & Buka Simulator Midtrans';
+                        label.textContent = 'Salin URL & Buka Simulator';
                     }, 3500);
                 }
             }).catch(() => {});
@@ -380,12 +485,12 @@
             } else {
                 alert(json.message || 'Gagal memproses simulasi.');
                 if (btn) btn.disabled = false;
-                if (btnText) btnText.textContent = 'Simulasikan Pembayaran Berhasil (Lunas)';
+                if (btnText) btnText.textContent = 'Simulasikan Lunas Instan';
             }
         } catch (err) {
             alert('Terjadi kesalahan saat memproses simulasi.');
             if (btn) btn.disabled = false;
-            if (btnText) btnText.textContent = 'Simulasikan Pembayaran Berhasil (Lunas)';
+            if (btnText) btnText.textContent = 'Simulasikan Lunas Instan';
         }
     }
 
@@ -394,12 +499,11 @@
     setInterval(updateCountdown, 1000);
     pollInterval = setInterval(() => checkPaymentStatus(false), 3000);
 
-    // Deteksi jika user kembali lewat tombol Back browser dari bfcache (Point 9)
+    // Deteksi jika user kembali lewat tombol Back browser dari bfcache
     window.addEventListener('pageshow', function (event) {
         if (event.persisted) {
             window.location.reload();
         }
     });
 </script>
-</body>
-</html>
+@endpush

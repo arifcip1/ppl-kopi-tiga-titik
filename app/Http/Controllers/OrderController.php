@@ -479,4 +479,71 @@ class OrderController extends Controller
         $order->status_icon = $cfg['icon'];
         $order->status_step = $cfg['step'];
     }
+
+    /**
+     * Tampilkan Nota Digital resmi pesanan pelanggan (FR-13 - PPL 24).
+     * Endpoint: GET /orders/{kode}/nota atau GET /nota/{kode}
+     */
+    public function nota(Request $request, string $kode): View|JsonResponse
+    {
+        $user = Auth::user();
+
+        $order = Order::where(function ($q) use ($kode) {
+            $q->where('kode', $kode)->orWhere('id', $kode);
+        })->first();
+
+        if (!$order) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pesanan tidak ditemukan.',
+                ], 404);
+            }
+            abort(404, 'Pesanan tidak ditemukan.');
+        }
+
+        // Keamanan Otorisasi: Pembeli HANYA dapat melihat notanya sendiri (kecuali admin/owner)
+        if ($order->user_id !== $user->id && !in_array($user->role, ['admin', 'owner'])) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki hak akses untuk melihat nota pesanan ini.',
+                ], 403);
+            }
+            abort(403, 'Anda tidak memiliki hak akses untuk melihat nota pesanan ini.');
+        }
+
+        $order->load([
+            'orderItems.product',
+            'statusHistories' => fn($q) => $q->orderBy('created_at', 'asc'),
+            'payment',
+            'courier',
+        ]);
+
+        $this->formatOrderAttributes($order);
+
+        $sellerWa = Setting::where('key', 'kontak_whatsapp')->value('value') 
+            ?? config('services.seller.whatsapp', '6281234567890');
+        $sellerWaDisplay = config('services.seller.whatsapp_display', '0812-3456-7890');
+        $sellerStoreName = config('services.seller.nama_toko', 'Kopi Tiga Titik Mojokerto');
+        $sellerStoreAddress = config('services.seller.alamat_lapak', 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto');
+
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Berhasil mengambil data nota digital',
+                'data' => [
+                    'order' => $order,
+                    'seller' => [
+                        'name' => $sellerStoreName,
+                        'address' => $sellerStoreAddress,
+                        'whatsapp' => $sellerWa,
+                        'whatsapp_display' => $sellerWaDisplay,
+                    ],
+                ],
+            ], 200);
+        }
+
+        return view('Nota Digital Page', compact('order', 'sellerWa', 'sellerWaDisplay', 'sellerStoreName', 'sellerStoreAddress'));
+    }
 }
