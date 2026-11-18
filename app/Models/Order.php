@@ -46,6 +46,7 @@ class Order extends Model
             'lat' => 'decimal:7',
             'lng' => 'decimal:7',
             'stok_dikembalikan' => 'boolean',
+            'batas_pengambilan' => 'datetime',
         ];
     }
 

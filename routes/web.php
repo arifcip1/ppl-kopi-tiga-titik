@@ -72,13 +72,16 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/api/cart/items/{id}', [CartController::class, 'update'])->name('api.cart.update');
     Route::delete('/api/cart/items/{id}', [CartController::class, 'destroy'])->name('api.cart.destroy');
 
-    // 3. RIWAYAT & STATUS PESANAN PEMBELI (F8 - PPL 14)
+    // 3. RIWAYAT, STATUS PESANAN, & NOTA DIGITAL PEMBELI (F8 / F13 - PPL 14 & PPL 24)
     Route::get('/riwayat-pesanan', [OrderController::class, 'index'])->name('orders');
     Route::get('/riwayat-pesanan/{kode}', [OrderController::class, 'show'])->name('orders.show');
     Route::get('/order-tracking', [OrderController::class, 'tracking'])->name('tracking');
     Route::get('/order-tracking/{kode}', [OrderController::class, 'show'])->name('tracking.detail');
     Route::get('/tracking', [OrderController::class, 'tracking']);
     Route::get('/tracking/{kode}', [OrderController::class, 'show']);
+    Route::get('/orders/{kode}/nota', [OrderController::class, 'nota'])->name('orders.nota');
+    Route::get('/nota/{kode}', [OrderController::class, 'nota'])->name('nota');
+    Route::get('/api/orders/{kode}/nota', [OrderController::class, 'nota'])->name('api.orders.nota');
 
     // Endpoint API Riwayat & Status Pesanan Sisi Pembeli (PPL 14)
     Route::get('/api/orders', [OrderController::class, 'index'])->name('api.orders.index');

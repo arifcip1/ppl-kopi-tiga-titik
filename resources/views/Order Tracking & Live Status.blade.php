@@ -7,10 +7,19 @@
 @section('page_subtitle', 'Pantau progres peracikan, pengantaran kurir, dan riwayat pesanan secara transparan')
 
 @section('header_actions')
-    <a href="{{ route('orders') }}" class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs">
-        <span class="material-symbols-outlined text-base">arrow_back</span>
-        <span class="hidden sm:inline">Daftar Pesanan</span>
-    </a>
+    <div class="flex items-center gap-1.5 sm:gap-2">
+        @if(isset($order) && $order)
+            <a href="{{ route('orders.nota', $order->kode) }}" class="px-2.5 sm:px-3.5 py-1.5 bg-blue-900 hover:bg-blue-800 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all shadow-xs" title="Lihat dan Cetak Nota Digital">
+                <span class="material-symbols-outlined text-sm sm:text-base">receipt_long</span>
+                <span class="sm:hidden">Nota</span>
+                <span class="hidden sm:inline">Nota Digital</span>
+            </a>
+        @endif
+        <a href="{{ route('orders') }}" class="px-2.5 sm:px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1 sm:gap-1.5 transition-colors shadow-2xs">
+            <span class="material-symbols-outlined text-sm sm:text-base">arrow_back</span>
+            <span class="hidden sm:inline">Daftar Pesanan</span>
+        </a>
+    </div>
 @endsection
 
 @section('content')
@@ -385,16 +394,33 @@
                     </span>
                 </div>
 
-                <!-- Tombol Aksi Bawah -->
+                <!-- Tombol Aksi Bawah & Nota Digital (FR-13 - PPL 24) -->
                 <div class="flex flex-col gap-2 pt-2">
-                    <a href="{{ url('/katalog') }}" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs">
-                        <span class="material-symbols-outlined text-sm">storefront</span>
-                        <span>Pesan Menu Lain</span>
-                    </a>
-                    <a href="{{ route('orders') }}" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors">
+                    <a href="{{ route('orders.nota', $order->kode) }}" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs">
                         <span class="material-symbols-outlined text-sm">receipt_long</span>
-                        <span>Lihat Semua Pesanan Saya</span>
+                        <span>Lihat & Unduh Nota Digital</span>
                     </a>
+
+                    @php
+                        $sellerWaNumber = config('services.seller.whatsapp', '6281234567890');
+                        $sellerWaDisplay = config('services.seller.whatsapp_display', '0812-3456-7890');
+                        $waMessage = 'Halo Penjual Kopi Tiga Titik, saya ingin menanyakan progres pesanan #' . $order->kode . ' atas nama ' . ($order->nama_penerima ?? Auth::user()->name);
+                    @endphp
+                    <a href="https://wa.me/{{ $sellerWaNumber }}?text={{ urlencode($waMessage) }}" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs">
+                        <span class="material-symbols-outlined text-sm text-emerald-700">chat</span>
+                        <span>Hubungi Penjual ({{ $sellerWaDisplay }})</span>
+                    </a>
+
+                    <div class="grid grid-cols-2 gap-2 mt-1">
+                        <a href="{{ url('/katalog') }}" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-colors">
+                            <span class="material-symbols-outlined text-sm">storefront</span>
+                            <span>Menu Lain</span>
+                        </a>
+                        <a href="{{ route('orders') }}" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-colors">
+                            <span class="material-symbols-outlined text-sm">format_list_bulleted</span>
+                            <span>Pesanan Saya</span>
+                        </a>
+                    </div>
                 </div>
             </div>
 
