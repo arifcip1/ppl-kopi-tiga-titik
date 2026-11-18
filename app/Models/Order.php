@@ -77,6 +77,33 @@ class Order extends Model
     }
 
     /**
+     * Menghasilkan kode pesanan kasir offline (POS) dengan format:
+     * POS-YYYYMMDD-NNNN
+     */
+    public static function generatePosCode(): string
+    {
+        $prefix = 'POS-' . now()->format('Ymd') . '-';
+
+        $lastCode = static::query()
+            ->where('kode', 'like', $prefix . '%')
+            ->orderByDesc('kode')
+            ->value('kode');
+
+        $lastNumber = $lastCode
+            ? (int) substr($lastCode, -4)
+            : 0;
+
+        $nextNumber = $lastNumber + 1;
+
+        return $prefix . str_pad(
+            (string) $nextNumber,
+            4,
+            '0',
+            STR_PAD_LEFT
+        );
+    }
+
+    /**
      * Waktu kedaluwarsa pembayaran.
      * Sumber utama: payments.kedaluwarsa_pada.
      * Fallback: created_at + 10 menit jika Payment belum tersedia.

@@ -8,6 +8,7 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OwnerDashboardController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShippingController;
 use Illuminate\Support\Facades\Route;
@@ -162,12 +163,10 @@ Route::middleware(['role:admin'])->group(function () {
     Route::get('/owner/riwayat-penjualan', [OwnerDashboardController::class, 'riwayatPenjualan'])->name('owner.riwayat-penjualan');
     Route::get('/owner/riwayat-penjualan/export', [ExportController::class, 'exportSales'])->name('owner.export.sales');
 
-    // PPL-31: UI POS Kasir Offline (Lapak Fisik)
-    Route::get('/owner/pos', function () {
-        return view('owner.pos', [
-            'products' => \App\Models\Product::where('aktif', true)->orderBy('nama')->get(),
-        ]);
-    })->name('owner.pos');
+    // PPL-31 & PPL-32: POS Kasir Offline (Lapak Fisik) & Transaksi
+    Route::get('/owner/pos', [PosController::class, 'index'])->name('owner.pos');
+    Route::post('/owner/pos/transactions', [PosController::class, 'transaction'])->name('owner.pos.transaction');
+    Route::post('/api/admin/pos/transactions', [PosController::class, 'transaction'])->name('api.admin.pos.transaction');
 
     Route::get('/owner/profil', fn() => view('Profil Owner Page'));
     Route::get('/profil-owner', fn() => view('Profil Owner Page'));

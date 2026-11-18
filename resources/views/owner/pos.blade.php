@@ -7,10 +7,10 @@
 
 @section('header_actions')
     <!-- Tombol Cepat Reset Form Transaksi Kasir -->
-    <button type="button" onclick="resetCartConfirm()" class="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-xs font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors cursor-pointer" title="Reset Keranjang Kasir">
+    <!-- <button type="button" onclick="resetCartConfirm()" class="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 text-xs font-semibold rounded-xl inline-flex items-center gap-1.5 transition-colors cursor-pointer" title="Reset Keranjang Kasir">
         <span class="material-symbols-outlined text-base">restart_alt</span>
         <span>Reset Kasir</span>
-    </button>
+    </button> -->
 @endsection
 
 @section('content')
@@ -27,7 +27,7 @@
         $standardStockTarget = 10; // Nilai acuan standar stok harian per varian (settings.stok_harian_standar)
     @endphp
 
-    @if($lowStockProducts->isNotEmpty())
+    <div id="restockWarningContainer" class="{{ $lowStockProducts->isEmpty() ? 'hidden' : '' }}">
         <div class="p-4 bg-amber-50/90 border border-amber-200/90 rounded-2xl shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div class="flex items-start gap-3">
                 <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
@@ -41,13 +41,13 @@
                         </span>
                     </div>
                     <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                        Terdapat <strong>{{ $lowStockProducts->count() }} varian kopi</strong> dengan persediaan menipis di cooler box lapak. Sistem menyarankan produksi tambahan harian:
+                        Terdapat <strong id="restockCountText">{{ $lowStockProducts->count() }} varian kopi</strong> dengan persediaan menipis di cooler box lapak. Sistem menyarankan produksi tambahan harian:
                     </p>
                 </div>
             </div>
 
             <!-- Daftar Pill Varian Kritis & Saran Produksi -->
-            <div class="flex items-center gap-1.5 flex-wrap shrink-0">
+            <div id="restockPillsContainer" class="flex items-center gap-1.5 flex-wrap shrink-0">
                 @foreach($lowStockProducts as $lp)
                     @php
                         $saranProduksi = max(0, $standardStockTarget - (int) $lp->stok);
@@ -60,7 +60,7 @@
                 @endforeach
             </div>
         </div>
-    @endif
+    </div>
 
     <!-- ============================================================== -->
     <!-- 2. KONTEN UTAMA: KATALOG LAPAK (KIRI) & PANEL KERANJANG (KANAN) -->
@@ -108,6 +108,7 @@
                     @endphp
 
                     <div 
+                        id="product-card-{{ $product->id }}"
                         class="product-pos-card bg-white rounded-2xl border transition-all flex flex-col justify-between overflow-hidden p-3.5 shadow-2xs relative
                             {{ $isOutOfStock ? 'opacity-60 border-slate-200 bg-slate-50/60' : 'border-slate-200/90 hover:border-blue-900/30 hover:shadow-xs' }}"
                         data-id="{{ $product->id }}"
@@ -118,20 +119,22 @@
                         <!-- Visual Header: Badge Stok F10 & Foto/Ikon -->
                         <div>
                             <div class="flex items-center justify-between gap-1 mb-2">
-                                @if($isOutOfStock)
-                                    <span class="px-2 py-0.5 bg-slate-200 text-slate-700 font-extrabold text-[10px] rounded-md uppercase">
-                                        Habis
-                                    </span>
-                                @elseif($isLowStock)
-                                    <span class="px-2 py-0.5 bg-rose-100 text-rose-800 font-extrabold text-[10px] rounded-md flex items-center gap-0.5" title="Stok kritis &le; 5 botol">
-                                        <span class="material-symbols-outlined text-[11px]">warning</span>
-                                        <span>Sisa {{ $product->stok }} btl</span>
-                                    </span>
-                                @else
-                                    <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded-md">
-                                        Stok: {{ $product->stok }} btl
-                                    </span>
-                                @endif
+                                <div id="stock-badge-container-{{ $product->id }}">
+                                    @if($isOutOfStock)
+                                        <span class="px-2 py-0.5 bg-slate-200 text-slate-700 font-extrabold text-[10px] rounded-md uppercase">
+                                            Habis
+                                        </span>
+                                    @elseif($isLowStock)
+                                        <span class="px-2 py-0.5 bg-rose-100 text-rose-800 font-extrabold text-[10px] rounded-md flex items-center gap-0.5" title="Stok kritis &le; 5 botol">
+                                            <span class="material-symbols-outlined text-[11px]">warning</span>
+                                            <span>Sisa {{ $product->stok }} btl</span>
+                                        </span>
+                                    @else
+                                        <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded-md">
+                                            Stok: {{ $product->stok }} btl
+                                        </span>
+                                    @endif
+                                </div>
 
                                 <span class="text-[10px] font-semibold text-slate-400">250ml</span>
                             </div>
@@ -165,24 +168,26 @@
                                 </span>
                             </div>
 
-                            @if($isOutOfStock)
-                                <button 
-                                    type="button" 
-                                    disabled 
-                                    class="px-2.5 py-1.5 bg-slate-100 text-slate-400 rounded-xl text-xs font-bold cursor-not-allowed"
-                                >
-                                    Habis
-                                </button>
-                            @else
-                                <button 
-                                    type="button" 
-                                    onclick="addToCart({{ $product->id }}, '{{ addslashes($product->nama) }}', '{{ addslashes($product->rasa ?? '') }}', {{ $product->harga }}, {{ $product->stok }})"
-                                    class="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-2xs active:scale-95 transition-all cursor-pointer"
-                                >
-                                    <span class="material-symbols-outlined text-sm font-bold">add</span>
-                                    <span>Pilih</span>
-                                </button>
-                            @endif
+                            <div id="product-action-container-{{ $product->id }}">
+                                @if($isOutOfStock)
+                                    <button 
+                                        type="button" 
+                                        disabled 
+                                        class="px-2.5 py-1.5 bg-slate-100 text-slate-400 rounded-xl text-xs font-bold cursor-not-allowed"
+                                    >
+                                        Habis
+                                    </button>
+                                @else
+                                    <button 
+                                        type="button" 
+                                        onclick="addToCart({{ $product->id }}, '{{ addslashes($product->nama) }}', '{{ addslashes($product->rasa ?? '') }}', {{ $product->harga }}, {{ $product->stok }})"
+                                        class="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-2xs active:scale-95 transition-all cursor-pointer"
+                                    >
+                                        <span class="material-symbols-outlined text-sm font-bold">add</span>
+                                        <span>Pilih</span>
+                                    </button>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 @empty
@@ -275,7 +280,7 @@
 
                 <!-- Pilihan Metode Pembayaran POS (Tunai vs QRIS Lapak Langsung) -->
                 <div class="flex flex-col gap-2 pt-1 border-t border-slate-100">
-                    <label class="block text-[11px] font-bold text-slate-700">Metode Pembayaran Lapak (F12):</label>
+                    <label class="block text-[11px] font-bold text-slate-700">Metode Pembayaran Lapak :</label>
                     
                     <div class="grid grid-cols-2 gap-2">
                         <button 
@@ -844,55 +849,181 @@
         filterPosProducts();
     }
 
-    // Konfirmasi & Selesaikan Transaksi POS (PPL-31 Client-Side Preview)
+    function escapeJsString(str) {
+        return (str || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    // Konfirmasi & Selesaikan Transaksi POS (PPL-32 Backend Transaction & F10 Reactivity)
     function submitPosTransaction() {
         if (cart.length === 0) return;
 
-        const total = cart.reduce((sum, item) => sum + (item.qty * item.price), 0);
+        const submitBtn = document.getElementById('btnSubmitPos');
         const customerName = document.getElementById('customerNameInput').value.trim() || 'Pelanggan Lapak';
-        const cashReceived = Number(document.getElementById('cashReceivedInput').value) || total;
-        const change = Math.max(0, cashReceived - total);
+        const cashReceivedVal = document.getElementById('cashReceivedInput').value;
 
-        // Populate Modal Nota
-        const now = new Date();
-        const timeStr = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + ', ' + 
-                        now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-        const randomCode = 'POS-' + now.getFullYear() + 
-                           String(now.getMonth() + 1).padStart(2, '0') + 
-                           String(now.getDate()).padStart(2, '0') + '-' + 
-                           String(Math.floor(1000 + Math.random() * 9000));
+        const payload = {
+            items: cart.map(item => ({
+                product_id: item.id,
+                jumlah: item.qty
+            })),
+            metode_pembayaran: paymentMethod,
+            nama_pelanggan: customerName,
+            uang_diterima: (paymentMethod === 'tunai' && cashReceivedVal !== '') ? Number(cashReceivedVal) : null
+        };
 
-        document.getElementById('receiptCode').textContent = randomCode;
-        document.getElementById('receiptTime').textContent = timeStr;
-        document.getElementById('receiptCustomer').textContent = customerName;
-        document.getElementById('receiptMethod').textContent = paymentMethod === 'tunai' ? 'Tunai (Cash)' : 'QRIS Langsung';
-        document.getElementById('receiptTotal').textContent = formatRupiah(total);
+        // Loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">progress_activity</span><span>Memproses Transaksi...</span>';
 
-        // Items list in modal
-        let itemsHtml = '';
-        cart.forEach(item => {
-            itemsHtml += `
-                <div class="flex items-center justify-between">
-                    <span>${item.qty}x ${item.name}</span>
-                    <span>${formatRupiah(item.qty * item.price)}</span>
-                </div>
-            `;
+        fetch('{{ route('owner.pos.transaction') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(async response => {
+            const res = await response.json();
+            if (!response.ok) {
+                let errorMsg = res.message || 'Terjadi kesalahan saat memproses transaksi kasir.';
+                if (res.errors) {
+                    const firstErrorKey = Object.keys(res.errors)[0];
+                    if (firstErrorKey && res.errors[firstErrorKey][0]) {
+                        errorMsg = res.errors[firstErrorKey][0];
+                    }
+                }
+                throw new Error(errorMsg);
+            }
+            return res;
+        })
+        .then(res => {
+            const data = res.data;
+            const order = data.order;
+
+            // Populate Modal Nota Digital dari Database Nyata
+            document.getElementById('receiptCode').textContent = order.kode;
+            document.getElementById('receiptTime').textContent = order.waktu;
+            document.getElementById('receiptCustomer').textContent = order.nama_pelanggan;
+            document.getElementById('receiptMethod').textContent = order.metode_pembayaran === 'tunai' ? 'Tunai (Cash)' : 'QRIS Langsung';
+            document.getElementById('receiptTotal').textContent = formatRupiah(order.total);
+
+            // Rincian Item di Nota
+            let itemsHtml = '';
+            (order.items || []).forEach(item => {
+                itemsHtml += `
+                    <div class="flex items-center justify-between">
+                        <span>${item.jumlah}x ${item.nama_produk}</span>
+                        <span>${formatRupiah(item.subtotal)}</span>
+                    </div>
+                `;
+            });
+            document.getElementById('receiptItemsList').innerHTML = itemsHtml;
+
+            const cashDetails = document.getElementById('receiptCashDetails');
+            if (order.metode_pembayaran === 'tunai') {
+                cashDetails.classList.remove('hidden');
+                document.getElementById('receiptCashGiven').textContent = formatRupiah(order.uang_diterima);
+                document.getElementById('receiptCashBack').textContent = formatRupiah(order.kembalian);
+            } else {
+                cashDetails.classList.add('hidden');
+            }
+
+            // Tampilkan Modal Nota Sukses
+            const modal = document.getElementById('posSuccessModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+
+            // Kosongkan state keranjang kasir
+            cart = [];
+            document.getElementById('cashReceivedInput').value = '';
+            renderCart();
+
+            // Reaktivitas UI Peringatan Restok (F10) & Pembaruan Stok Kartu Real-time
+            updateProductsUI(data.products, data.low_stock_products, data.restock_settings);
+
+            showPosToast('Transaksi kasir #' + order.kode + ' berhasil disimpan!', 'success', 'Transaksi Berhasil');
+        })
+        .catch(err => {
+            showPosToast(err.message, 'error', 'Transaksi Gagal');
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span class="material-symbols-outlined text-base">task_alt</span><span>Konfirmasi & Selesaikan Transaksi</span>';
+            calculateChange();
         });
-        document.getElementById('receiptItemsList').innerHTML = itemsHtml;
+    }
 
-        const cashDetails = document.getElementById('receiptCashDetails');
-        if (paymentMethod === 'tunai') {
-            cashDetails.classList.remove('hidden');
-            document.getElementById('receiptCashGiven').textContent = formatRupiah(cashReceived);
-            document.getElementById('receiptCashBack').textContent = formatRupiah(change);
-        } else {
-            cashDetails.classList.add('hidden');
+    // Reaktivitas UI Real-time: Kartu Produk & Widget Rule-Based Peringatan Restok (F10)
+    function updateProductsUI(products, lowStockProducts, restockSettings) {
+        if (!products || !Array.isArray(products)) return;
+
+        // 1. Perbarui masing-masing kartu produk di katalog kasir
+        products.forEach(p => {
+            const card = document.getElementById(`product-card-${p.id}`);
+            const badgeContainer = document.getElementById(`stock-badge-container-${p.id}`);
+            const actionContainer = document.getElementById(`product-action-container-${p.id}`);
+
+            if (card) {
+                card.setAttribute('data-stock', p.stok);
+                if (p.stok <= 0) {
+                    card.className = 'product-pos-card bg-white rounded-2xl border transition-all flex flex-col justify-between overflow-hidden p-3.5 shadow-2xs relative opacity-60 border-slate-200 bg-slate-50/60';
+                } else {
+                    card.className = 'product-pos-card bg-white rounded-2xl border transition-all flex flex-col justify-between overflow-hidden p-3.5 shadow-2xs relative border-slate-200/90 hover:border-blue-900/30 hover:shadow-xs';
+                }
+            }
+
+            if (badgeContainer) {
+                if (p.stok <= 0) {
+                    badgeContainer.innerHTML = '<span class="px-2 py-0.5 bg-slate-200 text-slate-700 font-extrabold text-[10px] rounded-md uppercase">Habis</span>';
+                } else if (p.stok <= 5) {
+                    badgeContainer.innerHTML = `<span class="px-2 py-0.5 bg-rose-100 text-rose-800 font-extrabold text-[10px] rounded-md flex items-center gap-0.5" title="Stok kritis &le; 5 botol"><span class="material-symbols-outlined text-[11px]">warning</span><span>Sisa ${p.stok} btl</span></span>`;
+                } else {
+                    badgeContainer.innerHTML = `<span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded-md">Stok: ${p.stok} btl</span>`;
+                }
+            }
+
+            if (actionContainer) {
+                if (p.stok <= 0) {
+                    actionContainer.innerHTML = '<button type="button" disabled class="px-2.5 py-1.5 bg-slate-100 text-slate-400 rounded-xl text-xs font-bold cursor-not-allowed">Habis</button>';
+                } else {
+                    actionContainer.innerHTML = `<button type="button" onclick="addToCart(${p.id}, '${escapeJsString(p.nama)}', '${escapeJsString(p.rasa || '')}', ${p.harga}, ${p.stok})" class="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-2xs active:scale-95 transition-all cursor-pointer" title="Tambah ke Keranjang Kasir"><span class="material-symbols-outlined text-sm font-bold">add</span><span>Pilih</span></button>`;
+                }
+            }
+        });
+
+        // 2. Perbarui Widget Peringatan Restok (Aturan F10 & BR-10)
+        const warningContainer = document.getElementById('restockWarningContainer');
+        const warningCountText = document.getElementById('restockCountText');
+        const pillsContainer = document.getElementById('restockPillsContainer');
+
+        if (warningContainer && pillsContainer) {
+            if (!lowStockProducts || lowStockProducts.length === 0) {
+                warningContainer.classList.add('hidden');
+            } else {
+                warningContainer.classList.remove('hidden');
+                if (warningCountText) {
+                    warningCountText.textContent = `${lowStockProducts.length} varian kopi`;
+                }
+
+                let pillsHtml = '';
+                lowStockProducts.forEach(lp => {
+                    const isZero = lp.stok <= 0;
+                    const badgeClass = isZero ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-white text-amber-900 border border-amber-200/80 shadow-2xs';
+                    const countClass = isZero ? 'text-rose-950' : 'text-slate-500';
+
+                    pillsHtml += `
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold ${badgeClass}">
+                            <span>${lp.nama}</span>
+                            <span class="font-mono text-[10px] ${countClass}">(${lp.stok} btl)</span>
+                            <span class="text-[10px] text-blue-900 bg-blue-50 px-1 py-0.2 rounded-md font-extrabold">+${lp.saran_produksi}</span>
+                        </span>
+                    `;
+                });
+                pillsContainer.innerHTML = pillsHtml;
+            }
         }
-
-        // Tampilkan Modal
-        const modal = document.getElementById('posSuccessModal');
-        modal.classList.remove('hidden');
-        setTimeout(() => modal.classList.remove('opacity-0'), 10);
     }
 
     function closeSuccessModal() {
