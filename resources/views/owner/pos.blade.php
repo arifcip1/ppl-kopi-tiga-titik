@@ -432,8 +432,28 @@
             </div>
         </div>
 
-        <!-- Tombol Aksi Nota -->
+        <!-- Tombol Aksi Nota (Unduh PNG, Cetak/PDF Nota Resmi, Transaksi Baru - TC-OWN-04) -->
         <div class="flex flex-col gap-2">
+            <div class="grid grid-cols-2 gap-2">
+                <button 
+                    type="button" 
+                    onclick="downloadPosReceiptPng()" 
+                    class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                    <span class="material-symbols-outlined text-base">download</span>
+                    <span>Unduh Nota</span>
+                </button>
+                <a 
+                    id="btnOpenOfficialNota"
+                    href="#"
+                    target="_blank"
+                    rel="noopener"
+                    class="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 active:scale-98 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                    <span class="material-symbols-outlined text-base">print</span>
+                    <span>Cetak / PDF</span>
+                </a>
+            </div>
             <button 
                 type="button" 
                 onclick="closeSuccessModal()" 
@@ -901,6 +921,7 @@
         .then(res => {
             const data = res.data;
             const order = data.order;
+            window.lastCompletedPosOrder = order;
 
             // Populate Modal Nota Digital dari Database Nyata
             document.getElementById('receiptCode').textContent = order.kode;
@@ -908,6 +929,11 @@
             document.getElementById('receiptCustomer').textContent = order.nama_pelanggan;
             document.getElementById('receiptMethod').textContent = order.metode_pembayaran === 'tunai' ? 'Tunai (Cash)' : 'QRIS Langsung';
             document.getElementById('receiptTotal').textContent = formatRupiah(order.total);
+
+            const officialNotaLink = document.getElementById('btnOpenOfficialNota');
+            if (officialNotaLink && order.kode) {
+                officialNotaLink.href = '/nota/' + encodeURIComponent(order.kode);
+            }
 
             // Rincian Item di Nota
             let itemsHtml = '';
@@ -1024,6 +1050,137 @@
                 pillsContainer.innerHTML = pillsHtml;
             }
         }
+    }
+
+    // Unduh Nota Transaksi POS sebagai Gambar PNG Siap Cetak / Kirim Pelanggan (TC-OWN-04)
+    function downloadPosReceiptPng() {
+        const order = window.lastCompletedPosOrder;
+        const kode = order?.kode || document.getElementById('receiptCode')?.textContent || 'POS-NOTA';
+        const waktu = order?.waktu || document.getElementById('receiptTime')?.textContent || '-';
+        const pelanggan = order?.nama_pelanggan || document.getElementById('receiptCustomer')?.textContent || 'Pelanggan Lapak';
+        const metode = (order?.metode_pembayaran === 'tunai') ? 'Tunai (Cash)' : (order?.metode_pembayaran ? 'QRIS Langsung' : (document.getElementById('receiptMethod')?.textContent || '-'));
+        const items = Array.isArray(order?.items) ? order.items : [];
+        const total = order?.total ?? 0;
+        const isTunai = order?.metode_pembayaran === 'tunai';
+        const uangDiterima = order?.uang_diterima ?? total;
+        const kembalian = order?.kembalian ?? 0;
+
+        const scale = 2;
+        const width = 420;
+        const baseHeight = 350 + (items.length * 28) + (isTunai ? 52 : 0);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width * scale;
+        canvas.height = baseHeight * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(scale, scale);
+
+        // Background putih bersih
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, baseHeight);
+
+        // Header Accent Bar
+        ctx.fillStyle = '#1e3a8a';
+        ctx.fillRect(0, 0, width, 10);
+
+        let y = 42;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillText('KOPI TIGA TITIK', width / 2, y);
+
+        y += 18;
+        ctx.fillStyle = '#64748b';
+        ctx.font = '12px sans-serif';
+        ctx.fillText('Street Coffee • Kota Mojokerto', width / 2, y);
+
+        y += 16;
+        ctx.fillStyle = '#059669';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('NOTA TRANSAKSI POS LAPAK — LUNAS', width / 2, y);
+
+        // Garis putus-putus
+        const drawDivider = (posY) => {
+            ctx.save();
+            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.beginPath();
+            ctx.moveTo(24, posY);
+            ctx.lineTo(width - 24, posY);
+            ctx.stroke();
+            ctx.restore();
+        };
+
+        y += 18;
+        drawDivider(y);
+
+        const drawRow = (label, value, posY, bold = false, valueColor = '#0f172a') => {
+            ctx.textAlign = 'left';
+            ctx.fillStyle = bold ? '#0f172a' : '#64748b';
+            ctx.font = (bold ? 'bold ' : '') + '12px monospace';
+            ctx.fillText(label, 24, posY);
+
+            ctx.textAlign = 'right';
+            ctx.fillStyle = valueColor;
+            ctx.font = (bold ? 'bold ' : '') + '12px monospace';
+            ctx.fillText(value, width - 24, posY);
+        };
+
+        y += 22;
+        drawRow('No. Nota', kode, y, true);
+        y += 20;
+        drawRow('Waktu', waktu, y);
+        y += 20;
+        drawRow('Pelanggan', pelanggan, y);
+        y += 20;
+        drawRow('Metode', metode, y, true, '#1e3a8a');
+
+        y += 16;
+        drawDivider(y);
+
+        y += 22;
+        items.forEach(item => {
+            const label = `${item.jumlah}x ${item.nama_produk}`;
+            const val = formatRupiah(item.subtotal);
+            drawRow(label.length > 26 ? label.slice(0, 26) + '...' : label, val, y, false, '#1e293b');
+            y += 24;
+        });
+
+        y += 2;
+        drawDivider(y);
+
+        y += 24;
+        drawRow('TOTAL BELANJA', formatRupiah(total), y, true, '#1e3a8a');
+
+        if (isTunai) {
+            y += 22;
+            drawRow('Uang Diterima', formatRupiah(uangDiterima), y);
+            y += 20;
+            drawRow('Kembalian', formatRupiah(kembalian), y, true, '#059669');
+        }
+
+        y += 24;
+        drawDivider(y);
+
+        y += 24;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#475569';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('Terima kasih telah menikmati Kopi Tiga Titik!', width / 2, y);
+
+        y += 16;
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px sans-serif';
+        ctx.fillText('Simpan di lemari pendingin (tahan 5-7 hari)', width / 2, y);
+
+        const link = document.createElement('a');
+        link.download = `Nota-POS-${kode}.png`;
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showPosToast('Nota ' + kode + ' berhasil diunduh sebagai PNG!', 'success', 'Nota Diunduh');
     }
 
     function closeSuccessModal() {

@@ -17,7 +17,7 @@
         @else
         <a href="{{ route('owner.update-lokasi') }}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold shadow-2xs transition-colors" title="Pengaturan Lapak (Status: Tutup)">
             <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-            <span>Lapak Tutup</span>
+            <span>{{ ($isOutsideOperatingHours ?? false) ? 'Lapak Tutup (Di Luar Jam)' : 'Lapak Tutup' }}</span>
         </a>
         @endif
 
@@ -182,7 +182,13 @@
                         {{ $jamBuka ?? '15:00' }} - {{ $jamTutup ?? '18:00' }} WIB
                     </span>
                     @if(($statusLapak ?? 'buka') === 'tutup')
-                        <span class="px-2 py-0.5 bg-rose-100 text-rose-800 text-[10px] font-extrabold rounded-md">Tutup</span>
+                        <span class="px-2 py-0.5 bg-rose-100 text-rose-800 border border-rose-200 text-[10px] font-extrabold rounded-md">
+                            {{ ($isOutsideOperatingHours ?? false) ? 'Tutup (Di Luar Jam)' : 'Tutup' }}
+                        </span>
+                    @else
+                        <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold rounded-md">
+                            Buka
+                        </span>
                     @endif
                 </div>
                 <p class="text-xs font-semibold text-slate-800 mt-1 flex items-center gap-1">
@@ -414,15 +420,14 @@
                             </button>
                         @endif
 
-                        <!-- Aksi Serahkan Pesanan (Untuk Ambil Sendiri Berstatus Diproses) -->
+                        <!-- Aksi Serahkan Pesanan (Untuk Ambil Sendiri Berstatus Diproses - Template Modal TC-OWN-06) -->
                         @if($order->status === 'diproses' && $order->metode_pemenuhan === 'ambil_sendiri')
-                            <form action="{{ route('owner.orders.complete-pickup', $order->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" onclick="return confirm('Konfirmasi serahkan pesanan ini kepada pembeli di lapak?')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer">
-                                    <span class="material-symbols-outlined text-sm">check_circle</span>
-                                    <span>Serahkan (Selesai)</span>
-                                </button>
-                            </form>
+                            <button type="button"
+                                    onclick="openCompletePickupModal({{ $order->id }}, '{{ $order->kode }}', '{{ addslashes($order->nama_penerima ?? 'Pelanggan') }}')"
+                                    class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer">
+                                <span class="material-symbols-outlined text-sm">check_circle</span>
+                                <span>Serahkan (Selesai)</span>
+                            </button>
                         @endif
 
                         <!-- Status Kurir Bertugas Jika Sudah Dikirim -->
@@ -449,6 +454,32 @@
     <!-- Paginasi -->
     <div class="mt-2">
         {{ $orders->withQueryString()->links() }}
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODAL KONFIRMASI SERAHKAN PESANAN AMBIL SENDIRI (TC-OWN-06)    -->
+    <!-- ============================================================== -->
+    <div id="modal-complete-pickup-confirm" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200" onclick="if (event.target === this) closeCompletePickupModal()">
+        <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 text-center flex flex-col items-center">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-3 shadow-xs">
+                <span class="material-symbols-outlined text-3xl">storefront</span>
+            </div>
+            <h3 class="font-bold text-slate-900 text-base font-['Plus_Jakarta_Sans']">Serahkan Pesanan di Lapak?</h3>
+            <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                Konfirmasi bahwa pesanan <strong id="pickup-modal-kode" class="text-blue-900 font-mono">#KTT-...</strong> atas nama <strong id="pickup-modal-customer" class="text-slate-900">Pelanggan</strong> telah diserahkan langsung di lapak dan ditandai <strong>Selesai</strong>.
+            </p>
+
+            <form id="complete-pickup-form" method="POST" action="" class="mt-5 w-full grid grid-cols-2 gap-2.5">
+                @csrf
+                <button type="button" onclick="closeCompletePickupModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors cursor-pointer">
+                    Batal
+                </button>
+                <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1 cursor-pointer">
+                    <span class="material-symbols-outlined text-sm">check_circle</span>
+                    <span>Ya, Serahkan</span>
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- ============================================================== -->
@@ -908,6 +939,29 @@
 
     function closeDetailModal() {
         const modal = document.getElementById('detail-modal');
+        modal.classList.add('opacity-0');
+        setTimeout(() => modal.classList.add('hidden'), 200);
+    }
+
+    function openCompletePickupModal(orderId, orderKode, customerName) {
+        const modal = document.getElementById('modal-complete-pickup-confirm');
+        const form = document.getElementById('complete-pickup-form');
+        const kodeEl = document.getElementById('pickup-modal-kode');
+        const customerEl = document.getElementById('pickup-modal-customer');
+
+        if (form) form.action = `/owner/orders/${orderId}/complete-pickup`;
+        if (kodeEl) kodeEl.textContent = '#' + orderKode;
+        if (customerEl) customerEl.textContent = customerName || 'Pelanggan';
+
+        if (modal) {
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+    }
+
+    function closeCompletePickupModal() {
+        const modal = document.getElementById('modal-complete-pickup-confirm');
+        if (!modal) return;
         modal.classList.add('opacity-0');
         setTimeout(() => modal.classList.add('hidden'), 200);
     }

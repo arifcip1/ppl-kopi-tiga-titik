@@ -1,9 +1,14 @@
-@extends('layouts.pelanggan')
+@php
+    $isOwnerViewer = in_array(auth()->user()->role ?? '', ['admin', 'owner']);
+    $isPosOrder = ($order->sumber_transaksi ?? 'online') === 'pos';
+@endphp
+
+@extends($isOwnerViewer ? 'layouts.owner' : 'layouts.pelanggan')
 
 @section('title', 'Nota Digital #' . ($order->kode ?? 'Pesanan') . ' - Kopi Tiga Titik')
-@section('active_menu', 'pesanan-saya')
-@section('page_title', 'Nota Digital Pesanan')
-@section('role_badge', 'PELANGGAN')
+@section('active_menu', $isOwnerViewer ? 'pos' : 'pesanan-saya')
+@section('page_title', $isPosOrder ? 'Nota Transaksi POS Lapak' : 'Nota Digital Pesanan')
+@section('role_badge', $isOwnerViewer ? 'OWNER' : 'PELANGGAN')
 @section('page_subtitle', 'Bukti transaksi resmi dan rincian pemenuhan pesanan Kopi Tiga Titik')
 
 @section('header_actions')
@@ -27,13 +32,23 @@
             <span class="hidden sm:inline">Cetak</span>
         </button>
 
-        <!-- Tombol Lacak Live -->
-        <a href="{{ route('tracking.detail', $order->kode) }}" 
-           class="w-8 h-8 sm:w-auto px-0 sm:px-3 py-0 sm:py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-colors shadow-2xs shrink-0" 
-           title="Pantau Status Pesanan Live">
-            <span class="material-symbols-outlined text-base">track_changes</span>
-            <span class="hidden sm:inline">Lacak</span>
-        </a>
+        @if($isPosOrder && $isOwnerViewer)
+            <!-- Kembali ke POS Kasir -->
+            <a href="{{ route('owner.pos') }}" 
+               class="w-8 h-8 sm:w-auto px-0 sm:px-3 py-0 sm:py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-colors shadow-2xs shrink-0" 
+               title="Kembali ke POS Kasir">
+                <span class="material-symbols-outlined text-base">point_of_sale</span>
+                <span class="hidden sm:inline">Kasir POS</span>
+            </a>
+        @else
+            <!-- Tombol Lacak Live -->
+            <a href="{{ route('tracking.detail', $order->kode) }}" 
+               class="w-8 h-8 sm:w-auto px-0 sm:px-3 py-0 sm:py-1.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 transition-colors shadow-2xs shrink-0" 
+               title="Pantau Status Pesanan Live">
+                <span class="material-symbols-outlined text-base">track_changes</span>
+                <span class="hidden sm:inline">Lacak</span>
+            </a>
+        @endif
     </div>
 @endsection
 
@@ -89,11 +104,19 @@
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="text-xs font-bold text-slate-900">Status Pembayaran:</span>
                         <span class="px-2 py-0.5 bg-emerald-600 text-white font-extrabold text-[10px] rounded-md tracking-wider">
-                            {{ $order->payment && $order->payment->isSuccess() ? 'LUNAS (VERIFIKASI QRIS)' : 'TERVERIFIKASI' }}
+                            @if($isPosOrder)
+                                {{ ($order->payment?->metode_pembayaran ?? 'tunai') === 'tunai' ? 'LUNAS (TUNAI LAPAK)' : 'LUNAS (QRIS LAPAK)' }}
+                            @else
+                                {{ $order->payment && $order->payment->isSuccess() ? 'LUNAS (VERIFIKASI QRIS)' : 'TERVERIFIKASI' }}
+                            @endif
                         </span>
                     </div>
                     <p class="text-[11px] text-slate-500 truncate mt-0.5">
-                        Ref: {{ $order->payment?->referensi_provider ?? $order->kode }} • Kanal QRIS Sandbox
+                        @if($isPosOrder)
+                            Ref: {{ $order->kode }} • POS Kasir Offline (Dikonfirmasi Owner)
+                        @else
+                            Ref: {{ $order->payment?->referensi_provider ?? $order->kode }} • Kanal QRIS Sandbox
+                        @endif
                     </p>
                 </div>
             </div>
@@ -101,12 +124,12 @@
             <div class="sm:text-right shrink-0">
                 <span class="text-[10px] text-slate-500 block">Waktu Verifikasi Lunas:</span>
                 <span class="text-[11px] font-bold text-slate-800 font-mono">
-                    {{ $order->payment?->waktu_verifikasi ? $order->payment->waktu_verifikasi->translatedFormat('d M Y, H:i') . ' WIB' : 'Otomatis Server' }}
+                    {{ $order->payment?->waktu_verifikasi ? $order->payment->waktu_verifikasi->translatedFormat('d M Y, H:i') . ' WIB' : ($order->created_at ? $order->created_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Otomatis Server') }}
                 </span>
             </div>
         </div>
 
-        <!-- Data Pemesan & Rincian Pemenuhan (Pengiriman vs Ambil Sendiri) -->
+        <!-- Data Pemesan & Rincian Pemenuhan (Pengiriman vs Ambil Sendiri vs POS Lapak) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             
             <!-- Info Pelanggan -->
@@ -115,8 +138,12 @@
                     <span class="material-symbols-outlined text-sm text-blue-900">person</span>
                     <span>Pelanggan / Penerima</span>
                 </div>
-                <div class="font-bold text-slate-900 text-sm mt-0.5">{{ $order->nama_penerima }}</div>
-                <div class="text-slate-600 font-mono text-[11px]">{{ $order->telepon }}</div>
+                <div class="font-bold text-slate-900 text-sm mt-0.5">{{ $order->nama_pelanggan ?? $order->nama_penerima ?? 'Pelanggan Lapak' }}</div>
+                @if($order->telepon)
+                    <div class="text-slate-600 font-mono text-[11px]">{{ $order->telepon }}</div>
+                @elseif($isPosOrder)
+                    <div class="text-slate-500 text-[11px]">Pembelian Langsung di Lapak</div>
+                @endif
                 @if($order->catatan)
                     <div class="mt-1 pt-1 border-t border-slate-100 text-[10px] text-slate-500 italic">
                         "Catatan: {{ $order->catatan }}"
@@ -128,12 +155,23 @@
             <div class="p-4 bg-white rounded-2xl border border-slate-200/80 flex flex-col gap-1.5 shadow-2xs">
                 <div class="flex items-center gap-1.5 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                     <span class="material-symbols-outlined text-sm text-blue-900">
-                        {{ $order->metode_pemenuhan === 'ambil_sendiri' ? 'storefront' : 'local_shipping' }}
+                        {{ $isPosOrder ? 'point_of_sale' : ($order->metode_pemenuhan === 'ambil_sendiri' ? 'storefront' : 'local_shipping') }}
                     </span>
                     <span>Metode Pemenuhan</span>
                 </div>
 
-                @if($order->metode_pemenuhan === 'ambil_sendiri')
+                @if($isPosOrder)
+                    <div class="flex items-center gap-1.5 mt-0.5">
+                        <span class="font-bold text-emerald-800 text-xs">Transaksi Langsung di Lapak (POS)</span>
+                        <span class="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 font-bold text-[9px] rounded">Selesai</span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 leading-tight">
+                        {{ $order->nama_lokasi_asal ?? ($lokasiAktif->nama_lokasi ?? 'Lapak Kopi Tiga Titik') }}
+                        @if($order->alamat_lokasi_asal ?? ($lokasiAktif->alamat ?? null))
+                            — {{ $order->alamat_lokasi_asal ?? $lokasiAktif->alamat }}
+                        @endif
+                    </p>
+                @elseif($order->metode_pemenuhan === 'ambil_sendiri')
                     <div class="flex items-center gap-1.5 mt-0.5">
                         <span class="font-bold text-blue-900 text-xs">Ambil Sendiri di Lapak</span>
                         <span class="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 font-bold text-[9px] rounded">Bebas Ongkir</span>

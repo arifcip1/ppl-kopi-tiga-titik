@@ -106,22 +106,47 @@
         <input type="hidden" name="shipping_location_id" id="shipping_location_id" value="{{ old('shipping_location_id', $lokasiAktif->id ?? '') }}">
 
         <!-- 1. STATUS OPERASIONAL LAPAK HARI INI -->
+        @php
+            $selectedStatusManual = old('status_lapak', $statusLapakManual ?? $statusLapak ?? 'buka');
+            $effectiveLapakStatus = $statusLapak ?? 'buka';
+        @endphp
         <div class="bg-slate-50 p-3 sm:p-3.5 rounded-2xl border border-slate-200/80">
-            <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-2">STATUS OPERASIONAL LAPAK</label>
+            <div class="flex items-center justify-between gap-2 mb-2">
+                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">STATUS OPERASIONAL LAPAK</label>
+                @if($effectiveLapakStatus === 'buka')
+                    <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-extrabold rounded-full inline-flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Aktif Sekarang
+                    </span>
+                @else
+                    <span class="px-2 py-0.5 bg-rose-100 text-rose-800 border border-rose-200 text-[10px] font-extrabold rounded-full inline-flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                        {{ ($isOutsideOperatingHours ?? false) && $selectedStatusManual === 'buka' ? 'Tutup Otomatis (Di Luar Jam)' : 'Tutup Sekarang' }}
+                    </span>
+                @endif
+            </div>
             <div class="grid grid-cols-2 gap-2.5">
-                <label id="btn-status-buka" class="flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 cursor-pointer transition-all {{ old('status_lapak', $statusLapak ?? 'buka') === 'buka' ? 'bg-emerald-50 text-emerald-800 border-emerald-500 shadow-2xs font-bold' : 'bg-white text-slate-600 border-slate-200 font-medium' }}">
-                    <input type="radio" name="status_lapak" value="buka" {{ old('status_lapak', $statusLapak ?? 'buka') === 'buka' ? 'checked' : '' }} onchange="updateStatusLapakUI('buka')" class="sr-only">
+                <label id="btn-status-buka" class="flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 cursor-pointer transition-all {{ $selectedStatusManual === 'buka' ? 'bg-emerald-50 text-emerald-800 border-emerald-500 shadow-2xs font-bold' : 'bg-white text-slate-600 border-slate-200 font-medium' }}">
+                    <input type="radio" name="status_lapak" value="buka" {{ $selectedStatusManual === 'buka' ? 'checked' : '' }} onchange="updateStatusLapakUI('buka')" class="sr-only">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                     <span class="text-xs">Lapak Buka (Aktif)</span>
                 </label>
 
-                <label id="btn-status-tutup" class="flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 cursor-pointer transition-all {{ old('status_lapak', $statusLapak ?? 'buka') === 'tutup' ? 'bg-rose-50 text-rose-800 border-rose-500 shadow-2xs font-bold' : 'bg-white text-slate-600 border-slate-200 font-medium' }}">
-                    <input type="radio" name="status_lapak" value="tutup" {{ old('status_lapak', $statusLapak ?? 'buka') === 'tutup' ? 'checked' : '' }} onchange="updateStatusLapakUI('tutup')" class="sr-only">
+                <label id="btn-status-tutup" class="flex items-center justify-center gap-2 p-2.5 rounded-xl border-2 cursor-pointer transition-all {{ $selectedStatusManual === 'tutup' ? 'bg-rose-50 text-rose-800 border-rose-500 shadow-2xs font-bold' : 'bg-white text-slate-600 border-slate-200 font-medium' }}">
+                    <input type="radio" name="status_lapak" value="tutup" {{ $selectedStatusManual === 'tutup' ? 'checked' : '' }} onchange="updateStatusLapakUI('tutup')" class="sr-only">
                     <span class="w-2 h-2 rounded-full bg-slate-400"></span>
                     <span class="text-xs">Lapak Tutup</span>
                 </label>
             </div>
-            <p class="text-[10px] text-slate-500 mt-2">Jika lapak tutup, pelanggan online baru akan diberi tahu jam operasional lapak.</p>
+            @if(($isOutsideOperatingHours ?? false) && $selectedStatusManual === 'buka')
+                <div class="mt-2.5 p-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-[11px] text-amber-900">
+                    <span class="material-symbols-outlined text-amber-600 text-base shrink-0 mt-0.5">schedule</span>
+                    <span>
+                        <strong>Status Efektif: TUTUP OTOMATIS.</strong> Waktu saat ini ({{ now('Asia/Jakarta')->format('H:i') }} WIB) berada di luar jam operasional <strong>{{ $jamBuka ?? '15:00' }} - {{ $jamTutup ?? '18:00' }} WIB</strong>. Checkout online baru otomatis dinonaktifkan hingga jam buka tiba.
+                    </span>
+                </div>
+            @endif
+            <p class="text-[10px] text-slate-500 mt-2">Status lapak otomatis mengikuti jam operasional ({{ $jamBuka ?? '15:00' }} - {{ $jamTutup ?? '18:00' }} WIB) serta kontrol buka/tutup manual di atas.</p>
         </div>
 
         <!-- 2. NAMA TEMPAT & PATOKAN MANGKAL -->
@@ -291,6 +316,25 @@
             </a>
         </div>
     </form>
+</div>
+
+<!-- MODAL ALERT TEMPLATE BRAND (PENGGANTI NATIVE BROWSER ALERT - TC-LOC-02 / PPL-24) -->
+<div id="modal-lapak-alert" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200" onclick="if (event.target === this) closeLapakAlertModal()">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl border border-slate-100 text-center flex flex-col items-center">
+        <div class="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mb-3 shadow-xs">
+            <span class="material-symbols-outlined text-3xl">wrong_location</span>
+        </div>
+        <h3 id="modal-lapak-alert-title" class="font-bold text-slate-900 text-base font-['Plus_Jakarta_Sans']">Lokasi di Luar Wilayah Mojokerto</h3>
+        <p id="modal-lapak-alert-message" class="text-xs text-slate-600 mt-2 leading-relaxed">
+            Titik koordinat lapak berada di luar wilayah Kota Mojokerto. Lapak street coffee Kopi Tiga Titik wajib berlokasi di dalam area Kota Mojokerto.
+        </p>
+
+        <div class="mt-5 w-full">
+            <button type="button" onclick="closeLapakAlertModal()" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 active:scale-98 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer">
+                Mengerti, Sesuaikan Titik Peta
+            </button>
+        </div>
+    </div>
 </div>
 
 <!-- Leaflet JS via CDN -->
@@ -612,6 +656,31 @@
         }
     }
 
+    function openLapakAlertModal(title, message) {
+        const modal = document.getElementById('modal-lapak-alert');
+        const titleEl = document.getElementById('modal-lapak-alert-title');
+        const msgEl = document.getElementById('modal-lapak-alert-message');
+        if (titleEl && title) titleEl.textContent = title;
+        if (msgEl && message) msgEl.textContent = message;
+        if (modal) {
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+    }
+
+    function closeLapakAlertModal() {
+        const modal = document.getElementById('modal-lapak-alert');
+        if (!modal) return;
+        modal.classList.add('opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            const alertBox = document.getElementById('alert-lapak-out-of-bounds');
+            if (alertBox) {
+                alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 200);
+    }
+
     // Cegah submit form jika titik berada di luar Kota Mojokerto
     document.addEventListener('DOMContentLoaded', function () {
         const form = document.getElementById('formUpdateLokasi');
@@ -623,7 +692,10 @@
                     e.preventDefault();
                     const alertBox = document.getElementById('alert-lapak-out-of-bounds');
                     if (alertBox) alertBox.classList.remove('hidden');
-                    alert('Titik koordinat lapak berada di luar wilayah Kota Mojokerto!\n\nLapak street coffee Kopi Tiga Titik wajib berlokasi di dalam Kota Mojokerto.');
+                    openLapakAlertModal(
+                        'Lokasi di Luar Wilayah Kota Mojokerto',
+                        'Titik koordinat lapak berada di luar wilayah Kota Mojokerto. Lapak street coffee Kopi Tiga Titik wajib berlokasi di dalam area Kota Mojokerto.'
+                    );
                     return false;
                 }
             });

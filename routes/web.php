@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CourierDashboardController;
+use App\Http\Controllers\CustomerProfileController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OwnerDashboardController;
@@ -106,7 +107,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/orders/{identifier}/payment', [PaymentController::class, 'status'])->name('api.orders.payment');
     Route::post('/api/orders/{identifier}/simulate-payment', [PaymentController::class, 'simulateSuccess'])->name('api.orders.simulate-payment');
 
-    Route::get('/profil-pelanggan', fn() => view('Profil Pelanggan Page'))->name('profile');
+    Route::get('/profil-pelanggan', [CustomerProfileController::class, 'show'])->name('profile');
+    Route::put('/profil-pelanggan/alamat', [CustomerProfileController::class, 'updateAddress'])->name('profile.address.update');
 });
 
 // Endpoint Webhook Notifikasi Server-to-Server Midtrans Sandbox (FR-6.4 / Tanpa Autentikasi Sesi)

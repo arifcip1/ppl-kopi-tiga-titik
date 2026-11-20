@@ -22,6 +22,9 @@ class ShippingQuoteAndLocationTest extends TestCase
     {
         parent::setUp();
 
+        // Tetapkan jam pengujian di dalam jam operasional 15:00 - 18:00 WIB (BR-10, FR-11.6)
+        \Carbon\Carbon::setTestNow(\Carbon\Carbon::today('Asia/Jakarta')->setTime(16, 0));
+
         $this->owner = User::factory()->create([
             'email' => 'owner@kopitigatitik.com',
             'role'  => 'admin',
@@ -44,6 +47,12 @@ class ShippingQuoteAndLocationTest extends TestCase
         Setting::updateOrCreate(['key' => 'jam_buka'], ['value' => '15:00']);
         Setting::updateOrCreate(['key' => 'jam_tutup'], ['value' => '18:00']);
         Setting::updateOrCreate(['key' => 'status_lapak'], ['value' => 'buka']);
+    }
+
+    protected function tearDown(): void
+    {
+        \Carbon\Carbon::setTestNow();
+        parent::tearDown();
     }
 
     // =========================================================================

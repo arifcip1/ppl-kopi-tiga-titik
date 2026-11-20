@@ -25,7 +25,7 @@ class ShippingController extends Controller
     {
         $metodePemenuhan = $request->input('metode_pemenuhan', 'pengiriman');
 
-        // Jika metode pemenuhan adalah ambil sendiri di lapak, ongkir Rp 0 (BR-41, FR-14)
+        // Jika metode pemenuhan adalah ambil sendiri di lapak, ongkir Rp 0 (BR-11, FR-13)
         if ($metodePemenuhan === 'ambil_sendiri') {
             try {
                 $quote = $this->resolver->calculateQuote(0.0, 0.0, 'ambil_sendiri');
@@ -36,10 +36,14 @@ class ShippingController extends Controller
                     'data'    => $quote,
                 ], 200);
             } catch (ShippingCostUnavailableException $e) {
+                $isClosed = str_contains(strtolower($e->getMessage()), 'tutup')
+                    || str_contains(strtolower($e->getMessage()), 'jam operasional');
+
                 return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage(),
-                    'errors'  => [
+                    'success'    => false,
+                    'error_type' => $isClosed ? 'lapak_closed' : 'unavailable',
+                    'message'    => $e->getMessage(),
+                    'errors'     => [
                         'lokasi_tujuan' => [$e->getMessage()],
                     ],
                 ], 422);
@@ -52,9 +56,10 @@ class ShippingController extends Controller
 
         if ($lat === null || $lng === null || ! is_numeric($lat) || ! is_numeric($lng) || $lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
             return response()->json([
-                'success' => false,
-                'message' => 'Titik lokasi tujuan pengiriman wajib diisi dengan koordinat yang valid.',
-                'errors'  => [
+                'success'    => false,
+                'error_type' => 'invalid_coordinates',
+                'message'    => 'Titik lokasi tujuan pengiriman wajib diisi dengan koordinat yang valid.',
+                'errors'     => [
                     'lokasi_tujuan' => ['Koordinat latitude dan longitude pengiriman tidak valid.'],
                 ],
             ], 422);
@@ -72,10 +77,16 @@ class ShippingController extends Controller
                 'data'    => $quote,
             ], 200);
         } catch (ShippingCostUnavailableException $e) {
+            $msgLower = strtolower($e->getMessage());
+            $errorType = (str_contains($msgLower, 'tutup') || str_contains($msgLower, 'jam operasional'))
+                ? 'lapak_closed'
+                : (str_contains($msgLower, 'mojokerto') ? 'geofence' : 'unavailable');
+
             return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-                'errors'  => [
+                'success'    => false,
+                'error_type' => $errorType,
+                'message'    => $e->getMessage(),
+                'errors'     => [
                     'lokasi_tujuan' => [$e->getMessage()],
                 ],
             ], 422);
@@ -96,16 +107,23 @@ class ShippingController extends Controller
             $lokasiAktif = $locations->firstWhere('aktif', true) ?? $locations->first();
         }
 
-        $jamBuka = Setting::where('key', 'jam_buka')->value('value') ?? '15:00';
-        $jamTutup = Setting::where('key', 'jam_tutup')->value('value') ?? '18:00';
-        $statusLapak = Setting::where('key', 'status_lapak')->value('value') ?? 'buka';
+        $operational = app(\App\Services\LapakOperationalService::class)->getStatus();
+        $jamBuka = $operational['jam_buka'];
+        $jamTutup = $operational['jam_tutup'];
+        $statusLapak = $operational['effective_status'];
+        $statusLapakManual = $operational['manual_status'];
+        $isOutsideOperatingHours = $operational['is_outside_hours'];
+        $lapakClosedMessage = $operational['closed_message'];
 
         return view('Pop Up Update Lokasi Lapak Page', compact(
             'locations',
             'lokasiAktif',
             'jamBuka',
             'jamTutup',
-            'statusLapak'
+            'statusLapak',
+            'statusLapakManual',
+            'isOutsideOperatingHours',
+            'lapakClosedMessage'
         ));
     }
 
@@ -197,7 +215,13 @@ class ShippingController extends Controller
             ]
         );
 
-        return redirect()->route('owner.update-lokasi')->with('success', 'Lokasi lapak aktif dan jam operasional berhasil diperbarui!');
+        $operational = app(\App\Services\LapakOperationalService::class)->getStatus();
+        $flashMessage = 'Lokasi lapak aktif dan jam operasional berhasil diperbarui!';
+        if (($validated['status_lapak'] ?? 'buka') === 'buka' && $operational['is_outside_hours']) {
+            $flashMessage .= " Status efektif lapak saat ini otomatis TUTUP karena waktu sekarang di luar jam operasional ({$operational['jam_operasional']}).";
+        }
+
+        return redirect()->route('owner.update-lokasi')->with('success', $flashMessage);
     }
 
     /**

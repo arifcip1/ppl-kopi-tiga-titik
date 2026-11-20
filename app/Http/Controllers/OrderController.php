@@ -54,21 +54,37 @@ class OrderController extends Controller
             $lokasiAktif = ShippingLocation::where('aktif', true)->first();
         }
 
-        $jamBuka = Setting::where('key', 'jam_buka')->value('value') ?? '15:00';
-        $jamTutup = Setting::where('key', 'jam_tutup')->value('value') ?? '18:00';
-        $statusLapak = Setting::where('key', 'status_lapak')->value('value') ?? 'buka';
+        $operational = app(\App\Services\LapakOperationalService::class)->getStatus();
+        $jamBuka = $operational['jam_buka'];
+        $jamTutup = $operational['jam_tutup'];
+        $statusLapak = $operational['effective_status'];
+        $isLapakOpen = $operational['is_open'];
+        $isOutsideOperatingHours = $operational['is_outside_hours'];
+        $lapakClosedMessage = $operational['closed_message'];
 
-        // Lokasi default pengantaran pelanggan dari profil/pesanan sebelumnya (Point 3)
-        $latestOrder = $user->orders()->whereNotNull('alamat')->latest()->first();
-        if ($latestOrder && $latestOrder->lat && $latestOrder->lng) {
-            $customerDefaultAlamat = $latestOrder->alamat;
-            $customerDefaultLat = (float) $latestOrder->lat;
-            $customerDefaultLng = (float) $latestOrder->lng;
+        // Lokasi default pengantaran pelanggan: Prioritas 1 dari Profil Pelanggan (settings), Prioritas 2 pesanan terakhir
+        $savedAddressRaw = Setting::where('key', 'customer_address_' . $user->id)->value('value');
+        $savedAddress = is_string($savedAddressRaw) ? json_decode($savedAddressRaw, true) : null;
+
+        if (is_array($savedAddress) && ! empty($savedAddress['alamat']) && isset($savedAddress['lat'], $savedAddress['lng'])) {
+            $customerDefaultAlamat = $savedAddress['alamat'];
+            if (! empty($savedAddress['patokan'])) {
+                $customerDefaultAlamat .= ' (Patokan: ' . $savedAddress['patokan'] . ')';
+            }
+            $customerDefaultLat = (float) $savedAddress['lat'];
+            $customerDefaultLng = (float) $savedAddress['lng'];
         } else {
-            // Default profil pelanggan Mojokerto (Jl. Hayam Wuruk No. 42, Magersari)
-            $customerDefaultAlamat = 'Jl. Hayam Wuruk No. 42, Mergelo, Kec. Magersari, Kota Mojokerto';
-            $customerDefaultLat = -7.472100;
-            $customerDefaultLng = 112.434000;
+            $latestOrder = $user->orders()->whereNotNull('alamat')->latest()->first();
+            if ($latestOrder && $latestOrder->lat && $latestOrder->lng) {
+                $customerDefaultAlamat = $latestOrder->alamat;
+                $customerDefaultLat = (float) $latestOrder->lat;
+                $customerDefaultLng = (float) $latestOrder->lng;
+            } else {
+                // Default profil pelanggan Mojokerto (Jl. Hayam Wuruk No. 42, Magersari)
+                $customerDefaultAlamat = 'Jl. Hayam Wuruk No. 42, Mergelo, Kec. Magersari, Kota Mojokerto';
+                $customerDefaultLat = -7.472100;
+                $customerDefaultLng = 112.434000;
+            }
         }
 
         return view('Deskop Cart & Checkout Page', compact(
@@ -81,6 +97,9 @@ class OrderController extends Controller
             'jamBuka',
             'jamTutup',
             'statusLapak',
+            'isLapakOpen',
+            'isOutsideOperatingHours',
+            'lapakClosedMessage',
             'customerDefaultAlamat',
             'customerDefaultLat',
             'customerDefaultLng'

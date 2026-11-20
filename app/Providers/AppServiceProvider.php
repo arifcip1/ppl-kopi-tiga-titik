@@ -42,11 +42,15 @@ class AppServiceProvider extends ServiceProvider
                 $cartCount = is_countable($cart) ? count($cart) : 0;
             }
 
-            // Data Lokasi Lapak Aktif & Jam Operasional Terkini (PPL-25)
+            // Data Lokasi Lapak Aktif & Jam Operasional Terkini (PPL-25, FR-11.6)
             $lokasiAktif = null;
             $jamBuka = '15:00';
             $jamTutup = '18:00';
             $statusLapak = 'buka';
+            $statusLapakManual = 'buka';
+            $isLapakOpen = true;
+            $isOutsideOperatingHours = false;
+            $lapakClosedMessage = null;
 
             if (Schema::hasTable('shipping_locations') && Schema::hasTable('settings')) {
                 $activeLocId = \App\Models\Setting::where('key', 'lokasi_pengiriman_aktif_id')->value('value');
@@ -57,17 +61,26 @@ class AppServiceProvider extends ServiceProvider
                     $lokasiAktif = \App\Models\ShippingLocation::where('aktif', true)->first();
                 }
 
-                $jamBuka = \App\Models\Setting::where('key', 'jam_buka')->value('value') ?? '15:00';
-                $jamTutup = \App\Models\Setting::where('key', 'jam_tutup')->value('value') ?? '18:00';
-                $statusLapak = \App\Models\Setting::where('key', 'status_lapak')->value('value') ?? 'buka';
+                $operational = app(\App\Services\LapakOperationalService::class)->getStatus();
+                $jamBuka = $operational['jam_buka'];
+                $jamTutup = $operational['jam_tutup'];
+                $statusLapak = $operational['effective_status'];
+                $statusLapakManual = $operational['manual_status'];
+                $isLapakOpen = $operational['is_open'];
+                $isOutsideOperatingHours = $operational['is_outside_hours'];
+                $lapakClosedMessage = $operational['closed_message'];
             }
 
             $view->with([
-                'cartCount'   => $cartCount,
-                'lokasiAktif' => $lokasiAktif,
-                'jamBuka'     => $jamBuka,
-                'jamTutup'    => $jamTutup,
-                'statusLapak' => $statusLapak,
+                'cartCount'               => $cartCount,
+                'lokasiAktif'             => $lokasiAktif,
+                'jamBuka'                 => $jamBuka,
+                'jamTutup'                => $jamTutup,
+                'statusLapak'             => $statusLapak,
+                'statusLapakManual'       => $statusLapakManual,
+                'isLapakOpen'             => $isLapakOpen,
+                'isOutsideOperatingHours' => $isOutsideOperatingHours,
+                'lapakClosedMessage'      => $lapakClosedMessage,
             ]);
         });
     }
