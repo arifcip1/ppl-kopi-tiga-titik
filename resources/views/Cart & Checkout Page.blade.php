@@ -173,6 +173,19 @@
         </div>
     </div>
 
+    <!-- Banner Peringatan Lapak Tutup / Di Luar Jam Operasional (FR-11.6, BR-10, TC-LOC-04) -->
+    @if(!($isLapakOpen ?? true))
+        <div id="banner-lapak-tutup" class="p-4 bg-rose-50 border border-rose-200 rounded-2xl shadow-2xs flex items-start gap-3 text-rose-900">
+            <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-xl">store_off</span>
+            </div>
+            <div class="text-xs leading-relaxed">
+                <strong class="font-bold text-sm block text-rose-950 font-['Plus_Jakarta_Sans'] mb-0.5">Lapak Kopi Tiga Titik Sedang Tutup</strong>
+                <p>{{ $lapakClosedMessage ?? 'Lapak Kopi Tiga Titik saat ini sedang tutup. Pemesanan online baru (antar kurir maupun ambil sendiri) hanya dapat dilakukan saat jam operasional.' }}</p>
+            </div>
+        </div>
+    @endif
+
     <!-- ========================================================================= -->
     <!-- 2. FORM CHECKOUT & PETA LOKASI DENGAN LAYOUT RESPONSIVE 2-KOLOM -->
     <!-- ========================================================================= -->
@@ -368,11 +381,11 @@
                         </div>
                     </div>
 
-                    <!-- Alert Peringatan Geofence di Luar Kota Mojokerto (Hidden by Default) -->
+                    <!-- Alert Peringatan Geofence / Status Lapak (Hidden by Default) -->
                     <div id="alert-geofence" class="hidden p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-rose-900">
                         <span class="material-symbols-outlined text-rose-600 text-lg shrink-0 mt-0.5">error</span>
                         <div class="text-xs leading-relaxed">
-                            <strong class="font-bold block text-rose-950 mb-0.5">Titik Lokasi di Luar Wilayah Layanan Kota Mojokerto</strong>
+                            <strong id="geofence-error-title" class="font-bold block text-rose-950 mb-0.5">Titik Lokasi di Luar Wilayah Layanan Kota Mojokerto</strong>
                             <span id="geofence-error-text">Layanan pengantaran kurir Kopi Tiga Titik saat ini hanya menjangkau area Kota Mojokerto. Silakan geser pin ke dalam wilayah Kota Mojokerto atau pilih opsi "Ambil Sendiri di Lapak".</span>
                         </div>
                     </div>
@@ -594,7 +607,7 @@
                                         </div>
                                         <p class="text-[10px] text-slate-500 truncate">{{ $item->product?->deskripsi ?? 'Kopi Botol 250ml' }}</p>
                                         <div class="flex items-center justify-between text-[10px] text-slate-600 mt-1 font-semibold">
-                                            <span>{{ $item->jumlah }} botol @ Rp {{ number_format($item->product?->harga ?? 10000, 0, ',', '.') }}</span>
+                                            <span>{{ $item->jumlah }} botol Rp {{ number_format($item->product?->harga ?? 10000, 0, ',', '.') }}</span>
                                             <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Botol Segar</span>
                                         </div>
                                     </div>
@@ -613,7 +626,7 @@
                                     </div>
                                     <p class="text-[10px] text-slate-500">Kopi Susu Gula Aren 250ml</p>
                                     <div class="flex items-center justify-between text-[10px] text-slate-600 mt-1 font-semibold">
-                                        <span>2 botol @ Rp 10.000</span>
+                                        <span>2 botol Rp 10.000</span>
                                         <span class="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Botol Segar</span>
                                     </div>
                                 </div>
@@ -690,12 +703,13 @@
                         </div>
                     </div>
 
-                    <!-- TOMBOL SUBMIT & PENCEGAHAN DOUBLE SUBMIT (FR-5.2) -->
+                    <!-- TOMBOL SUBMIT & PENCEGAHAN DOUBLE SUBMIT (FR-5.2, FR-11.6) -->
                     <button type="submit" 
-                            id="btn-submit-order" 
-                            class="w-full py-3.5 sm:py-4 px-4 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 active:scale-98 text-white rounded-2xl font-bold text-xs sm:text-sm inline-flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 transition-all cursor-pointer">
-                        <span class="material-symbols-outlined text-lg sm:text-xl leading-none" id="btn-submit-icon">qr_code_2</span>
-                        <span id="btn-submit-text">Buat Pesanan & Bayar QRIS (Rp {{ isset($total) ? number_format($total, 0, ',', '.') : '28.000' }})</span>
+                            id="btn-submit-order"
+                            @if(!($isLapakOpen ?? true)) disabled @endif
+                            class="w-full py-3.5 sm:py-4 px-4 bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 active:scale-98 text-white rounded-2xl font-bold text-xs sm:text-sm inline-flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 transition-all {{ !($isLapakOpen ?? true) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer' }}">
+                        <span class="material-symbols-outlined text-lg sm:text-xl leading-none" id="btn-submit-icon">{{ !($isLapakOpen ?? true) ? 'block' : 'qr_code_2' }}</span>
+                        <span id="btn-submit-text">{{ !($isLapakOpen ?? true) ? 'Lapak Sedang Tutup — Tidak Dapat Memesan' : 'Buat Pesanan & Bayar QRIS (Rp ' . (isset($total) ? number_format($total, 0, ',', '.') : '28.000') . ')' }}</span>
                     </button>
 
                     <!-- Jaminan & Keamanan -->
@@ -725,6 +739,8 @@
         const LAPAK_NAME = "{{ addslashes($lokasiAktif->nama_lokasi ?? 'Lapak Jl. Kuwung') }}";
         const LAPAK_ADDRESS = "{{ addslashes($lokasiAktif->alamat ?? 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto') }}";
         const BASE_SUBTOTAL = {{ (int) ($subtotal ?? 28000) }};
+        const IS_LAPAK_OPEN = {{ ($isLapakOpen ?? true) ? 'true' : 'false' }};
+        const LAPAK_CLOSED_MSG = @json($lapakClosedMessage ?? 'Lapak Kopi Tiga Titik saat ini sedang tutup. Pemesanan online tidak dapat diproses.');
 
         let map;
         let customerMarker;
@@ -1122,16 +1138,38 @@
                     if (summaryTotal) summaryTotal.textContent = `Rp ${formatRupiah(newTotal)}`;
                     if (btnSubmitText) btnSubmitText.textContent = `Buat Pesanan & Bayar QRIS (Rp ${formatRupiah(newTotal)})`;
                 } else {
-                    // Validasi Geofence Gagal (Di luar Kota Mojokerto)
-                    isOutsideMojokerto = true;
+                    // Bedakan error Lapak Tutup / Di Luar Jam vs Geofence Di Luar Mojokerto (TC-LOC-04)
                     const errorMsg = result.message || 'Titik lokasi tujuan berada di luar jangkauan wilayah Kota Mojokerto.';
-                    if (alertGeofence) {
-                        alertGeofence.classList.remove('hidden');
-                        if (geofenceErrorText) geofenceErrorText.textContent = errorMsg;
+                    const isLapakClosedError = !IS_LAPAK_OPEN
+                        || result.error_type === 'lapak_closed'
+                        || errorMsg.toLowerCase().includes('tutup')
+                        || errorMsg.toLowerCase().includes('jam operasional');
+
+                    const geofenceErrorTitle = document.getElementById('geofence-error-title');
+
+                    if (isLapakClosedError) {
+                        isOutsideMojokerto = false;
+                        if (alertGeofence) {
+                            alertGeofence.classList.remove('hidden');
+                            if (geofenceErrorTitle) geofenceErrorTitle.textContent = 'Lapak Kopi Tiga Titik Sedang Tutup';
+                            if (geofenceErrorText) geofenceErrorText.textContent = errorMsg;
+                        }
+                        if (displayOngkir) displayOngkir.textContent = 'Lapak Tutup';
+                        if (displayDistance) displayDistance.textContent = '-';
+                        if (summaryOngkir) summaryOngkir.innerHTML = `<span class="text-rose-600 font-bold text-[11px]">Lapak Tutup</span>`;
+                        if (btnSubmitText) btnSubmitText.textContent = 'Lapak Sedang Tutup — Tidak Dapat Memesan';
+                    } else {
+                        isOutsideMojokerto = true;
+                        if (alertGeofence) {
+                            alertGeofence.classList.remove('hidden');
+                            if (geofenceErrorTitle) geofenceErrorTitle.textContent = 'Titik Lokasi di Luar Wilayah Layanan Kota Mojokerto';
+                            if (geofenceErrorText) geofenceErrorText.textContent = errorMsg;
+                        }
+                        if (displayOngkir) displayOngkir.textContent = 'Di luar jangkauan';
+                        if (displayDistance) displayDistance.textContent = '-';
+                        if (summaryOngkir) summaryOngkir.innerHTML = `<span class="text-rose-600 font-bold text-[11px]">Di luar jangkauan</span>`;
                     }
-                    if (displayOngkir) displayOngkir.textContent = 'Di luar jangkauan';
-                    if (displayDistance) displayDistance.textContent = '-';
-                    if (summaryOngkir) summaryOngkir.innerHTML = `<span class="text-rose-600 font-bold text-[11px]">Di luar jangkauan</span>`;
+
                     if (submitBtn) {
                         submitBtn.disabled = true;
                         submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -1146,14 +1184,33 @@
 
         // Fallback Perhitungan Jarak & Ongkir di Sisi Klien
         function fallbackCalculateQuote(lat, lng) {
+            const alertGeofence = document.getElementById('alert-geofence');
+            const geofenceErrorTitle = document.getElementById('geofence-error-title');
+            const geofenceErrorText = document.getElementById('geofence-error-text');
+            const submitBtn = document.getElementById('btn-submit-order');
+
+            if (!IS_LAPAK_OPEN) {
+                if (alertGeofence) {
+                    alertGeofence.classList.remove('hidden');
+                    if (geofenceErrorTitle) geofenceErrorTitle.textContent = 'Lapak Kopi Tiga Titik Sedang Tutup';
+                    if (geofenceErrorText) geofenceErrorText.textContent = LAPAK_CLOSED_MSG;
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                return;
+            }
+
             // Geofence Bounding Box Kota Mojokerto
             const isInside = (lat >= -7.530000 && lat <= -7.420000 && lng >= 112.390000 && lng <= 112.480000);
-            const alertGeofence = document.getElementById('alert-geofence');
-            const submitBtn = document.getElementById('btn-submit-order');
 
             if (!isInside) {
                 isOutsideMojokerto = true;
-                if (alertGeofence) alertGeofence.classList.remove('hidden');
+                if (alertGeofence) {
+                    alertGeofence.classList.remove('hidden');
+                    if (geofenceErrorTitle) geofenceErrorTitle.textContent = 'Titik Lokasi di Luar Wilayah Layanan Kota Mojokerto';
+                }
                 if (submitBtn) {
                     submitBtn.disabled = true;
                     submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
@@ -1250,13 +1307,21 @@
                 summaryOngkir.innerHTML = `<span class="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">Rp 0 (Ambil di Lapak)</span>`;
                 summaryDistance.textContent = 'Ambil di Lapak';
                 summaryTotal.textContent = `Rp ${formatRupiah(newTotal)}`;
-                btnSubmitText.textContent = `Buat Pesanan & Bayar QRIS (Rp ${formatRupiah(newTotal)})`;
 
-                // Izinkan Submit
-                if (alertGeofence) alertGeofence.classList.add('hidden');
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                // Blokir submit jika lapak sedang tutup / di luar jam operasional (FR-11.6, BR-10, TC-LOC-04)
+                if (!IS_LAPAK_OPEN) {
+                    if (btnSubmitText) btnSubmitText.textContent = 'Lapak Sedang Tutup — Tidak Dapat Memesan';
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    }
+                } else {
+                    if (btnSubmitText) btnSubmitText.textContent = `Buat Pesanan & Bayar QRIS (Rp ${formatRupiah(newTotal)})`;
+                    if (alertGeofence) alertGeofence.classList.add('hidden');
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
                 }
 
                 // Otomatisasi Alamat jika kosong untuk Ambil Sendiri
@@ -1350,8 +1415,17 @@
             );
         }
 
-        // Handler Submit Form & Pencegahan Double Submit (FR-5.2)
+        // Handler Submit Form & Pencegahan Double Submit (FR-5.2, FR-11.6)
         function handleCheckoutSubmit(event) {
+            if (!IS_LAPAK_OPEN) {
+                event.preventDefault();
+                const closedBanner = document.getElementById('banner-lapak-tutup');
+                if (closedBanner) {
+                    closedBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return false;
+            }
+
             const currentMethod = document.querySelector('input[name="metode_pemenuhan"]:checked')?.value || 'pengiriman';
             const nama = document.getElementById('nama_penerima').value.trim();
             const telp = document.getElementById('telepon').value.trim();

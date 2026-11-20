@@ -31,6 +31,9 @@ class OsmRouteShippingTest extends TestCase
     {
         parent::setUp();
 
+        // Tetapkan jam pengujian di dalam jam operasional 15:00 - 18:00 WIB (BR-10, FR-11.6)
+        \Carbon\Carbon::setTestNow(\Carbon\Carbon::today('Asia/Jakarta')->setTime(16, 0));
+
         config([
             'services.openrouteservice.api_key'  => 'mock-ors-test-key-12345',
             'services.openrouteservice.base_url' => 'https://api.openrouteservice.org',
@@ -58,6 +61,12 @@ class OsmRouteShippingTest extends TestCase
 
         $this->routingService = new OsmRoutingService();
         $this->resolver = new OsmRouteShippingCostResolver($this->routingService);
+    }
+
+    protected function tearDown(): void
+    {
+        \Carbon\Carbon::setTestNow();
+        parent::tearDown();
     }
 
     // =========================================================================

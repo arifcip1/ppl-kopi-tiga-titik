@@ -40,11 +40,13 @@ class CheckoutService
     {
         $penerima = $this->validateRecipient($dataPenerima);
 
-        // 1. Validasi Status Lapak Tutup (FR-11.6, PPL-26)
-        $statusLapak = Setting::where('key', 'status_lapak')->value('value') ?? 'buka';
-        if ($statusLapak === 'tutup') {
-            throw new CheckoutException('Lapak Kopi Tiga Titik saat ini sedang tutup. Pemesanan online baru dapat dilakukan saat lapak buka kembali.', [
-                'lapak' => ['Lapak saat ini sedang tutup.'],
+        // 1. Validasi Status & Jam Operasional Lapak (FR-11.6, BR-10, PPL-26)
+        $operational = app(LapakOperationalService::class)->getStatus();
+        if (! $operational['is_open']) {
+            $closedMsg = $operational['closed_message']
+                ?? 'Lapak Kopi Tiga Titik saat ini sedang tutup. Pemesanan online baru dapat dilakukan saat lapak buka kembali.';
+            throw new CheckoutException($closedMsg, [
+                'lapak' => [$closedMsg],
             ]);
         }
 

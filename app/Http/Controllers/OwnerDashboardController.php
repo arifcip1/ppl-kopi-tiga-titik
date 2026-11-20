@@ -98,9 +98,11 @@ class OwnerDashboardController extends Controller
             $activeLocation = ShippingLocation::where('aktif', true)->first();
         }
 
-        $jamBuka = \App\Models\Setting::where('key', 'jam_buka')->value('value') ?? '15:00';
-        $jamTutup = \App\Models\Setting::where('key', 'jam_tutup')->value('value') ?? '18:00';
-        $statusLapak = \App\Models\Setting::where('key', 'status_lapak')->value('value') ?? 'buka';
+        $operational = app(\App\Services\LapakOperationalService::class)->getStatus();
+        $jamBuka = $operational['jam_buka'];
+        $jamTutup = $operational['jam_tutup'];
+        $statusLapak = $operational['effective_status'];
+        $isOutsideOperatingHours = $operational['is_outside_hours'];
         $lokasiAktif = $activeLocation;
 
         // 2. Query Daftar Pesanan Khusus Hari Ini dengan Filter Status, Pencarian, & Sorting (Point 8)
@@ -166,6 +168,7 @@ class OwnerDashboardController extends Controller
             'jamBuka',
             'jamTutup',
             'statusLapak',
+            'isOutsideOperatingHours',
             'orders',
             'couriers',
             'products',

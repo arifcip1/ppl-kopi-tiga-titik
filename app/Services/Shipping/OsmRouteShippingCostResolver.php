@@ -52,11 +52,26 @@ class OsmRouteShippingCostResolver extends UnavailableShippingCostResolver
         $originLat = (float) $lokasiAktif->latitude;
         $originLng = (float) $lokasiAktif->longitude;
 
-        $jamBuka = Setting::where('key', 'jam_buka')->value('value') ?? '15:00';
-        $jamTutup = Setting::where('key', 'jam_tutup')->value('value') ?? '18:00';
-        $statusLapak = Setting::where('key', 'status_lapak')->value('value') ?? 'buka';
+        $operational = app(\App\Services\LapakOperationalService::class)->getStatus();
+        $jamBuka = $operational['jam_buka'];
+        $jamTutup = $operational['jam_tutup'];
+        $statusLapak = $operational['effective_status'];
 
-        // 2. Jika metode ambil sendiri di lapak, ongkir Rp 0 (BR-41, FR-14)
+        // 2. Validasi Status & Jam Operasional Lapak untuk SEMUA checkout online baru (FR-11.6, BR-10)
+        if (! $operational['is_open']) {
+            if ($operational['closed_reason'] === 'manual' && $metodePemenuhan === 'pengiriman') {
+                throw new ShippingCostUnavailableException(
+                    'Lapak Kopi Tiga Titik saat ini sedang tutup. Pemesanan pengantaran kurir tidak dapat diproses.'
+                );
+            }
+
+            throw new ShippingCostUnavailableException(
+                $operational['closed_message']
+                    ?? 'Lapak Kopi Tiga Titik saat ini sedang tutup. Pemesanan online tidak dapat diproses.'
+            );
+        }
+
+        // 3. Jika metode ambil sendiri di lapak, ongkir Rp 0 (BR-11, FR-13)
         if ($metodePemenuhan === 'ambil_sendiri') {
             return [
                 'metode_pemenuhan' => 'ambil_sendiri',
@@ -79,14 +94,9 @@ class OsmRouteShippingCostResolver extends UnavailableShippingCostResolver
             ];
         }
 
-        // 3. Validasi Geofence Wilayah Layanan: Kota Mojokerto (BR-16, BR-33, BR-46, FR-7.5)
+        // 4. Validasi Geofence Wilayah Layanan: Kota Mojokerto (BR-8, FR-7.5)
         if (! $this->isInsideMojokertoCity($lat, $lng)) {
             throw new ShippingCostUnavailableException('Titik lokasi tujuan berada di luar jangkauan wilayah Kota Mojokerto.');
-        }
-
-        // 4. Validasi Status Lapak Tutup (FR-11.6)
-        if ($statusLapak === 'tutup') {
-            throw new ShippingCostUnavailableException('Lapak Kopi Tiga Titik saat ini sedang tutup. Pemesanan pengantaran kurir tidak dapat diproses.');
         }
 
         // 5. Panggil OpenRouteService untuk mendapatkan jarak rute jalan riil (FR-7.2)
