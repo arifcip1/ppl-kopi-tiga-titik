@@ -432,7 +432,7 @@
             </div>
         </div>
 
-        <!-- Tombol Aksi Nota (Unduh PNG, Cetak/PDF Nota Resmi, Transaksi Baru - TC-OWN-04) -->
+        <!-- Tombol Aksi Nota (Unduh PNG & Unduh PDF Langsung dari Modal POS) -->
         <div class="flex flex-col gap-2">
             <div class="grid grid-cols-2 gap-2">
                 <button 
@@ -441,18 +441,17 @@
                     class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1.5"
                 >
                     <span class="material-symbols-outlined text-base">download</span>
-                    <span>Unduh Nota</span>
+                    <span>Unduh PNG</span>
                 </button>
-                <a 
-                    id="btnOpenOfficialNota"
-                    href="#"
-                    target="_blank"
-                    rel="noopener"
+                <button 
+                    type="button"
+                    id="btnDownloadPosPdf"
+                    onclick="downloadPosReceiptPdf()"
                     class="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 active:scale-98 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                    <span class="material-symbols-outlined text-base">print</span>
-                    <span>Cetak / PDF</span>
-                </a>
+                    <span class="material-symbols-outlined text-base text-rose-600">picture_as_pdf</span>
+                    <span id="btnDownloadPosPdfText">Unduh PDF</span>
+                </button>
             </div>
             <button 
                 type="button" 
@@ -497,6 +496,8 @@
 @endsection
 
 @push('scripts')
+<!-- Library html2pdf.bundle.min.js lokal untuk unduh PDF Nota POS langsung tanpa keluar halaman -->
+<script src="{{ asset('js/html2pdf.bundle.min.js') }}"></script>
 <script>
     /**
      * STATE MANAGEMENT KERANJANG KASIR (VANILLA JS - PPL-31)
@@ -930,11 +931,6 @@
             document.getElementById('receiptMethod').textContent = order.metode_pembayaran === 'tunai' ? 'Tunai (Cash)' : 'QRIS Langsung';
             document.getElementById('receiptTotal').textContent = formatRupiah(order.total);
 
-            const officialNotaLink = document.getElementById('btnOpenOfficialNota');
-            if (officialNotaLink && order.kode) {
-                officialNotaLink.href = '/nota/' + encodeURIComponent(order.kode);
-            }
-
             // Rincian Item di Nota
             let itemsHtml = '';
             (order.items || []).forEach(item => {
@@ -1052,8 +1048,8 @@
         }
     }
 
-    // Unduh Nota Transaksi POS sebagai Gambar PNG Siap Cetak / Kirim Pelanggan (TC-OWN-04)
-    function downloadPosReceiptPng() {
+    // Helper pembuat Canvas Nota POS Resolusi Tinggi (dipakai bersama oleh Unduh PNG & Unduh PDF)
+    function buildPosReceiptCanvas() {
         const order = window.lastCompletedPosOrder;
         const kode = order?.kode || document.getElementById('receiptCode')?.textContent || 'POS-NOTA';
         const waktu = order?.waktu || document.getElementById('receiptTime')?.textContent || '-';
@@ -1173,6 +1169,12 @@
         ctx.font = '10px sans-serif';
         ctx.fillText('Simpan di lemari pendingin (tahan 5-7 hari)', width / 2, y);
 
+        return { canvas, kode, width, height: baseHeight };
+    }
+
+    // Unduh Nota Transaksi POS sebagai Gambar PNG Siap Cetak / Kirim Pelanggan
+    function downloadPosReceiptPng() {
+        const { canvas, kode } = buildPosReceiptCanvas();
         const link = document.createElement('a');
         link.download = `Nota-POS-${kode}.png`;
         link.href = canvas.toDataURL('image/png');
@@ -1180,7 +1182,60 @@
         link.click();
         document.body.removeChild(link);
 
-        showPosToast('Nota ' + kode + ' berhasil diunduh sebagai PNG!', 'success', 'Nota Diunduh');
+        showPosToast('Nota ' + kode + ' berhasil diunduh sebagai PNG!', 'success', 'Nota PNG Diunduh');
+    }
+
+    // Unduh Nota Transaksi POS langsung sebagai Dokumen PDF tanpa keluar dari halaman POS
+    function downloadPosReceiptPdf() {
+        const btn = document.getElementById('btnDownloadPosPdf');
+        const btnText = document.getElementById('btnDownloadPosPdfText');
+        const { canvas, kode, width, height } = buildPosReceiptCanvas();
+
+        if (typeof html2pdf === 'undefined') {
+            showPosToast('Library PDF belum siap, mencoba mengunduh sebagai PNG...', 'warning', 'Info');
+            downloadPosReceiptPng();
+            return;
+        }
+
+        if (btn) btn.disabled = true;
+        if (btnText) btnText.textContent = 'Membuat PDF...';
+
+        const imgData = canvas.toDataURL('image/png');
+        const wrapper = document.createElement('div');
+        wrapper.style.width = width + 'px';
+        wrapper.style.background = '#ffffff';
+        wrapper.style.padding = '0';
+        wrapper.style.margin = '0';
+
+        const img = document.createElement('img');
+        img.src = imgData;
+        img.style.width = width + 'px';
+        img.style.height = height + 'px';
+        img.style.display = 'block';
+        wrapper.appendChild(img);
+
+        const pdfWidthMm = 110;
+        const pdfHeightMm = Math.ceil((height / width) * pdfWidthMm) + 8;
+
+        const opt = {
+            margin:       [4, 4, 4, 4],
+            filename:     `Nota-POS-${kode}.pdf`,
+            image:        { type: 'png', quality: 1 },
+            html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+            jsPDF:        { unit: 'mm', format: [pdfWidthMm + 8, pdfHeightMm], orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(wrapper).save()
+            .then(() => {
+                showPosToast('Nota ' + kode + ' berhasil diunduh sebagai PDF!', 'success', 'Nota PDF Diunduh');
+            })
+            .catch(() => {
+                showPosToast('Gagal membuat PDF, silakan coba unduh PNG.', 'error', 'Gagal PDF');
+            })
+            .finally(() => {
+                if (btn) btn.disabled = false;
+                if (btnText) btnText.textContent = 'Unduh PDF';
+            });
     }
 
     function closeSuccessModal() {

@@ -56,59 +56,72 @@ Route::get('/login-pembeli', fn() => redirect('/login'));
 Route::get('/login-kurir', fn() => redirect('/login'));
 Route::get('/login-owner', fn() => redirect('/login'));
 
-// Pembeli - Publik (FR-3.1: Dapat diakses tanpa login)
-Route::get('/landing', fn() => view('Desktop Landing Page'))->name('landing');
+// Pembeli - Publik (FR-3.1: Dapat diakses tanpa login; Owner & Kurir diarahkan ke dashboard perannya)
+Route::get('/landing', function () {
+    if (\Illuminate\Support\Facades\Auth::check()) {
+        $role = \Illuminate\Support\Facades\Auth::user()->role;
+        if (in_array($role, ['admin', 'owner'])) {
+            return redirect()->route('owner.dashboard');
+        }
+        if ($role === 'kurir') {
+            return redirect()->route('kurir.tugas-baru');
+        }
+    }
+    return view('Desktop Landing Page');
+})->name('landing');
 Route::get('/katalog', [CatalogController::class, 'index'])->name('katalog.index');
 
 // Pembeli - Fitur Terlindungi (Wajib Login Sesuai PRD)
 Route::middleware(['auth'])->group(function () {
-    // 2. KERANJANG BELANJA (F4 - PPL 13)
-    Route::get('/cart', [CartController::class, 'index'])->name('cart');
-    Route::post('/cart/items', [CartController::class, 'store'])->name('cart.items.store');
-    Route::patch('/cart/items/{id}', [CartController::class, 'update'])->name('cart.items.update');
-    Route::delete('/cart/items/{id}', [CartController::class, 'destroy'])->name('cart.items.destroy');
-
-    // Endpoint API Keranjang Sesuai Kontrak Dokumen Penyelarasan
-    Route::get('/api/cart', [CartController::class, 'index'])->name('api.cart.index');
-    Route::post('/api/cart/items', [CartController::class, 'store'])->name('api.cart.store');
-    Route::patch('/api/cart/items/{id}', [CartController::class, 'update'])->name('api.cart.update');
-    Route::delete('/api/cart/items/{id}', [CartController::class, 'destroy'])->name('api.cart.destroy');
-
-    // 3. RIWAYAT, STATUS PESANAN, & NOTA DIGITAL PEMBELI (F8 / F13 - PPL 14 & PPL 24)
-    Route::get('/riwayat-pesanan', [OrderController::class, 'index'])->name('orders');
-    Route::get('/riwayat-pesanan/{kode}', [OrderController::class, 'show'])->name('orders.show');
-    Route::get('/order-tracking', [OrderController::class, 'tracking'])->name('tracking');
-    Route::get('/order-tracking/{kode}', [OrderController::class, 'show'])->name('tracking.detail');
-    Route::get('/tracking', [OrderController::class, 'tracking']);
-    Route::get('/tracking/{kode}', [OrderController::class, 'show']);
+    // Nota Digital & Status Pembayaran (Pelanggan pemilik pesanan atau Admin/Owner)
     Route::get('/orders/{kode}/nota', [OrderController::class, 'nota'])->name('orders.nota');
     Route::get('/nota/{kode}', [OrderController::class, 'nota'])->name('nota');
     Route::get('/api/orders/{kode}/nota', [OrderController::class, 'nota'])->name('api.orders.nota');
 
-    // Endpoint API Riwayat & Status Pesanan Sisi Pembeli (PPL 14)
+    // Endpoint API Riwayat, Detail, & Status Pembayaran (otorisasi dicek di controller)
     Route::get('/api/orders', [OrderController::class, 'index'])->name('api.orders.index');
     Route::get('/api/orders/{kode}', [OrderController::class, 'show'])->name('api.orders.show');
+    Route::get('/api/orders/{identifier}/payment-status', [PaymentController::class, 'status'])->name('api.orders.payment-status');
+    Route::get('/api/orders/{identifier}/payment', [PaymentController::class, 'status'])->name('api.orders.payment');
 
     // Endpoint API Quote Ongkos Kirim (PPL 19 & PPL 25)
     Route::post('/api/shipping/quote', [ShippingController::class, 'quote'])->name('api.shipping.quote');
 
-    // Transaksi & Checkout Pelanggan (PPL 16 / PPL-20)
+    // Halaman & Aksi KHUSUS PELANGGAN — Owner/Admin & Kurir dilarang masuk tampilan Pelanggan (403 Forbidden)
     Route::middleware(['role:pelanggan'])->group(function () {
+        // 2. KERANJANG BELANJA (F4 - PPL 13)
+        Route::get('/cart', [CartController::class, 'index'])->name('cart');
+        Route::post('/cart/items', [CartController::class, 'store'])->name('cart.items.store');
+        Route::patch('/cart/items/{id}', [CartController::class, 'update'])->name('cart.items.update');
+        Route::delete('/cart/items/{id}', [CartController::class, 'destroy'])->name('cart.items.destroy');
+
+        // Endpoint API Keranjang Sesuai Kontrak Dokumen Penyelarasan
+        Route::get('/api/cart', [CartController::class, 'index'])->name('api.cart.index');
+        Route::post('/api/cart/items', [CartController::class, 'store'])->name('api.cart.store');
+        Route::patch('/api/cart/items/{id}', [CartController::class, 'update'])->name('api.cart.update');
+        Route::delete('/api/cart/items/{id}', [CartController::class, 'destroy'])->name('api.cart.destroy');
+
+        // 3. RIWAYAT & STATUS PELACAKAN PESANAN PEMBELI (F8 / F13 - PPL 14 & PPL 24)
+        Route::get('/riwayat-pesanan', [OrderController::class, 'index'])->name('orders');
+        Route::get('/riwayat-pesanan/{kode}', [OrderController::class, 'show'])->name('orders.show');
+        Route::get('/order-tracking', [OrderController::class, 'tracking'])->name('tracking');
+        Route::get('/order-tracking/{kode}', [OrderController::class, 'show'])->name('tracking.detail');
+        Route::get('/tracking', [OrderController::class, 'tracking']);
+        Route::get('/tracking/{kode}', [OrderController::class, 'show']);
+
+        // 4. TRANSAKSI, CHECKOUT & PEMBAYARAN QRIS PELANGGAN (PPL 16, PPL 23, PPL 27)
         Route::get('/checkout', [OrderController::class, 'showCheckout'])->name('checkout');
         Route::post('/checkout', [OrderController::class, 'checkout'])->name('checkout.process');
         Route::post('/api/orders', [OrderController::class, 'checkout'])->name('api.orders.store');
         Route::post('/api/checkout', [OrderController::class, 'checkout'])->name('api.checkout.store');
         Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+        Route::get('/pembayaran-qris/{kode?}', [PaymentController::class, 'show'])->name('payment');
+        Route::post('/api/orders/{identifier}/simulate-payment', [PaymentController::class, 'simulateSuccess'])->name('api.orders.simulate-payment');
+
+        // 5. PROFIL & ALAMAT PENGIRIMAN UTAMA PELANGGAN
+        Route::get('/profil-pelanggan', [CustomerProfileController::class, 'show'])->name('profile');
+        Route::put('/profil-pelanggan/alamat', [CustomerProfileController::class, 'updateAddress'])->name('profile.address.update');
     });
-
-    // 4. PEMBAYARAN QRIS MIDTRANS SANDBOX (F6 - PPL-27 / PPL-23)
-    Route::get('/pembayaran-qris/{kode?}', [PaymentController::class, 'show'])->name('payment');
-    Route::get('/api/orders/{identifier}/payment-status', [PaymentController::class, 'status'])->name('api.orders.payment-status');
-    Route::get('/api/orders/{identifier}/payment', [PaymentController::class, 'status'])->name('api.orders.payment');
-    Route::post('/api/orders/{identifier}/simulate-payment', [PaymentController::class, 'simulateSuccess'])->name('api.orders.simulate-payment');
-
-    Route::get('/profil-pelanggan', [CustomerProfileController::class, 'show'])->name('profile');
-    Route::put('/profil-pelanggan/alamat', [CustomerProfileController::class, 'updateAddress'])->name('profile.address.update');
 });
 
 // Endpoint Webhook Notifikasi Server-to-Server Midtrans Sandbox (FR-6.4 / Tanpa Autentikasi Sesi)

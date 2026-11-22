@@ -318,35 +318,47 @@
         </button>
     </div>
 
-    <!-- Tombol Aksi Hubungi Penjual & Navigasi (FR-13 / PPL-24) -->
+    <!-- Tombol Aksi Hubungi Penjual & Navigasi (Khusus Pelanggan vs Owner) -->
     <div class="flex flex-col sm:flex-row gap-2.5 sm:gap-3 print:hidden">
-        
-        <!-- Tombol Hubungi Penjual (WhatsApp Resmi) -->
-        @php
-            $waMessage = "Halo Admin Kopi Tiga Titik, saya ingin konfirmasi pesanan dengan nomor Nota: #" . ($order->kode ?? '') . " atas nama " . ($order->nama_penerima ?? '') . ".";
-            $waUrl = "https://wa.me/" . preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $sellerWa ?? '6281234567890')) . "?text=" . urlencode($waMessage);
-        @endphp
+        @if($isOwnerViewer)
+            <a href="{{ route('owner.pos') }}" 
+               class="w-full sm:flex-1 py-3 px-4 bg-blue-900 hover:bg-blue-800 active:scale-98 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs">
+                <span class="material-symbols-outlined text-base">point_of_sale</span>
+                <span>Kembali ke POS Kasir</span>
+            </a>
 
-        <a href="{{ $waUrl }}" 
-           target="_blank" 
-           rel="noopener noreferrer"
-           class="w-full sm:flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs">
-            <span class="material-symbols-outlined text-base">chat</span>
-            <span>Hubungi Penjual via WhatsApp</span>
-        </a>
+            <a href="{{ route('owner.dashboard') }}" 
+               class="w-full sm:flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-colors">
+                <span class="material-symbols-outlined text-base">dashboard</span>
+                <span>Kembali ke Dashboard Owner</span>
+            </a>
+        @else
+            <!-- Tombol Hubungi Penjual (WhatsApp Resmi) -->
+            @php
+                $waMessage = "Halo Admin Kopi Tiga Titik, saya ingin konfirmasi pesanan dengan nomor Nota: #" . ($order->kode ?? '') . " atas nama " . ($order->nama_penerima ?? '') . ".";
+                $waUrl = "https://wa.me/" . preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $sellerWa ?? '6281234567890')) . "?text=" . urlencode($waMessage);
+            @endphp
 
-        <a href="{{ route('tracking.detail', $order->kode) }}" 
-           class="w-full sm:flex-1 py-3 px-4 bg-blue-900/10 hover:bg-blue-900/20 text-blue-900 active:scale-98 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-2xs">
-            <span class="material-symbols-outlined text-base">track_changes</span>
-            <span>Pantau Status Live</span>
-        </a>
+            <a href="{{ $waUrl }}" 
+               target="_blank" 
+               rel="noopener noreferrer"
+               class="w-full sm:flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-xs">
+                <span class="material-symbols-outlined text-base">chat</span>
+                <span>Hubungi Penjual via WhatsApp</span>
+            </a>
 
-        <a href="{{ route('orders') }}" 
-           class="w-full sm:w-auto py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors">
-            <span class="material-symbols-outlined text-base">receipt_long</span>
-            <span class="inline">Daftar Pesanan</span>
-        </a>
+            <a href="{{ route('tracking.detail', $order->kode) }}" 
+               class="w-full sm:flex-1 py-3 px-4 bg-blue-900/10 hover:bg-blue-900/20 text-blue-900 active:scale-98 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-2xs">
+                <span class="material-symbols-outlined text-base">track_changes</span>
+                <span>Pantau Status Live</span>
+            </a>
 
+            <a href="{{ route('orders') }}" 
+               class="w-full sm:w-auto py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors">
+                <span class="material-symbols-outlined text-base">receipt_long</span>
+                <span class="inline">Daftar Pesanan</span>
+            </a>
+        @endif
     </div>
 
 </div>

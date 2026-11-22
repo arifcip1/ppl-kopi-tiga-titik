@@ -334,7 +334,12 @@
                                 <span class="text-[10px] text-slate-400">• {{ $customerPhone }}</span>
                             </div>
                             <div class="flex items-center gap-1.5 mt-0.5">
-                                @if($order->metode_pemenuhan === 'ambil_sendiri')
+                                @if($order->sumber_transaksi === 'pos')
+                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.2 bg-amber-50 text-amber-800 text-[10px] font-bold rounded">
+                                        <span class="material-symbols-outlined text-[12px]">point_of_sale</span>
+                                        POS Kasir Lapak
+                                    </span>
+                                @elseif($order->metode_pemenuhan === 'ambil_sendiri')
                                     <span class="inline-flex items-center gap-1 px-1.5 py-0.2 bg-purple-50 text-purple-700 text-[10px] font-bold rounded">
                                         <span class="material-symbols-outlined text-[12px]">storefront</span>
                                         Ambil Sendiri di Lapak
@@ -370,7 +375,7 @@
                     </div>
 
                     <!-- Alamat / Catatan Pengiriman (Point 4: Tombol Lihat Titik Peta Tujuan) -->
-                    @if($order->metode_pemenuhan !== 'ambil_sendiri' && $order->alamat)
+                    @if($order->sumber_transaksi !== 'pos' && $order->metode_pemenuhan !== 'ambil_sendiri' && $order->alamat)
                         <div class="mt-2 p-2 bg-slate-50 rounded-xl text-[11px] text-slate-600 flex items-start justify-between gap-1.5">
                             <div class="flex items-start gap-1.5 min-w-0">
                                 <span class="material-symbols-outlined text-slate-400 text-sm mt-0.5 shrink-0">place</span>
@@ -399,7 +404,15 @@
                 <!-- Footer Kartu: Total & Tombol Aksi -->
                 <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
                     <div>
-                        <span class="text-[10px] text-slate-400 block">Total Tagihan (Termasuk Ongkir)</span>
+                        <span class="text-[10px] text-slate-400 block">
+                            @if($order->sumber_transaksi === 'pos')
+                                Total Pembayaran (POS Lapak)
+                            @elseif($order->metode_pemenuhan === 'ambil_sendiri')
+                                Total Tagihan (Ambil di Lapak)
+                            @else
+                                Total Tagihan (Termasuk Ongkir)
+                            @endif
+                        </span>
                         <span class="text-sm font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">
                             Rp {{ number_format($order->total, 0, ',', '.') }}
                         </span>
@@ -413,7 +426,7 @@
                         </button>
 
                         <!-- Aksi Penugasan Kurir (Untuk Pesan Antar Berstatus Diproses) -->
-                        @if($order->status === 'diproses' && $order->metode_pemenuhan !== 'ambil_sendiri')
+                        @if($order->status === 'diproses' && $order->sumber_transaksi !== 'pos' && $order->metode_pemenuhan !== 'ambil_sendiri')
                             <button type="button" onclick="openAssignModal({{ $order->id }}, '{{ $order->kode }}')" class="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer">
                                 <span class="material-symbols-outlined text-sm">send</span>
                                 <span>Tugaskan Kurir</span>
@@ -532,7 +545,7 @@
     <!-- ============================================================== -->
     <!-- MODAL DETAIL LENGKAP PESANAN (AJAX BREAKDOWN)                   -->
     <!-- ============================================================== -->
-    <div id="detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200">
+    <div id="detail-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200" onclick="if (event.target === this) closeDetailModal()">
         <div class="bg-white w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center gap-2">
@@ -718,6 +731,8 @@
 @endsection
 
 @push('scripts')
+<!-- Library html2pdf.bundle.min.js lokal untuk unduh PDF Nota Pesanan langsung dari Dashboard Owner -->
+<script src="{{ asset('js/html2pdf.bundle.min.js') }}"></script>
 <script>
     // Courier Management Modal Logic
     function openCouriersModal() {
@@ -809,12 +824,15 @@
         }
     }
 
-    // Detail Order Modal AJAX Logic (Point 5: Robust JSON Parsing)
+    // Detail Order Modal AJAX Logic (Point 5: Robust JSON Parsing + Cetak/Unduh Nota)
+    let currentDetailOrder = null;
+
     function openOrderDetailModal(orderId) {
         const modal = document.getElementById('detail-modal');
         const codeEl = document.getElementById('modalDetailOrderCode');
         const contentEl = document.getElementById('modalDetailContent');
 
+        currentDetailOrder = null;
         modal.classList.remove('hidden');
         setTimeout(() => modal.classList.remove('opacity-0'), 10);
         contentEl.innerHTML = '<div class="py-8 text-center text-slate-400"><span class="material-symbols-outlined animate-spin text-2xl">sync</span><p class="mt-1">Mengambil rincian...</p></div>';
@@ -826,7 +844,10 @@
             .then(res => {
                 if(!res.success) throw new Error('Gagal memuat');
                 const d = res.data;
-                codeEl.innerText = 'Kode: #' + (d.kode || '-') + ' • Waktu: ' + (d.created_at || '-');
+                currentDetailOrder = d;
+
+                const formattedTime = d.tanggal_formatted || d.created_at || '-';
+                codeEl.innerText = 'Kode: #' + (d.kode || '-') + ' • Waktu: ' + formattedTime;
 
                 const rawItems = d.items || d.order_items || d.orderItems || [];
                 let itemsHtml = rawItems.map(it => `
@@ -851,12 +872,23 @@
                     </div>
                 `).join('');
 
-                const customerName = (d.customer && d.customer.name) || d.nama_penerima || d.nama_pelanggan || (d.user && d.user.name) || 'Pelanggan';
+                const isPosOrder = d.sumber_transaksi === 'pos';
+                const customerName = (d.customer && d.customer.name) || d.nama_penerima || d.nama_pelanggan || (d.user && d.user.name) || (isPosOrder ? 'Pelanggan Lapak' : 'Pelanggan');
                 const customerPhone = (d.customer && d.customer.telepon) || d.telepon || (d.user && d.user.no_telepon) || '-';
-                const deliveryAddress = d.alamat_pengiriman || d.alamat || d.alamat_lokasi_asal || '-';
+                const deliveryAddress = d.alamat_pengiriman || d.alamat || d.alamat_lokasi_asal || '';
+                const hasDeliveryAddress = !isPosOrder && deliveryAddress && deliveryAddress !== '-';
+                const fulfillmentLabel = isPosOrder
+                    ? 'POS Kasir Lapak (Transaksi Langsung)'
+                    : (d.metode_pemenuhan === 'ambil_sendiri'
+                        ? 'Ambil Sendiri di Lapak (Pickup)'
+                        : 'Pesan Antar ke Alamat (Delivery)');
+
                 const paymentStatus = (d.payment && d.payment.status) || 'menunggu_pembayaran';
+                const rawPayMethod = (d.payment && d.payment.metode) || d.metode_pembayaran || '';
                 const isPaid = ['berhasil', 'lunas'].includes(paymentStatus) || ['diproses', 'dikirim', 'selesai'].includes(d.status);
-                const paymentMethodLabel = d.sumber_transaksi === 'pos' ? 'Lunas (POS Lapak)' : 'Lunas (QRIS)';
+                const paymentMethodLabel = isPosOrder
+                    ? (rawPayMethod === 'tunai' ? 'Lunas (POS Tunai)' : (rawPayMethod === 'qris' ? 'Lunas (POS QRIS)' : 'Lunas (POS Lapak)'))
+                    : 'Lunas (QRIS)';
 
                 contentEl.innerHTML = `
                     <!-- Info Pelanggan & Alamat -->
@@ -869,14 +901,14 @@
                             <strong>Telepon:</strong> ${customerPhone}
                         </div>
                         <div class="text-[11px] text-slate-600">
-                            <strong>Metode Pemenuhan:</strong> ${d.metode_pemenuhan === 'ambil_sendiri' ? 'Ambil Sendiri di Lapak (Pickup)' : 'Pesan Antar ke Alamat (Delivery)'}
+                            <strong>Metode Pemenuhan:</strong> ${fulfillmentLabel}
                         </div>
-                        ${deliveryAddress ? `
+                        ${hasDeliveryAddress ? `
                             <div class="text-[11px] text-slate-600 mt-1 pt-1 border-t border-slate-200">
                                 <strong>Alamat:</strong> ${deliveryAddress}
                             </div>
                         ` : ''}
-                        ${(d.lat && d.lng) ? `
+                        ${(!isPosOrder && d.lat && d.lng) ? `
                             <div class="mt-2">
                                 <a href="https://www.google.com/maps/dir/?api=1&destination=${d.lat},${d.lng}" target="_blank" rel="noopener" class="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs">
                                     <span class="material-symbols-outlined text-base">pin_drop</span>
@@ -930,10 +962,272 @@
                             ${timelineHtml || '<div class="text-slate-400 text-center py-2 text-xs">Belum ada riwayat audit trail</div>'}
                         </div>
                     </div>
+
+                    <!-- Tombol Cetak & Unduh Nota Pesanan -->
+                    <div class="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <button type="button" onclick="printOwnerOrderReceipt()" class="w-full py-2.5 px-3 bg-blue-900 hover:bg-blue-800 active:scale-98 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1.5">
+                            <span class="material-symbols-outlined text-base">print</span>
+                            <span>Cetak Nota</span>
+                        </button>
+                        <button type="button" id="btnDetailDownloadPdf" onclick="downloadOwnerOrderPdf()" class="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 active:scale-98 text-slate-800 border border-slate-200 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer flex items-center justify-center gap-1.5">
+                            <span class="material-symbols-outlined text-base text-rose-600">picture_as_pdf</span>
+                            <span id="btnDetailDownloadPdfText">Unduh PDF</span>
+                        </button>
+                        <button type="button" onclick="downloadOwnerOrderPng()" class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:scale-98 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1.5">
+                            <span class="material-symbols-outlined text-base">download</span>
+                            <span>Unduh PNG</span>
+                        </button>
+                    </div>
                 `;
             })
             .catch(err => {
                 contentEl.innerHTML = '<div class="p-4 text-center text-rose-600 font-semibold text-xs">Gagal mengambil detail pesanan. Silakan coba kembali.</div>';
+            });
+    }
+
+    function formatOwnerRupiah(amount) {
+        return 'Rp ' + Number(amount || 0).toLocaleString('id-ID');
+    }
+
+    // Helper pembuat Canvas Nota Resolusi Tinggi untuk Cetak, PDF, dan PNG langsung dari Dashboard Owner
+    function buildOwnerOrderReceiptCanvas(d) {
+        const isPos = d.sumber_transaksi === 'pos';
+        const kode = d.kode || 'NOTA';
+        const waktu = d.tanggal_formatted || d.created_at || '-';
+        const pelanggan = (d.customer && d.customer.name) || d.nama_penerima || d.nama_pelanggan || (isPos ? 'Pelanggan Lapak' : 'Pelanggan');
+        const layanan = isPos
+            ? 'POS Kasir Lapak'
+            : (d.metode_pemenuhan === 'ambil_sendiri' ? 'Ambil di Lapak' : 'Pesan Antar');
+        const rawPayMethod = (d.payment && d.payment.metode) || d.metode_pembayaran || '';
+        const paymentStatus = (d.payment && d.payment.status) || 'menunggu_pembayaran';
+        const isPaid = ['berhasil', 'lunas'].includes(paymentStatus) || ['diproses', 'dikirim', 'selesai'].includes(d.status);
+        const metodeBayar = isPos
+            ? (rawPayMethod === 'tunai' ? 'Tunai (POS)' : (rawPayMethod === 'qris' ? 'QRIS (POS)' : 'POS Lapak'))
+            : 'QRIS Online';
+        const statusBayarText = isPaid
+            ? 'LUNAS'
+            : (d.status === 'dibatalkan' ? 'DIBATALKAN' : 'MENUNGGU BAYAR');
+        const statusBayarColor = isPaid
+            ? '#059669'
+            : (d.status === 'dibatalkan' ? '#e11d48' : '#d97706');
+
+        const items = Array.isArray(d.items) ? d.items : [];
+        const subtotal = Number(d.subtotal || 0);
+        const ongkir = Number(d.ongkir || 0);
+        const total = Number(d.total || 0);
+
+        const scale = 2;
+        const width = 420;
+        const baseHeight = 405 + (items.length * 26);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width * scale;
+        canvas.height = baseHeight * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(scale, scale);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, baseHeight);
+
+        ctx.fillStyle = '#1e3a8a';
+        ctx.fillRect(0, 0, width, 10);
+
+        let y = 42;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#0f172a';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillText('KOPI TIGA TITIK', width / 2, y);
+
+        y += 18;
+        ctx.fillStyle = '#64748b';
+        ctx.font = '12px sans-serif';
+        ctx.fillText('Street Coffee • Kota Mojokerto', width / 2, y);
+
+        y += 16;
+        ctx.fillStyle = statusBayarColor;
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText((isPos ? 'NOTA POS LAPAK' : 'NOTA PESANAN') + ' — ' + statusBayarText, width / 2, y);
+
+        const drawDivider = (posY) => {
+            ctx.save();
+            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.beginPath();
+            ctx.moveTo(24, posY);
+            ctx.lineTo(width - 24, posY);
+            ctx.stroke();
+            ctx.restore();
+        };
+
+        const drawRow = (label, value, posY, bold = false, valueColor = '#0f172a') => {
+            ctx.textAlign = 'left';
+            ctx.fillStyle = bold ? '#0f172a' : '#64748b';
+            ctx.font = (bold ? 'bold ' : '') + '12px monospace';
+            ctx.fillText(label, 24, posY);
+
+            ctx.textAlign = 'right';
+            ctx.fillStyle = valueColor;
+            ctx.font = (bold ? 'bold ' : '') + '12px monospace';
+            ctx.fillText(value, width - 24, posY);
+        };
+
+        y += 18;
+        drawDivider(y);
+
+        y += 22;
+        drawRow('No. Nota', kode, y, true);
+        y += 20;
+        drawRow('Waktu', waktu, y);
+        y += 20;
+        drawRow('Pelanggan', pelanggan.length > 22 ? pelanggan.slice(0, 22) + '...' : pelanggan, y);
+        y += 20;
+        drawRow('Layanan', layanan, y, true, '#1e3a8a');
+        y += 20;
+        drawRow('Pembayaran', metodeBayar, y);
+
+        y += 16;
+        drawDivider(y);
+
+        y += 22;
+        items.forEach(item => {
+            const nama = item.nama_produk || 'Produk Kopi';
+            const label = `${item.jumlah}x ${nama}`;
+            const val = formatOwnerRupiah(item.subtotal);
+            drawRow(label.length > 26 ? label.slice(0, 26) + '...' : label, val, y, false, '#1e293b');
+            y += 24;
+        });
+
+        y += 2;
+        drawDivider(y);
+
+        y += 22;
+        drawRow('Subtotal', formatOwnerRupiah(subtotal), y);
+        y += 20;
+        drawRow('Ongkos Kirim', ongkir > 0 ? formatOwnerRupiah(ongkir) : 'Gratis / Rp 0', y);
+        y += 24;
+        drawRow('TOTAL BAYAR', formatOwnerRupiah(total), y, true, '#1e3a8a');
+
+        y += 22;
+        drawDivider(y);
+
+        y += 24;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#475569';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillText('Terima kasih telah menikmati Kopi Tiga Titik!', width / 2, y);
+
+        y += 16;
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '10px sans-serif';
+        ctx.fillText('Simpan di lemari pendingin (tahan 5-7 hari)', width / 2, y);
+
+        return { canvas, kode, width, height: baseHeight };
+    }
+
+    function printOwnerOrderReceipt() {
+        if (!currentDetailOrder) return;
+        const { canvas, kode, width } = buildOwnerOrderReceiptCanvas(currentDetailOrder);
+        const imgData = canvas.toDataURL('image/png');
+
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(`<!DOCTYPE html>
+            <html>
+                <head>
+                    <title>Nota ${kode} - Kopi Tiga Titik</title>
+                    <style>
+                        @page { margin: 8mm; }
+                        body { margin: 0; padding: 0; display: flex; justify-content: center; background: #fff; }
+                        img { width: ${width}px; max-width: 100%; height: auto; display: block; }
+                    </style>
+                </head>
+                <body>
+                    <img id="receiptPrintImg" src="${imgData}" alt="Nota ${kode}" />
+                </body>
+            </html>`);
+        doc.close();
+
+        const triggerPrint = () => {
+            try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } finally {
+                setTimeout(() => {
+                    if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+                }, 1500);
+            }
+        };
+
+        const imgEl = doc.getElementById('receiptPrintImg');
+        if (imgEl && !imgEl.complete) {
+            imgEl.onload = triggerPrint;
+        } else {
+            setTimeout(triggerPrint, 100);
+        }
+    }
+
+    function downloadOwnerOrderPng() {
+        if (!currentDetailOrder) return;
+        const { canvas, kode } = buildOwnerOrderReceiptCanvas(currentDetailOrder);
+        const link = document.createElement('a');
+        link.download = `Nota-${kode}.png`;
+        link.href = canvas.toDataURL('image/png');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function downloadOwnerOrderPdf() {
+        if (!currentDetailOrder) return;
+        const btn = document.getElementById('btnDetailDownloadPdf');
+        const btnText = document.getElementById('btnDetailDownloadPdfText');
+        const { canvas, kode, width, height } = buildOwnerOrderReceiptCanvas(currentDetailOrder);
+
+        if (typeof html2pdf === 'undefined') {
+            downloadOwnerOrderPng();
+            return;
+        }
+
+        if (btn) btn.disabled = true;
+        if (btnText) btnText.textContent = 'Membuat PDF...';
+
+        const wrapper = document.createElement('div');
+        wrapper.style.width = width + 'px';
+        wrapper.style.background = '#ffffff';
+        wrapper.style.padding = '0';
+        wrapper.style.margin = '0';
+
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL('image/png');
+        img.style.width = width + 'px';
+        img.style.height = height + 'px';
+        img.style.display = 'block';
+        wrapper.appendChild(img);
+
+        const pdfWidthMm = 110;
+        const pdfHeightMm = Math.ceil((height / width) * pdfWidthMm) + 8;
+
+        const opt = {
+            margin:      [4, 4, 4, 4],
+            filename:    `Nota-${kode}.pdf`,
+            image:       { type: 'png', quality: 1 },
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+            jsPDF:       { unit: 'mm', format: [pdfWidthMm + 8, pdfHeightMm], orientation: 'portrait' }
+        };
+
+        html2pdf().set(opt).from(wrapper).save()
+            .finally(() => {
+                if (btn) btn.disabled = false;
+                if (btnText) btnText.textContent = 'Unduh PDF';
             });
     }
 
