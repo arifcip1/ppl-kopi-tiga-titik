@@ -167,7 +167,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <a href="https://wa.me/6281234567890" target="_blank" rel="noopener"
+                    <a href="https://wa.me/6285710885120" target="_blank" rel="noopener"
                        class="p-3.5 bg-slate-50 hover:bg-blue-50/70 rounded-xl border border-slate-200/80 flex items-center gap-3 transition-colors">
                         <div class="w-9 h-9 bg-emerald-100 text-emerald-800 rounded-lg flex items-center justify-center shrink-0">
                             <span class="material-symbols-outlined text-lg">support_agent</span>

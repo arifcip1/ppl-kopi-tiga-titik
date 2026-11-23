@@ -14,8 +14,8 @@
         </a>
 
         @php
-            $sellerWaNumber = config('services.seller.whatsapp', '6281234567890');
-            $sellerWaDisplay = config('services.seller.whatsapp_display', '0812-3456-7890');
+            $sellerWaNumber = config('services.seller.whatsapp', '6285710885120');
+            $sellerWaDisplay = config('services.seller.whatsapp_display', '0857-1088-5120');
         @endphp
         <a href="https://wa.me/{{ $sellerWaNumber }}?text={{ urlencode('Halo Admin Kopi Tiga Titik, saya butuh bantuan untuk pembayaran pesanan #' . ($order->kode ?? '')) }}" 
            target="_blank" 
@@ -290,10 +290,10 @@
                 </div>
                 <div class="min-w-0">
                     <div class="text-xs font-bold text-slate-900 truncate">Butuh Bantuan Penjual?</div>
-                    <div class="text-[10px] text-slate-500 font-mono">{{ $sellerWaDisplay ?? '0812-3456-7890' }}</div>
+                    <div class="text-[10px] text-slate-500 font-mono">{{ $sellerWaDisplay ?? '0857-1088-5120' }}</div>
                 </div>
             </div>
-            <a href="https://wa.me/{{ $sellerWaNumber ?? '6281234567890' }}?text={{ urlencode('Halo Barista Kopi Tiga Titik, saya ingin konfirmasi pembayaran pesanan: #' . ($order->kode ?? '')) }}" 
+            <a href="https://wa.me/{{ $sellerWaNumber ?? '6285710885120' }}?text={{ urlencode('Halo Barista Kopi Tiga Titik, saya ingin konfirmasi pembayaran pesanan: #' . ($order->kode ?? '')) }}" 
                target="_blank" 
                rel="noopener noreferrer" 
                class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-xs transition-all shrink-0">

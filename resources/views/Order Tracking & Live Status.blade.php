@@ -402,8 +402,8 @@
                     </a>
 
                     @php
-                        $sellerWaNumber = config('services.seller.whatsapp', '6281234567890');
-                        $sellerWaDisplay = config('services.seller.whatsapp_display', '0812-3456-7890');
+                        $sellerWaNumber = config('services.seller.whatsapp', '6285710885120');
+                        $sellerWaDisplay = config('services.seller.whatsapp_display', '0857-1088-5120');
                         $waMessage = 'Halo Penjual Kopi Tiga Titik, saya ingin menanyakan progres pesanan #' . $order->kode . ' atas nama ' . ($order->nama_penerima ?? Auth::user()->name);
                     @endphp
                     <a href="https://wa.me/{{ $sellerWaNumber }}?text={{ urlencode($waMessage) }}" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-2xs">

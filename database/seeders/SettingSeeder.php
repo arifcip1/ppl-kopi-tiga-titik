@@ -64,6 +64,16 @@ class SettingSeeder extends Seeder
                 'value' => 'buka',
                 'description' => 'Status buka/tutup lapak hari ini (buka/tutup).',
             ],
+            [
+                'key' => 'kontak_whatsapp',
+                'value' => '6285710885120',
+                'description' => 'Nomor WhatsApp resmi owner/admin untuk konfirmasi pesanan.',
+            ],
+            [
+                'key' => 'kontak_whatsapp_display',
+                'value' => '0857-1088-5120',
+                'description' => 'Format tampilan nomor WhatsApp owner di halaman pelanggan.',
+            ],
         ];
 
         foreach ($settings as $setting) {

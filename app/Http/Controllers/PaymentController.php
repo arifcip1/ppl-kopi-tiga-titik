@@ -54,6 +54,11 @@ class PaymentController extends Controller
             abort(403, 'Anda tidak memiliki hak untuk mengakses pembayaran pesanan ini.');
         }
 
+        // Isolasi Transaksi: Pesanan POS kasir offline tidak menggunakan pembayaran gateway online
+        if ($order->sumber_transaksi === 'pos') {
+            return redirect()->route('orders')->with('error', 'Pesanan kasir offline POS tidak menggunakan halaman pembayaran online.');
+        }
+
         // Jika pesanan sudah dibayar, langsung alihkan ke pelacakan status
         if ($order->isProcessing() || $order->isShipped() || $order->isCompleted()) {
             return redirect()->route('tracking.detail', $order->kode)

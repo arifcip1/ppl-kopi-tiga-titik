@@ -76,7 +76,7 @@
                         {{ $sellerStoreAddress ?? 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto' }}
                     </p>
                     <p class="text-[10px] text-slate-400 font-mono mt-0.5">
-                        WhatsApp: {{ $sellerWaDisplay ?? '0812-3456-7890' }}
+                        WhatsApp: {{ $sellerWaDisplay ?? '0857-1088-5120' }}
                     </p>
                 </div>
             </div>
@@ -336,7 +336,7 @@
             <!-- Tombol Hubungi Penjual (WhatsApp Resmi) -->
             @php
                 $waMessage = "Halo Admin Kopi Tiga Titik, saya ingin konfirmasi pesanan dengan nomor Nota: #" . ($order->kode ?? '') . " atas nama " . ($order->nama_penerima ?? '') . ".";
-                $waUrl = "https://wa.me/" . preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $sellerWa ?? '6281234567890')) . "?text=" . urlencode($waMessage);
+                $waUrl = "https://wa.me/" . preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $sellerWa ?? '6285710885120')) . "?text=" . urlencode($waMessage);
             @endphp
 
             <a href="{{ $waUrl }}" 
@@ -367,33 +367,6 @@
 
 @push('styles')
 <style>
-/* Fix container html2pdf agar koordinat rendering selalu tepat di x=0 tanpa terpotong di layar mobile maupun desktop */
-.html2pdf__overlay {
-    position: fixed !important;
-    left: 0 !important;
-    top: 0 !important;
-    right: auto !important;
-    bottom: auto !important;
-    width: 720px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    z-index: 9999 !important;
-    background: transparent !important;
-}
-.html2pdf__container {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    right: auto !important;
-    bottom: auto !important;
-    width: 720px !important;
-    max-width: 720px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    box-sizing: border-box !important;
-    background: #ffffff !important;
-}
-
 @media print {
     /* Sembunyikan seluruh navigasi web dan sidebar saat dicetak */
     nav, header, footer, aside, #mainSidebar, #mobileBackdrop, .print\:hidden, #header-container, #global-toast-container {
@@ -427,50 +400,28 @@
 <script src="{{ asset('js/html2pdf.bundle.min.js') }}"></script>
 <script>
     /**
-     * Fungsi Helper Pembuat Klon Struk yang Terstandarisasi (720px)
-     * Menghasilkan struktur A4 rapi tanpa terpotong oleh margin sidebar desktop atau viewport mobile
-     */
-    function createReceiptStandardClone() {
-        const receipt = document.getElementById('printable-receipt');
-        if (!receipt) return null;
-
-        const clone = receipt.cloneNode(true);
-        clone.style.width = '720px';
-        clone.style.maxWidth = '720px';
-        clone.style.minWidth = '720px';
-        clone.style.margin = '0';
-        clone.style.padding = '28px';
-        clone.style.boxSizing = 'border-box';
-        clone.style.boxShadow = 'none';
-        clone.style.border = '1px solid #e2e8f0';
-        clone.style.borderRadius = '16px';
-        clone.style.backgroundColor = '#ffffff';
-
-        // Hapus elemen blur dekoratif agar tidak menimbulkan glitch visual pada canvas
-        const blurDecorations = clone.querySelectorAll('.blur-2xl');
-        blurDecorations.forEach(el => el.remove());
-
-        return clone;
-    }
-
-    /**
      * Unduh Nota Digital dalam format Dokumen PDF Resmi A4
+     * Menggunakan elemen asli yang sudah ter-render sempurna tanpa pemotongan margin di desktop maupun mobile
      */
     function downloadReceiptPdf() {
-        const btnNav = document.getElementById('btn-download-pdf-nav');
-        const btnBottom = document.getElementById('btn-download-pdf-bottom');
-        const textBottom = document.getElementById('btn-download-text-bottom');
-
-        const clone = createReceiptStandardClone();
-        if (!clone) {
+        const receipt = document.getElementById('printable-receipt');
+        if (!receipt) {
             window.print();
             return;
         }
+
+        const btnNav = document.getElementById('btn-download-pdf-nav');
+        const btnBottom = document.getElementById('btn-download-pdf-bottom');
+        const textBottom = document.getElementById('btn-download-text-bottom');
 
         // Tampilkan indikator proses unduh
         if (btnNav) btnNav.disabled = true;
         if (btnBottom) btnBottom.disabled = true;
         if (textBottom) textBottom.textContent = 'Membuat Dokumen PDF...';
+
+        // Sembunyikan elemen blur dekoratif sementara agar tidak menimbulkan glitch visual pada canvas
+        const blurDecorations = receipt.querySelectorAll('.blur-2xl');
+        blurDecorations.forEach(el => el.style.display = 'none');
 
         const orderKode = "{{ $order->kode ?? 'Pesanan' }}";
         const filename = 'Nota-Kopi-Tiga-Titik-' + orderKode + '.pdf';
@@ -482,25 +433,20 @@
             html2canvas: { 
                 scale: 2, 
                 useCORS: true, 
-                logging: false,
-                scrollX: 0,
-                scrollY: 0,
-                x: 0,
-                y: 0,
-                width: 720,
-                windowWidth: 720
+                logging: false
             },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         const cleanupAndReset = () => {
+            blurDecorations.forEach(el => el.style.display = '');
             if (btnNav) btnNav.disabled = false;
             if (btnBottom) btnBottom.disabled = false;
             if (textBottom) textBottom.textContent = 'Unduh File PDF';
         };
 
         if (typeof html2pdf !== 'undefined') {
-            html2pdf().set(opt).from(clone).save().then(() => {
+            html2pdf().set(opt).from(receipt).save().then(() => {
                 cleanupAndReset();
             }).catch(err => {
                 console.error('PDF export error:', err);
@@ -519,35 +465,34 @@
     function downloadReceiptPng() {
         const btnPng = document.getElementById('btn-download-png-bottom');
         const textPng = document.getElementById('btn-download-png-text');
+        const receipt = document.getElementById('printable-receipt');
 
-        const clone = createReceiptStandardClone();
-        if (!clone) return;
+        if (!receipt) return;
 
         if (btnPng) btnPng.disabled = true;
         if (textPng) textPng.textContent = 'Membuat Gambar...';
+
+        // Sembunyikan elemen blur dekoratif sementara
+        const blurDecorations = receipt.querySelectorAll('.blur-2xl');
+        blurDecorations.forEach(el => el.style.display = 'none');
 
         const opt = {
             margin: [0, 0, 0, 0],
             html2canvas: { 
                 scale: 2, 
                 useCORS: true, 
-                logging: false,
-                scrollX: 0,
-                scrollY: 0,
-                x: 0,
-                y: 0,
-                width: 720,
-                windowWidth: 720
+                logging: false
             }
         };
 
         const cleanupPng = () => {
+            blurDecorations.forEach(el => el.style.display = '');
             if (btnPng) btnPng.disabled = false;
             if (textPng) textPng.textContent = 'Unduh Gambar (PNG)';
         };
 
         if (typeof html2pdf !== 'undefined') {
-            html2pdf().set(opt).from(clone).toCanvas().get('canvas').then(canvas => {
+            html2pdf().set(opt).from(receipt).toCanvas().get('canvas').then(canvas => {
                 const dataUrl = canvas.toDataURL('image/png');
                 const a = document.createElement('a');
                 a.download = 'Nota-Kopi-Tiga-Titik-{{ $order->kode ?? 'Pesanan' }}.png';
