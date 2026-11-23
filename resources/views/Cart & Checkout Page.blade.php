@@ -103,10 +103,10 @@
     <!-- ========================================================================= -->
     <!-- 1. STEP PROGRESS INDICATOR & LAPAK BANNER (FR-11.4 & FR-11.6) -->
     <!-- ========================================================================= -->
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-4 items-stretch">
         
         <!-- Step Progress Indicator -->
-        <div class="md:col-span-7 bg-white p-3.5 sm:p-4 md:p-5 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between">
+        <div class="lg:col-span-7 bg-white p-3.5 sm:p-4 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between min-w-0">
             <!-- Step 1: Keranjang (Selesai) -->
             <a href="{{ url('/cart') }}" class="flex items-center gap-2 sm:gap-2.5 group cursor-pointer shrink-0" title="Kembali ke Keranjang">
                 <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center font-bold text-xs shrink-0 group-hover:bg-emerald-100 transition-colors">
@@ -114,12 +114,12 @@
                 </div>
                 <div>
                     <span class="text-xs font-bold text-slate-900 block leading-tight group-hover:text-blue-900 transition-colors hidden sm:block">1. Keranjang</span>
-                    <span class="text-[10px] text-emerald-600 font-semibold hidden md:block">Item Terpilih</span>
+                    <span class="text-[10px] text-emerald-600 font-semibold hidden xl:block">Item Terpilih</span>
                 </div>
             </a>
 
             <!-- Divider 1 -> 2 -->
-            <div class="flex-1 h-0.5 bg-emerald-300 mx-2 sm:mx-3 rounded-full min-w-4"></div>
+            <div class="flex-1 h-0.5 bg-emerald-300 mx-1.5 sm:mx-2.5 rounded-full min-w-2 sm:min-w-3"></div>
 
             <!-- Step 2: Lokasi & Pengiriman (Aktif) -->
             <div class="flex items-center gap-2 sm:gap-2.5 shrink-0">
@@ -128,12 +128,12 @@
                 </div>
                 <div>
                     <span class="text-xs font-bold text-blue-900 block leading-tight">Pengiriman</span>
-                    <span class="text-[10px] text-blue-700 font-semibold hidden md:block">Lokasi & Ongkir</span>
+                    <span class="text-[10px] text-blue-700 font-semibold hidden xl:block">Lokasi & Ongkir</span>
                 </div>
             </div>
 
             <!-- Divider 2 -> 3 -->
-            <div class="flex-1 h-0.5 bg-slate-200 mx-2 sm:mx-3 rounded-full min-w-4"></div>
+            <div class="flex-1 h-0.5 bg-slate-200 mx-1.5 sm:mx-2.5 rounded-full min-w-2 sm:min-w-3"></div>
 
             <!-- Step 3: Pembayaran QRIS (Berikutnya) -->
             <div class="flex items-center gap-2 sm:gap-2.5 opacity-60 shrink-0">
@@ -142,13 +142,13 @@
                 </div>
                 <div>
                     <span class="text-xs font-bold text-slate-600 block leading-tight hidden sm:block">Pembayaran</span>
-                    <span class="text-[10px] text-slate-400 font-semibold hidden md:block">QRIS Dinamis</span>
+                    <span class="text-[10px] text-slate-400 font-semibold hidden xl:block">QRIS Dinamis</span>
                 </div>
             </div>
         </div>
 
         <!-- Lapak Info Banner Mojokerto (FR-11.4 & FR-11.6) -->
-        <div class="md:col-span-5 bg-white p-3.5 sm:p-4 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between gap-3">
+        <div class="lg:col-span-5 bg-white p-3.5 sm:p-4 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between gap-3 min-w-0">
             <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
                 <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center shrink-0 border border-blue-100 shadow-2xs">
                     <span class="material-symbols-outlined text-amber-500 text-lg sm:text-xl">storefront</span>
@@ -177,7 +177,7 @@
     @if(!($isLapakOpen ?? true))
         <div id="banner-lapak-tutup" class="p-4 bg-rose-50 border border-rose-200 rounded-2xl shadow-2xs flex items-start gap-3 text-rose-900">
             <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
-                <span class="material-symbols-outlined text-xl">store_off</span>
+                <span class="material-symbols-outlined text-xl">error</span>
             </div>
             <div class="text-xs leading-relaxed">
                 <strong class="font-bold text-sm block text-rose-950 font-['Plus_Jakarta_Sans'] mb-0.5">Lapak Kopi Tiga Titik Sedang Tutup</strong>
