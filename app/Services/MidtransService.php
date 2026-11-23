@@ -342,6 +342,16 @@ class MidtransService
             ];
         }
 
+        // Validasi Isolasi POS: Pesanan POS Kasir Offline tidak boleh diproses melalui Midtrans webhook (BR-39)
+        if ($order->sumber_transaksi === 'pos') {
+            Log::warning('Midtrans Webhook: Pesanan POS tidak dapat diproses via Midtrans webhook untuk order ' . $orderId);
+            return [
+                'success' => false,
+                'code' => 400,
+                'message' => 'Pesanan POS offline tidak menggunakan integrasi webhook online.',
+            ];
+        }
+
         // 3. Validasi Nominal Transaksi (FR-6.5)
         $notifGross = (int) round((float) $grossAmount);
         if ($notifGross !== (int) $order->total) {

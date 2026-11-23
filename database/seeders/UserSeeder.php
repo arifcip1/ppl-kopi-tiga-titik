@@ -20,6 +20,7 @@ class UserSeeder extends Seeder
                 'name'     => 'Farrel',
                 'password' => Hash::make(env('ADMIN_PASSWORD', 'password123')),
                 'role'     => 'admin',
+                'telepon'  => '085710885120',
             ]
         );
 

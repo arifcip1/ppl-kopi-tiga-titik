@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
-class MidtransPaymentTest extends TestCase
+class MidtransPaymentServiceTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -526,5 +526,441 @@ class MidtransPaymentTest extends TestCase
         $response->assertSee('Ambil Sendiri di Lapak');
         $response->assertSee('Batas Waktu Pengambilan');
         $response->assertSee('Bebas Ongkir');
+    }
+
+    // =========================================================================
+    // PPL 40 (Jira PPL-44) - QUALITY ENGINEERING (QE) UJI ULANG PEMBAYARAN MIDTRANS & POS VALIDATION
+    // =========================================================================
+
+    /**
+     * PPL 40 - Skenario 1: Webhook capture dengan fraud_status accept memperbarui pesanan ke diproses
+     */
+    public function test_webhook_with_capture_and_accept_fraud_status_updates_order_to_diproses(): void
+    {
+        $order = $this->createOrderForCustomer($this->customer, 2, 0);
+        $payment = $order->payment;
+        $orderId = $order->kode . '-' . $payment->id;
+        $grossAmount = (string) $order->total;
+        $statusCode = '200';
+        $signature = hash('sha512', $orderId . $statusCode . $grossAmount . $this->serverKey);
+
+        $payload = [
+            'order_id' => $orderId,
+            'status_code' => $statusCode,
+            'gross_amount' => $grossAmount,
+            'signature_key' => $signature,
+            'transaction_status' => 'capture',
+            'fraud_status' => 'accept',
+            'transaction_id' => 'MID-CAPTURE-12345',
+        ];
+
+        $response = $this->postJson(route('api.payments.webhook'), $payload);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'order_status' => 'diproses',
+                'payment_status' => 'berhasil',
+            ]);
+
+        $order->refresh();
+        $this->assertEquals('diproses', $order->status);
+        $this->assertEquals('berhasil', $order->payment->status);
+    }
+
+    /**
+     * PPL 40 - Skenario 2: Webhook capture dengan fraud_status challenge mempertahankan status pending
+     */
+    public function test_webhook_with_capture_and_challenge_fraud_status_keeps_order_pending(): void
+    {
+        $order = $this->createOrderForCustomer($this->customer, 2, 0);
+        $payment = $order->payment;
+        $orderId = $order->kode . '-' . $payment->id;
+        $grossAmount = (string) $order->total;
+        $statusCode = '200';
+        $signature = hash('sha512', $orderId . $statusCode . $grossAmount . $this->serverKey);
+
+        $payload = [
+            'order_id' => $orderId,
+            'status_code' => $statusCode,
+            'gross_amount' => $grossAmount,
+            'signature_key' => $signature,
+            'transaction_status' => 'capture',
+            'fraud_status' => 'challenge',
+            'transaction_id' => 'MID-CHALLENGE-12345',
+        ];
+
+        $response = $this->postJson(route('api.payments.webhook'), $payload);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'order_status' => 'menunggu_pembayaran',
+                'payment_status' => 'pending',
+            ]);
+
+        $order->refresh();
+        $this->assertEquals('menunggu_pembayaran', $order->status);
+        $this->assertEquals('pending', $order->payment->status);
+    }
+
+    /**
+     * PPL 40 - Skenario 3: Webhook status pending mempertahankan status menunggu_pembayaran
+     */
+    public function test_webhook_with_pending_status_keeps_order_and_payment_in_pending(): void
+    {
+        $order = $this->createOrderForCustomer($this->customer, 1, 0);
+        $payment = $order->payment;
+        $orderId = $order->kode . '-' . $payment->id;
+        $grossAmount = (string) $order->total;
+        $statusCode = '201';
+        $signature = hash('sha512', $orderId . $statusCode . $grossAmount . $this->serverKey);
+
+        $payload = [
+            'order_id' => $orderId,
+            'status_code' => $statusCode,
+            'gross_amount' => $grossAmount,
+            'signature_key' => $signature,
+            'transaction_status' => 'pending',
+            'transaction_id' => 'MID-PENDING-12345',
+        ];
+
+        $response = $this->postJson(route('api.payments.webhook'), $payload);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'order_status' => 'menunggu_pembayaran',
+                'payment_status' => 'pending',
+            ]);
+
+        $order->refresh();
+        $this->assertEquals('menunggu_pembayaran', $order->status);
+        $this->assertEquals('pending', $order->payment->status);
+    }
+
+    /**
+     * PPL 40 - Skenario 4: Webhook status failure membatalkan pesanan dan mengembalikan stok
+     */
+    public function test_webhook_with_failure_status_cancels_order_and_restores_stock(): void
+    {
+        $initialStock = $this->product->stok;
+        $this->product->update(['stok' => $initialStock - 2]);
+
+        $order = $this->createOrderForCustomer($this->customer, 2);
+        $payment = $order->payment;
+        $orderId = $order->kode . '-' . $payment->id;
+        $grossAmount = (string) $order->total;
+        $statusCode = '200';
+        $signature = hash('sha512', $orderId . $statusCode . $grossAmount . $this->serverKey);
+
+        $payload = [
+            'order_id' => $orderId,
+            'status_code' => $statusCode,
+            'gross_amount' => $grossAmount,
+            'signature_key' => $signature,
+            'transaction_status' => 'failure',
+        ];
+
+        $response = $this->postJson(route('api.payments.webhook'), $payload);
+
+        $response->assertStatus(200);
+
+        $order->refresh();
+        $this->product->refresh();
+
+        $this->assertEquals('dibatalkan', $order->status);
+        $this->assertEquals('gagal', $order->payment->status);
+        $this->assertTrue((bool) $order->stok_dikembalikan);
+        $this->assertEquals($initialStock, $this->product->stok);
+    }
+
+    /**
+     * PPL 40 - Skenario 5: Webhook menolak payload yang tidak lengkap (missing fields)
+     */
+    public function test_webhook_rejects_missing_payload_fields(): void
+    {
+        $order = $this->createOrderForCustomer($this->customer);
+
+        // Tanpa signature_key
+        $response = $this->postJson(route('api.payments.webhook'), [
+            'order_id' => $order->kode,
+            'status_code' => '200',
+            'gross_amount' => (string) $order->total,
+            'transaction_status' => 'settlement',
+        ]);
+
+        $response->assertStatus(400)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Payload notifikasi tidak lengkap.',
+            ]);
+
+        // Tanpa order_id
+        $response2 = $this->postJson(route('api.payments.webhook'), [
+            'status_code' => '200',
+            'gross_amount' => (string) $order->total,
+            'signature_key' => 'SOME_SIG',
+            'transaction_status' => 'settlement',
+        ]);
+
+        $response2->assertStatus(400);
+    }
+
+    /**
+     * PPL 40 - Skenario 6: Webhook menolak referensi pesanan yang tidak ditemukan
+     */
+    public function test_webhook_rejects_non_existent_order(): void
+    {
+        $fakeOrderId = 'KTT-99991231-9999-1';
+        $statusCode = '200';
+        $grossAmount = '50000';
+        $signature = hash('sha512', $fakeOrderId . $statusCode . $grossAmount . $this->serverKey);
+
+        $payload = [
+            'order_id' => $fakeOrderId,
+            'status_code' => $statusCode,
+            'gross_amount' => $grossAmount,
+            'signature_key' => $signature,
+            'transaction_status' => 'settlement',
+        ];
+
+        $response = $this->postJson(route('api.payments.webhook'), $payload);
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Pesanan dengan referensi terkait tidak ditemukan.',
+            ]);
+    }
+
+    /**
+     * PPL 40 - Skenario 7: Validasi isolasi POS (Pesanan POS kasir offline ditolak via Midtrans webhook)
+     */
+    public function test_webhook_rejects_pos_order(): void
+    {
+        $posOrder = Order::create([
+            'kode' => 'POS-' . date('Ymd') . '-0001',
+            'sumber_transaksi' => 'pos',
+            'metode_pemenuhan' => null,
+            'user_id' => null,
+            'status' => 'selesai',
+            'subtotal' => 20000,
+            'ongkir' => 0,
+            'total' => 20000,
+            'nama_pelanggan' => 'Pelanggan POS Lapak',
+            'stok_dikembalikan' => false,
+        ]);
+
+        $orderId = $posOrder->kode . '-1';
+        $statusCode = '200';
+        $grossAmount = '20000';
+        $signature = hash('sha512', $orderId . $statusCode . $grossAmount . $this->serverKey);
+
+        $payload = [
+            'order_id' => $orderId,
+            'status_code' => $statusCode,
+            'gross_amount' => $grossAmount,
+            'signature_key' => $signature,
+            'transaction_status' => 'settlement',
+        ];
+
+        $response = $this->postJson(route('api.payments.webhook'), $payload);
+
+        $response->assertStatus(400)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Pesanan POS offline tidak menggunakan integrasi webhook online.',
+            ]);
+
+        $posOrder->refresh();
+        $this->assertEquals('selesai', $posOrder->status);
+    }
+
+    /**
+     * PPL 40 - Skenario 8: Notifikasi terlambat setelah pesanan dibatalkan (FR-6.9)
+     * Ditandai untuk penanganan Owner tanpa merusak status pembatalan dan stok.
+     */
+    public function test_late_settlement_notification_after_cancellation_marks_for_owner_review_without_changing_cancelled_status(): void
+    {
+        $order = $this->createOrderForCustomer($this->customer, 2, 0);
+        $order->update([
+            'status' => 'dibatalkan',
+            'stok_dikembalikan' => true,
+        ]);
+
+        $payment = $order->payment;
+        $orderId = $order->kode . '-' . $payment->id;
+        $statusCode = '200';
+        $grossAmount = (string) $order->total;
+        $signature = hash('sha512', $orderId . $statusCode . $grossAmount . $this->serverKey);
+
+        $payload = [
+            'order_id' => $orderId,
+            'status_code' => $statusCode,
+            'gross_amount' => $grossAmount,
+            'signature_key' => $signature,
+            'transaction_status' => 'settlement',
+            'transaction_id' => 'MID-LATE-99999',
+        ];
+
+        $response = $this->postJson(route('api.payments.webhook'), $payload);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Pembayaran diterima setelah pesanan kedaluwarsa. Ditandai untuk penanganan Owner.',
+                'order_status' => 'dibatalkan',
+            ]);
+
+        $order->refresh();
+        $this->assertEquals('dibatalkan', $order->status);
+        $this->assertEquals('MID-LATE-99999', $order->payment->referensi_provider);
+    }
+
+    /**
+     * PPL 40 - Skenario 9: Webhook duplikat tidak mereset status pesanan yang sudah dikirim atau selesai
+     */
+    public function test_duplicate_settlement_on_shipped_or_completed_order_does_not_revert_status(): void
+    {
+        $order = $this->createOrderForCustomer($this->customer, 1, 0);
+        $order->update(['status' => 'dikirim']);
+        $order->payment->update(['status' => 'berhasil']);
+
+        $payment = $order->payment;
+        $orderId = $order->kode . '-' . $payment->id;
+        $statusCode = '200';
+        $grossAmount = (string) $order->total;
+        $signature = hash('sha512', $orderId . $statusCode . $grossAmount . $this->serverKey);
+
+        $payload = [
+            'order_id' => $orderId,
+            'status_code' => $statusCode,
+            'gross_amount' => $grossAmount,
+            'signature_key' => $signature,
+            'transaction_status' => 'settlement',
+            'transaction_id' => 'MID-DUP-11111',
+        ];
+
+        $response = $this->postJson(route('api.payments.webhook'), $payload);
+
+        $response->assertStatus(200);
+
+        $order->refresh();
+        $this->assertEquals('dikirim', $order->status); // Status tetap dikirim, tidak mundur jadi diproses
+    }
+
+    /**
+     * PPL 40 - Skenario 10: Notifikasi expire ganda tidak mengembalikan stok berulang kali
+     */
+    public function test_duplicate_expire_notification_does_not_restore_stock_twice(): void
+    {
+        $initialStock = $this->product->stok;
+        $this->product->update(['stok' => $initialStock - 2]); // 8
+
+        $order = $this->createOrderForCustomer($this->customer, 2);
+        $payment = $order->payment;
+        $orderId = $order->kode . '-' . $payment->id;
+        $statusCode = '200';
+        $grossAmount = (string) $order->total;
+        $signature = hash('sha512', $orderId . $statusCode . $grossAmount . $this->serverKey);
+
+        $payload = [
+            'order_id' => $orderId,
+            'status_code' => $statusCode,
+            'gross_amount' => $grossAmount,
+            'signature_key' => $signature,
+            'transaction_status' => 'expire',
+        ];
+
+        // Webhook expire 1
+        $this->postJson(route('api.payments.webhook'), $payload)->assertStatus(200);
+
+        $this->product->refresh();
+        $this->assertEquals($initialStock, $this->product->stok); // Pulih jadi 10
+
+        // Webhook expire 2 (duplikat)
+        $this->postJson(route('api.payments.webhook'), $payload)->assertStatus(200);
+
+        $this->product->refresh();
+        // Stok tetap 10, tidak bertambah jadi 12
+        $this->assertEquals($initialStock, $this->product->stok);
+    }
+
+    /**
+     * PPL 40 - Skenario 11: Polling payment-status otomatis membatalkan pesanan yang lewat batas waktu
+     */
+    public function test_polling_payment_status_api_auto_expires_overdue_order(): void
+    {
+        $initialStock = $this->product->stok;
+        $this->product->update(['stok' => $initialStock - 1]);
+
+        $order = $this->createOrderForCustomer($this->customer, 1);
+        $order->payment->update([
+            'kedaluwarsa_pada' => now()->subMinutes(12),
+        ]);
+
+        $response = $this->actingAs($this->customer)
+            ->getJson("/api/orders/{$order->kode}/payment-status");
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'order_status' => 'dibatalkan',
+                    'is_expired' => true,
+                    'is_paid' => false,
+                ],
+            ]);
+
+        $order->refresh();
+        $this->product->refresh();
+
+        $this->assertEquals('dibatalkan', $order->status);
+        $this->assertEquals($initialStock, $this->product->stok);
+    }
+
+    /**
+     * PPL 40 - Skenario 12: Simulate payment menolak pesanan yang sudah dibayar atau dibatalkan
+     */
+    public function test_simulate_payment_rejects_already_paid_or_cancelled_order(): void
+    {
+        $order = $this->createOrderForCustomer($this->customer, 1);
+        $order->update(['status' => 'diproses']);
+
+        $response = $this->actingAs($this->customer)
+            ->postJson(route('api.orders.simulate-payment', ['identifier' => $order->kode]));
+
+        $response->assertStatus(400)
+            ->assertJson([
+                'success' => false,
+            ]);
+    }
+
+    /**
+     * PPL 40 - Skenario 13: Halaman pembayaran menolak akses ke pesanan kasir POS offline
+     */
+    public function test_payment_page_rejects_pos_orders(): void
+    {
+        $customer = User::factory()->create(['role' => 'pelanggan']);
+
+        $posOrder = Order::create([
+            'kode' => 'POS-' . date('Ymd') . '-0099',
+            'sumber_transaksi' => 'pos',
+            'metode_pemenuhan' => null,
+            'user_id' => $customer->id,
+            'status' => 'selesai',
+            'subtotal' => 15000,
+            'ongkir' => 0,
+            'total' => 15000,
+            'nama_pelanggan' => 'Pelanggan POS',
+            'stok_dikembalikan' => false,
+        ]);
+
+        $response = $this->actingAs($customer)
+            ->get(route('payment', ['kode' => $posOrder->kode]));
+
+        $response->assertRedirect(route('orders'));
+        $response->assertSessionHas('error', 'Pesanan kasir offline POS tidak menggunakan halaman pembayaran online.');
     }
 }

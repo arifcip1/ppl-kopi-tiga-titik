@@ -67,8 +67,8 @@ return [
     |--------------------------------------------------------------------------
     */
     'seller' => [
-        'whatsapp' => env('SELLER_WHATSAPP_NUMBER', '6281234567890'),
-        'whatsapp_display' => env('SELLER_WHATSAPP_DISPLAY', '0812-3456-7890'),
+        'whatsapp' => env('SELLER_WHATSAPP_NUMBER', '6285710885120'),
+        'whatsapp_display' => env('SELLER_WHATSAPP_DISPLAY', '0857-1088-5120'),
         'nama_toko' => env('SELLER_STORE_NAME', 'Kopi Tiga Titik Mojokerto'),
         'alamat_lapak' => env('SELLER_STORE_ADDRESS', 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto'),
     ],

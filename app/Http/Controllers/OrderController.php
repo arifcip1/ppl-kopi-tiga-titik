@@ -542,8 +542,9 @@ class OrderController extends Controller
         $this->formatOrderAttributes($order);
 
         $sellerWa = Setting::where('key', 'kontak_whatsapp')->value('value') 
-            ?? config('services.seller.whatsapp', '6281234567890');
-        $sellerWaDisplay = config('services.seller.whatsapp_display', '0812-3456-7890');
+            ?? config('services.seller.whatsapp', '6285710885120');
+        $sellerWaDisplay = Setting::where('key', 'kontak_whatsapp_display')->value('value')
+            ?? config('services.seller.whatsapp_display', '0857-1088-5120');
         $sellerStoreName = config('services.seller.nama_toko', 'Kopi Tiga Titik Mojokerto');
         $sellerStoreAddress = config('services.seller.alamat_lapak', 'Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto');
 
