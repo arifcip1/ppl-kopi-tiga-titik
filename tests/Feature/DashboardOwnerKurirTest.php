@@ -267,4 +267,36 @@ class DashboardOwnerKurirTest extends TestCase
             'diubah_oleh' => $this->owner->id,
         ]);
     }
+
+    /**
+     * PPL-34 (K3): Pesanan aktif dari hari sebelumnya (overnight) tetap muncul di antrean Owner.
+     */
+    public function test_owner_dashboard_shows_overnight_active_orders(): void
+    {
+        // Buat pesanan aktif dari kemarin
+        $yesterdayOrder = Order::factory()->create([
+            'user_id' => $this->customer->id,
+            'status' => 'diproses',
+            'kode' => 'KTT-YESTERDAY-001',
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        // Buat pesanan selesai dari kemarin (seharusnya tidak muncul di antrean hari ini)
+        $yesterdayDoneOrder = Order::factory()->create([
+            'user_id' => $this->customer->id,
+            'status' => 'selesai',
+            'kode' => 'KTT-YESTERDAY-DONE',
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+
+        $response = $this->actingAs($this->owner)->get(route('owner.dashboard'));
+
+        $response->assertStatus(200);
+        // Pesanan aktif kemarin tetap muncul agar bisa diproses/ditugaskan
+        $response->assertSee('KTT-YESTERDAY-001');
+        // Pesanan selesai kemarin tidak muncul di list hari ini
+        $response->assertDontSee('KTT-YESTERDAY-DONE');
+    }
 }

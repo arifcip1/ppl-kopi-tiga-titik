@@ -213,31 +213,33 @@ Route::middleware(['auth'])->get('/api/notifications', function (\Illuminate\Htt
     ]);
 })->name('api.notifications');
 
-Route::get('/dev/error/{code}', function ($code) {
-    abort((int) $code);
-})->where('code', '403|404|419|500')->name('dev.error');
+if (app()->isLocal() || app()->environment('testing')) {
+    Route::get('/dev/error/{code}', function ($code) {
+        abort((int) $code);
+    })->where('code', '403|404|419|500')->name('dev.error');
 
-Route::get('/dev/test-alerts', fn() => view('dev-test-alerts'))->name('dev.test-alerts');
+    Route::get('/dev/test-alerts', fn() => view('dev-test-alerts'))->name('dev.test-alerts');
 
-Route::get('/dev/trigger-flash', function (\Illuminate\Http\Request $request) {
-    $type = $request->query('type', 'success');
+    Route::get('/dev/trigger-flash', function (\Illuminate\Http\Request $request) {
+        $type = $request->query('type', 'success');
 
-    if ($type === 'validation') {
-        return redirect('/dev/test-alerts')->withErrors([
-            'nama' => 'Nama varian produk kopi tidak boleh kosong.',
-            'harga' => 'Harga jual harus berupa angka minimal Rp 1.000.',
-            'stok' => 'Jumlah stok fisik tidak boleh bernilai negatif.',
-        ]);
-    }
+        if ($type === 'validation') {
+            return redirect('/dev/test-alerts')->withErrors([
+                'nama' => 'Nama varian produk kopi tidak boleh kosong.',
+                'harga' => 'Harga jual harus berupa angka minimal Rp 1.000.',
+                'stok' => 'Jumlah stok fisik tidak boleh bernilai negatif.',
+            ]);
+        }
 
-    $messages = [
-        'success' => 'Menu baru "Titik Cerita" berhasil disimpan ke katalog!',
-        'error' => 'Gagal memperbarui status produk, silakan periksa data.',
-        'warning' => 'Peringatan: Stok varian kopi botol tersisa kurang dari 5 botol.',
-    ];
+        $messages = [
+            'success' => 'Menu baru "Titik Cerita" berhasil disimpan ke katalog!',
+            'error' => 'Gagal memperbarui status produk, silakan periksa data.',
+            'warning' => 'Peringatan: Stok varian kopi botol tersisa kurang dari 5 botol.',
+        ];
 
-    return redirect('/dev/test-alerts')->with($type, $messages[$type] ?? 'Notifikasi percobaan.');
-});
+        return redirect('/dev/test-alerts')->with($type, $messages[$type] ?? 'Notifikasi percobaan.');
+    });
+}
 
 
 

@@ -48,7 +48,7 @@ class SalesHistorySeeder extends Seeder
             $order = Order::create([
                 'kode' => 'KTT-' . $date->format('Ymd') . '-' . str_pad($day, 4, '0', STR_PAD_LEFT),
                 'sumber_transaksi' => $sumberTransaksi,
-                'metode_pemenuhan' => $sumberTransaksi === 'online' ? 'pengiriman' : 'ambil_sendiri',
+                'metode_pemenuhan' => $sumberTransaksi === 'online' ? 'pengiriman' : null,
                 'status' => 'selesai',
                 'user_id' => $randomUser->id, // <-- Tautkan ke ID User Asli
                 'subtotal' => 0,

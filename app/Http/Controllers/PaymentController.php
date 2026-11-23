@@ -190,6 +190,14 @@ class PaymentController extends Controller
      */
     public function simulateSuccess(Request $request, string $identifier): JsonResponse
     {
+        // Proteksi: Simulasi hanya diizinkan di environment non-produksi (local / testing)
+        if (!app()->environment(['local', 'testing']) && config('services.midtrans.is_production', false)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Simulasi pembayaran hanya tersedia di lingkungan non-produksi.',
+            ], 403);
+        }
+
         $order = Order::with('payment')
             ->where('id', $identifier)
             ->orWhere('kode', $identifier)
@@ -200,6 +208,31 @@ class PaymentController extends Controller
                 'success' => false,
                 'message' => 'Pesanan tidak ditemukan.',
             ], 404);
+        }
+
+        // Proteksi Otorisasi: Hanya pemilik pesanan atau admin/owner yang berhak mensimulasikan pembayaran
+        $user = Auth::user();
+        if ($order->user_id !== null) {
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Silakan login terlebih dahulu untuk mengakses pesanan ini.',
+                ], 401);
+            }
+
+            if ((int) $user->id !== (int) $order->user_id && !in_array($user->role, ['admin', 'owner'], true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akses ditolak. Anda tidak berhak melakukan simulasi pembayaran pesanan ini.',
+                ], 403);
+            }
+        } else {
+            if (!$user || !in_array($user->role, ['admin', 'owner'], true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akses ditolak. Hanya admin/owner yang dapat mensimulasikan pembayaran pesanan ini.',
+                ], 403);
+            }
         }
 
         if (!$order->isWaitingPayment()) {

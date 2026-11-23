@@ -52,9 +52,10 @@ class WebNotificationService
             ];
         }
 
-        // 2. Peringatan Stok Menipis (stok <= 5 BR-10 & BR-19)
+        // 2. Peringatan Stok Menipis (BR-10 & BR-19) — ambang batas dari tabel settings
+        $batasStok = (int) (\App\Models\Setting::where('key', 'batas_stok_minimum')->value('value') ?? 5);
         $lowStockProducts = Product::where('aktif', true)
-            ->where('stok', '<=', 5)
+            ->where('stok', '<=', $batasStok)
             ->get();
 
         if ($lowStockProducts->isNotEmpty()) {
@@ -63,7 +64,7 @@ class WebNotificationService
             $notifications[] = [
                 'id'       => 'owner_low_stock',
                 'tipe'     => 'stok',
-                'judul'    => "{$count} Menu Menipis (Stok ≤ 5)",
+                'judul'    => "{$count} Menu Menipis (Stok ≤ {$batasStok})",
                 'pesan'    => "Varian: {$names}. Segera isi ulang stok cooler box lapak.",
                 'waktu'    => 'Hari ini',
                 'link'     => url('/owner/produk'),

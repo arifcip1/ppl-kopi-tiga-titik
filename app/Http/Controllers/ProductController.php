@@ -22,8 +22,9 @@ class ProductController extends Controller
         // Hitung metrik statistik inventaris
         $totalMenu = $products->count();
         $totalStok = $products->sum('stok');
-        // BR-10 & BR-19: Ambang peringatan restok adalah stok <= 5
-        $perluRestok = $products->where('stok', '<=', 5)->count();
+        // BR-10 & BR-19: Ambang peringatan restok dari tabel settings
+        $batasStokMinimum = (int) (\App\Models\Setting::where('key', 'batas_stok_minimum')->value('value') ?? 5);
+        $perluRestok = $products->where('stok', '<=', $batasStokMinimum)->count();
         $katalogAktif = $products->where('aktif', true)->count();
 
         return view('Kelola Produk Page', compact(
