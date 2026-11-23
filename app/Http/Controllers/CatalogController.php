@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class CatalogController extends Controller
@@ -13,9 +15,20 @@ class CatalogController extends Controller
      * Tampilkan halaman katalog produk untuk pelanggan (FR-3.1 s/d FR-3.5).
      * - FR-3.1: Publik dapat melihat katalog tanpa login; hanya produk aktif tampil.
      * - FR-3.4: Stok dibaca langsung dari database setiap kali tampil, tidak di-cache.
+     * - Pemisahan Role: Owner/Admin dan Kurir diarahkan ke dashboard perannya masing-masing.
      */
-    public function index(Request $request): View|JsonResponse
+    public function index(Request $request): View|JsonResponse|RedirectResponse
     {
+        if (! $request->wantsJson() && Auth::check()) {
+            $role = Auth::user()->role;
+            if (in_array($role, ['admin', 'owner'])) {
+                return redirect()->route('owner.dashboard');
+            }
+            if ($role === 'kurir') {
+                return redirect()->route('kurir.tugas-baru');
+            }
+        }
+
         // FR-3.1 & FR-3.4: Stok dibaca langsung dari database pada setiap request, tidak di-cache.
         $products = Product::where('aktif', true)
             ->orderBy('id', 'asc')

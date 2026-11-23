@@ -207,15 +207,17 @@ class QaSprint3FixesTest extends TestCase
     }
 
     /**
-     * TC-OWN-04: POS Mini Owner menyediakan aksi unduh & cetak nota resmi pelanggan.
+     * TC-OWN-04: POS Mini Owner menyediakan aksi unduh PNG & PDF langsung dari modal tanpa keluar halaman POS.
      */
     public function test_pos_page_has_download_and_print_receipt_actions_and_owner_can_open_pos_nota(): void
     {
         $posPage = $this->actingAs($this->owner)->get(route('owner.pos'));
         $posPage->assertStatus(200);
         $posPage->assertSee('downloadPosReceiptPng');
-        $posPage->assertSee('btnOpenOfficialNota');
-        $posPage->assertSee('Unduh Nota');
+        $posPage->assertSee('downloadPosReceiptPdf');
+        $posPage->assertSee('Unduh PNG');
+        $posPage->assertSee('Unduh PDF');
+        $posPage->assertDontSee('btnOpenOfficialNota');
 
         // Buat order POS dan pastikan Owner dapat membuka halaman Nota Digital resminya untuk cetak/PDF
         $posOrder = Order::factory()->create([
@@ -271,5 +273,45 @@ class QaSprint3FixesTest extends TestCase
         $dashboard->assertSee('modal-complete-pickup-confirm');
         $dashboard->assertSee('openCompletePickupModal');
         $dashboard->assertDontSee("onclick=\"return confirm('Konfirmasi serahkan pesanan ini kepada pembeli di lapak?')\"");
+    }
+
+    /**
+     * Regresi Dashboard Owner: Pesanan POS menampilkan badge POS Kasir Lapak (bukan Pesan Antar)
+     * dan modal detail pesanan menyediakan tombol Cetak Nota, Unduh PDF, serta Unduh PNG.
+     */
+    public function test_owner_dashboard_displays_pos_badge_and_detail_receipt_print_actions(): void
+    {
+        $posOrder = Order::factory()->create([
+            'user_id'          => $this->owner->id,
+            'kode'             => 'POS-20261122-0099',
+            'nama_penerima'    => 'Pelanggan Lapak',
+            'status'           => 'selesai',
+            'sumber_transaksi' => 'pos',
+            'metode_pemenuhan' => null,
+            'alamat'           => null,
+            'subtotal'         => 10000,
+            'ongkir'           => 0,
+            'total'            => 10000,
+        ]);
+
+        $dashboard = $this->actingAs($this->owner)->get(route('owner.dashboard'));
+        $dashboard->assertStatus(200);
+        $dashboard->assertSee('#POS-20261122-0099');
+        $dashboard->assertSee('POS Kasir Lapak');
+        $dashboard->assertSee('Total Pembayaran (POS Lapak)');
+        $htmlWithoutScripts = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $dashboard->getContent());
+        $visibleHtml = preg_replace('/<!--.*?-->/s', '', $htmlWithoutScripts);
+        $this->assertStringNotContainsString('Pesan Antar', $visibleHtml);
+        $dashboard->assertSee('printOwnerOrderReceipt()');
+        $dashboard->assertSee('downloadOwnerOrderPdf()');
+        $dashboard->assertSee('downloadOwnerOrderPng()');
+        $dashboard->assertSee('Cetak Nota');
+
+        $detail = $this->actingAs($this->owner)->getJson("/owner/orders/{$posOrder->id}/detail");
+        $detail->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.sumber_transaksi', 'pos')
+            ->assertJsonPath('data.kode', 'POS-20261122-0099');
+        $this->assertNotEmpty($detail->json('data.tanggal_formatted'));
     }
 }
