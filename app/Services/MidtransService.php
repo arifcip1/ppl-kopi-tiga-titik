@@ -384,6 +384,22 @@ class MidtransService
                 ]);
             }
 
+            // Proteksi Out-of-Order / Downgrade:
+            // Jika pembayaran sudah berhasil atau pesanan sudah berada di status operasional lanjutan (diproses, dikirim, selesai),
+            // abaikan notifikasi status selain settlement/capture agar tidak menimpa status pembayaran menjadi pending/kedaluwarsa/gagal.
+            if ($payment->isSuccess() || in_array($lockedOrder->status, ['diproses', 'dikirim', 'selesai'], true)) {
+                if ($transactionStatus !== 'settlement' && !($transactionStatus === 'capture' && $fraudStatus === 'accept')) {
+                    Log::info("Midtrans Webhook: Mengabaikan notifikasi status '{$transactionStatus}' karena pesanan {$lockedOrder->kode} sudah berstatus lunas/diproses.");
+                    return [
+                        'success' => true,
+                        'code' => 200,
+                        'message' => 'Status pembayaran sudah berhasil, notifikasi diabaikan secara idempoten.',
+                        'order_status' => $lockedOrder->status,
+                        'payment_status' => $payment->status,
+                    ];
+                }
+            }
+
             // Skenario 1: Pembayaran Berhasil (settlement / capture)
             if ($transactionStatus === 'settlement' || ($transactionStatus === 'capture' && $fraudStatus === 'accept')) {
                 // Idempoten: Jika sudah diproses/berhasil, abaikan pemrosesan ulang
@@ -409,6 +425,14 @@ class MidtransService
                         'referensi_provider' => $payload['transaction_id'] ?? $payment->referensi_provider,
                     ]);
 
+                    OrderStatusHistory::create([
+                        'order_id' => $lockedOrder->id,
+                        'status_baru' => 'dibatalkan',
+                        'diubah_oleh' => null,
+                        'waktu_perubahan' => now(),
+                        'keterangan' => '[perhatian_owner] Pembayaran berhasil diterima setelah pesanan kedaluwarsa/dibatalkan.',
+                    ]);
+
                     Log::warning("Midtrans Webhook: Pembayaran sukses diterima setelah pesanan {$lockedOrder->kode} kedaluwarsa/dibatalkan.");
                     return [
                         'success' => true,
@@ -427,9 +451,13 @@ class MidtransService
                     'payload_mentah' => $payload,
                 ]);
 
-                $lockedOrder->update([
-                    'status' => 'diproses',
-                ]);
+                // S7: Untuk pesanan ambil_sendiri, batas waktu pengambilan 24 jam dihitung saat pembayaran lunas
+                $orderUpdates = ['status' => 'diproses'];
+                if ($lockedOrder->metode_pemenuhan === 'ambil_sendiri') {
+                    $orderUpdates['batas_pengambilan'] = now()->addHours(24);
+                }
+
+                $lockedOrder->update($orderUpdates);
 
                 OrderStatusHistory::create([
                     'order_id' => $lockedOrder->id,

@@ -85,9 +85,10 @@ class OwnerDashboardController extends Controller
 
         $activeStock = Product::where('aktif', true)->sum('stok');
 
-        // Peringatan stok menipis (FR-10.1: stok <= 5)
+        // Peringatan stok menipis (FR-10.1) — ambang batas dari tabel settings
+        $batasStokMinimum = (int) (\App\Models\Setting::where('key', 'batas_stok_minimum')->value('value') ?? 5);
         $lowStockProducts = Product::where('aktif', true)
-            ->where('stok', '<=', 5)
+            ->where('stok', '<=', $batasStokMinimum)
             ->get();
         $lowStockCount = $lowStockProducts->count();
 
@@ -105,9 +106,15 @@ class OwnerDashboardController extends Controller
         $isOutsideOperatingHours = $operational['is_outside_hours'];
         $lokasiAktif = $activeLocation;
 
-        // 2. Query Daftar Pesanan Khusus Hari Ini dengan Filter Status, Pencarian, & Sorting (Point 8)
-        $ordersQuery = Order::whereDate('created_at', today())
-            ->with(['orderItems.product', 'payment', 'courier', 'user', 'statusHistories']);
+        // 2. Query Daftar Pesanan: Pesanan aktif (menunggu_pembayaran, diproses, dikirim) ditampilkan terlepas dari tanggal pembuatan,
+        // sedangkan pesanan selesai/dibatalkan dibatasi untuk transaksi hari ini (Point 8).
+        $ordersQuery = Order::where(function ($q) {
+            $q->whereIn('status', ['menunggu_pembayaran', 'diproses', 'dikirim'])
+                ->orWhere(function ($sub) {
+                    $sub->whereIn('status', ['selesai', 'dibatalkan'])
+                        ->whereDate('created_at', today());
+                });
+        })->with(['orderItems.product', 'payment', 'courier', 'user', 'statusHistories']);
 
         $currentStatus = $request->query('status', 'semua');
         if ($currentStatus !== 'semua' && in_array($currentStatus, ['menunggu_pembayaran', 'diproses', 'dikirim', 'selesai', 'dibatalkan'])) {
@@ -143,12 +150,18 @@ class OwnerDashboardController extends Controller
         $couriers = $this->courierService->getCouriers();
         $products = Product::where('aktif', true)->orderBy('id')->get();
 
-        // Hitung jumlah pesanan per status khusus hari ini untuk badge filter tab
+        // Hitung jumlah pesanan per status untuk badge filter tab (aktif: seluruh tanggal, selesai/dibatalkan: hari ini)
         $statusCounts = [
-            'semua' => Order::whereDate('created_at', today())->count(),
-            'menunggu_pembayaran' => Order::whereDate('created_at', today())->where('status', 'menunggu_pembayaran')->count(),
-            'diproses' => Order::whereDate('created_at', today())->where('status', 'diproses')->count(),
-            'dikirim' => Order::whereDate('created_at', today())->where('status', 'dikirim')->count(),
+            'semua' => Order::where(function ($q) {
+                $q->whereIn('status', ['menunggu_pembayaran', 'diproses', 'dikirim'])
+                    ->orWhere(function ($sub) {
+                        $sub->whereIn('status', ['selesai', 'dibatalkan'])
+                            ->whereDate('created_at', today());
+                    });
+            })->count(),
+            'menunggu_pembayaran' => Order::where('status', 'menunggu_pembayaran')->count(),
+            'diproses' => Order::where('status', 'diproses')->count(),
+            'dikirim' => Order::where('status', 'dikirim')->count(),
             'selesai' => Order::whereDate('created_at', today())->where('status', 'selesai')->count(),
             'dibatalkan' => Order::whereDate('created_at', today())->where('status', 'dibatalkan')->count(),
         ];
@@ -184,8 +197,13 @@ class OwnerDashboardController extends Controller
      */
     public function apiOrdersIndex(Request $request): JsonResponse
     {
-        $ordersQuery = Order::whereDate('created_at', today())
-            ->with(['orderItems.product', 'payment', 'courier', 'user', 'statusHistories']);
+        $ordersQuery = Order::where(function ($q) {
+            $q->whereIn('status', ['menunggu_pembayaran', 'diproses', 'dikirim'])
+                ->orWhere(function ($sub) {
+                    $sub->whereIn('status', ['selesai', 'dibatalkan'])
+                        ->whereDate('created_at', today());
+                });
+        })->with(['orderItems.product', 'payment', 'courier', 'user', 'statusHistories']);
 
         $status = $request->query('status');
         if ($status && in_array($status, ['menunggu_pembayaran', 'diproses', 'dikirim', 'selesai', 'dibatalkan'])) {
@@ -248,9 +266,8 @@ class OwnerDashboardController extends Controller
         $orderData['history'] = $order->statusHistories
             ->filter(fn($h) => !str_contains($h->keterangan ?? '', '[sales_recorded]'))
             ->map(fn($h) => [
-                'status_sebelumnya' => $h->status_sebelumnya,
                 'status_baru'       => $h->status_baru,
-                'keterangan'        => $h->catatan ?? $h->keterangan,
+                'keterangan'        => $h->keterangan,
                 'waktu'             => $h->created_at ? $h->created_at->translatedFormat('d M Y, H:i') . ' WIB' : '-',
                 'actor'             => optional($h->user)->name ?? 'Sistem',
             ])->values()->all();

@@ -963,4 +963,106 @@ class MidtransPaymentServiceTest extends TestCase
         $response->assertRedirect(route('orders'));
         $response->assertSessionHas('error', 'Pesanan kasir offline POS tidak menggunakan halaman pembayaran online.');
     }
+
+    /**
+     * PPL-34 (K1): Endpoint simulate-payment menolak akses unauthorized (guest atau user lain).
+     */
+    public function test_simulate_payment_rejects_unauthorized_user(): void
+    {
+        $order = $this->createOrderForCustomer($this->customer, 1, 0);
+        $otherCustomer = User::factory()->create(['role' => 'pelanggan']);
+
+        // 1. Guest ditolak 401
+        $guestResponse = $this->postJson(route('api.orders.simulate-payment', ['identifier' => $order->kode]));
+        $guestResponse->assertStatus(401);
+
+        // 2. Pelanggan lain ditolak 403 oleh kontrol otorisasi controller
+        $otherResponse = $this->actingAs($otherCustomer)
+            ->postJson(route('api.orders.simulate-payment', ['identifier' => $order->kode]));
+        $otherResponse->assertStatus(403)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Akses ditolak. Anda tidak berhak melakukan simulasi pembayaran pesanan ini.',
+            ]);
+
+        // 3. Pemilik pesanan sah boleh melakukan simulasi pembayaran
+        $ownerResponse = $this->actingAs($this->customer)
+            ->postJson(route('api.orders.simulate-payment', ['identifier' => $order->kode]));
+        $ownerResponse->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+            ]);
+    }
+
+    /**
+     * PPL-34 (K2): Webhook out-of-order expire/deny tidak mendowngrade pesanan yang sudah berhasil/diproses.
+     */
+    public function test_webhook_out_of_order_expire_does_not_downgrade_already_paid_order(): void
+    {
+        $order = $this->createOrderForCustomer($this->customer, 1, 0);
+        $serverKey = config('services.midtrans.server_key', '');
+        $midtransOrderId = $order->kode . '-1';
+
+        // 1. Settle order first
+        $settlePayload = [
+            'order_id' => $midtransOrderId,
+            'status_code' => '200',
+            'gross_amount' => (string) $order->total,
+            'signature_key' => hash('sha512', $midtransOrderId . '200' . (string) $order->total . $serverKey),
+            'transaction_status' => 'settlement',
+            'fraud_status' => 'accept',
+            'payment_type' => 'qris',
+        ];
+        $this->postJson(route('api.payments.webhook'), $settlePayload)->assertStatus(200);
+
+        $order->refresh();
+        $this->assertEquals('diproses', $order->status);
+        $this->assertEquals('berhasil', $order->payment->status);
+
+        // 2. Delayed webhook expire tiba
+        $expirePayload = [
+            'order_id' => $midtransOrderId,
+            'status_code' => '200',
+            'gross_amount' => (string) $order->total,
+            'signature_key' => hash('sha512', $midtransOrderId . '200' . (string) $order->total . $serverKey),
+            'transaction_status' => 'expire',
+            'payment_type' => 'qris',
+        ];
+        $expireResponse = $this->postJson(route('api.payments.webhook'), $expirePayload);
+        $expireResponse->assertStatus(200);
+
+        $order->refresh();
+        // Status HARUS tetap 'diproses' dan 'berhasil', TIDAK boleh ter-downgrade menjadi 'kedaluwarsa'/'dibatalkan'
+        $this->assertEquals('diproses', $order->status);
+        $this->assertEquals('berhasil', $order->payment->status);
+    }
+
+    /**
+     * PPL-34 (K2): Pembayaran terlambat pada pesanan yang sudah dibatalkan mencatat audit history untuk owner.
+     */
+    public function test_late_settlement_on_cancelled_order_adds_history_for_owner_review(): void
+    {
+        $order = $this->createOrderForCustomer($this->customer, 1, 0);
+        $order->update(['status' => 'dibatalkan']);
+        $serverKey = config('services.midtrans.server_key', '');
+        $midtransOrderId = $order->kode . '-1';
+
+        $settlePayload = [
+            'order_id' => $midtransOrderId,
+            'status_code' => '200',
+            'gross_amount' => (string) $order->total,
+            'signature_key' => hash('sha512', $midtransOrderId . '200' . (string) $order->total . $serverKey),
+            'transaction_status' => 'settlement',
+            'fraud_status' => 'accept',
+            'payment_type' => 'qris',
+        ];
+        $response = $this->postJson(route('api.payments.webhook'), $settlePayload);
+        $response->assertStatus(200);
+
+        $this->assertDatabaseHas('order_status_history', [
+            'order_id' => $order->id,
+            'status_baru' => 'dibatalkan',
+            'keterangan' => '[perhatian_owner] Pembayaran berhasil diterima setelah pesanan kedaluwarsa/dibatalkan.',
+        ]);
+    }
 }

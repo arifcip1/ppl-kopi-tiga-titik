@@ -85,26 +85,31 @@ class SalesReportService
                 'products.harga',
             ]);
 
-        $kanal = $this->channelMap($start, $end);
+        [$kanal, $unitPrices] = $this->transactionData($start, $end);
 
-        return $history->map(function ($h) use ($kanal) {
+        return $history->map(function ($h) use ($kanal, $unitPrices) {
             $tanggal = Carbon::parse($h->tanggal)->toDateString();
+            $key = $tanggal.'|'.$h->product_id;
+
+            // Prioritaskan harga satuan saat transaksi dari order_items (S3 / FR-15).
+            // Fallback ke harga produk terkini jika nota order_items historis tidak ditemukan.
+            $hargaSatuan = $unitPrices[$key] ?? (int) $h->harga;
+            $totalOmzet = (int) $h->jumlah_terjual * $hargaSatuan;
 
             return [
                 'tanggal' => $tanggal,
                 'varian' => $h->nama,
-                'sumber' => $kanal[$tanggal.'|'.$h->product_id] ?? self::DEFAULT_SUMBER,
+                'sumber' => $kanal[$key] ?? self::DEFAULT_SUMBER,
                 'jumlah' => (int) $h->jumlah_terjual,
-                'total_omzet' => (int) $h->jumlah_terjual * (int) $h->harga,
+                'total_omzet' => $totalOmzet,
             ];
         });
     }
 
     /**
-     * Peta "tanggal|product_id" => label kanal dominan, dari orders valid.
-     * Query terpisah & di-GROUP BY sehingga hanya dipakai sebagai label, bukan penjumlahan.
+     * Peta kanal dominan dan harga satuan transaksi dari orders valid (order_items.harga_satuan / subtotal).
      */
-    private function channelMap(Carbon $start, Carbon $end): array
+    private function transactionData(Carbon $start, Carbon $end): array
     {
         $rows = DB::table('order_items')
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
@@ -116,23 +121,39 @@ class SalesReportService
                 'order_items.product_id',
                 'orders.sumber_transaksi',
                 DB::raw('SUM(order_items.jumlah) as qty'),
+                DB::raw('SUM(order_items.subtotal) as subtotal_real'),
             ])
             ->get();
 
-        $map = [];
+        $channels = [];
+        $unitPrices = [];
 
         foreach ($rows->groupBy(fn ($r) => $r->tgl.'|'.$r->product_id) as $key => $group) {
             $online = (int) $group->where('sumber_transaksi', 'online')->sum('qty');
             $pos = (int) $group->where('sumber_transaksi', 'pos')->sum('qty');
 
-            $map[$key] = match (true) {
+            $channels[$key] = match (true) {
                 $online > 0 && $pos > 0 => 'Online & POS',
                 $online > 0 => 'Online',
                 $pos > 0 => 'POS Lapak',
                 default => self::DEFAULT_SUMBER,
             };
+
+            $totalQty = (int) $group->sum('qty');
+            $totalSubtotal = (int) $group->sum('subtotal_real');
+            $unitPrices[$key] = $totalQty > 0 ? (int) round($totalSubtotal / $totalQty) : null;
         }
 
-        return $map;
+        return [$channels, $unitPrices];
+    }
+
+    /**
+     * Peta "tanggal|product_id" => label kanal dominan, dari orders valid.
+     * Query terpisah & di-GROUP BY sehingga hanya dipakai sebagai label, bukan penjumlahan.
+     */
+    private function channelMap(Carbon $start, Carbon $end): array
+    {
+        [$channels] = $this->transactionData($start, $end);
+        return $channels;
     }
 }

@@ -66,6 +66,11 @@ class CheckoutService
         $jarakPengiriman = null;
 
         if ($penerima['metode_pemenuhan'] === 'ambil_sendiri') {
+            if (ShippingLocation::exists() && ! $lokasiAktif) {
+                throw new CheckoutException('Lapak belum memiliki lokasi aktif untuk pengambilan sendiri.', [
+                    'metode_pemenuhan' => ['Lokasi lapak belum dikonfigurasi oleh owner.'],
+                ]);
+            }
             $ongkir = 0;
             $jarakPengiriman = 0.0;
         } else {
@@ -243,15 +248,20 @@ class CheckoutService
     {
         $errors = [];
 
-        foreach (['nama_penerima' => 'Nama penerima', 'telepon' => 'Nomor telepon', 'alamat' => 'Alamat'] as $key => $label) {
+        $metodePemenuhan = isset($data['metode_pemenuhan']) && $data['metode_pemenuhan'] === 'ambil_sendiri'
+            ? 'ambil_sendiri'
+            : 'pengiriman';
+
+        $requiredFields = ['nama_penerima' => 'Nama penerima', 'telepon' => 'Nomor telepon'];
+        if ($metodePemenuhan === 'pengiriman') {
+            $requiredFields['alamat'] = 'Alamat';
+        }
+
+        foreach ($requiredFields as $key => $label) {
             if (! isset($data[$key]) || ! is_string($data[$key]) || trim($data[$key]) === '') {
                 $errors[$key][] = "{$label} wajib diisi.";
             }
         }
-
-        $metodePemenuhan = isset($data['metode_pemenuhan']) && $data['metode_pemenuhan'] === 'ambil_sendiri'
-            ? 'ambil_sendiri'
-            : 'pengiriman';
 
         $lat = $data['lat'] ?? null;
         $lng = $data['lng'] ?? null;
@@ -283,11 +293,15 @@ class CheckoutService
             ? trim($data['catatan'])
             : null;
 
+        $alamat = isset($data['alamat']) && is_string($data['alamat']) && trim($data['alamat']) !== ''
+            ? trim($data['alamat'])
+            : ($metodePemenuhan === 'ambil_sendiri' ? 'Ambil di Lapak' : '');
+
         return [
             'metode_pemenuhan' => $metodePemenuhan,
             'nama_penerima' => trim($data['nama_penerima']),
             'telepon' => trim($data['telepon']),
-            'alamat' => trim($data['alamat']),
+            'alamat' => $alamat,
             'lat' => ($lat !== null && $lat !== '') ? (float) $lat : null,
             'lng' => ($lng !== null && $lng !== '') ? (float) $lng : null,
             'catatan' => $catatan,
