@@ -358,7 +358,7 @@ class OrderController extends Controller
         }
 
         // Keamanan Otorisasi: Pembeli HANYA dapat melihat pesanannya sendiri (FR-8.6, FR-8.9)
-        if ($order->user_id !== $user->id && !in_array($user->role, ['admin', 'owner'])) {
+        if ((int) $order->user_id !== (int) $user->id && !in_array($user->role, ['admin', 'owner'])) {
             if ($request->wantsJson() || $request->is('api/*')) {
                 return response()->json([
                     'success' => false,
@@ -522,7 +522,7 @@ class OrderController extends Controller
         }
 
         // Keamanan Otorisasi: Pembeli HANYA dapat melihat notanya sendiri (kecuali admin/owner)
-        if ($order->user_id !== $user->id && !in_array($user->role, ['admin', 'owner'])) {
+        if ((int) $order->user_id !== (int) $user->id && !in_array($user->role, ['admin', 'owner'])) {
             if ($request->wantsJson() || $request->is('api/*')) {
                 return response()->json([
                     'success' => false,

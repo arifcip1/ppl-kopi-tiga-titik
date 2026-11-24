@@ -8,12 +8,19 @@
 
 @section('content')
 
-    @if (session('success'))
-        <div class="p-3.5 bg-emerald-50 text-emerald-800 text-xs font-semibold rounded-2xl border border-emerald-200 flex items-center gap-2">
-            <span class="material-symbols-outlined text-base text-emerald-600">check_circle</span>
-            <span>{{ session('success') }}</span>
-        </div>
-    @endif
+    @php
+        $ownerUser = $owner ?? auth()->user();
+        $ownerName = $ownerUser?->name ?? 'Owner';
+        $ownerEmail = $ownerUser?->email ?? 'owner@kopitigatitik.com';
+        $ownerInitial = strtoupper(substr($ownerName, 0, 1));
+        $isLapakOpen = ($operational['is_open'] ?? true);
+        $jamBukaText = $operational['jam_buka'] ?? '15:00';
+        $jamTutupText = $operational['jam_tutup'] ?? '23:00';
+        $isOutsideHours = ($operational['is_outside_hours'] ?? false);
+        $savedLocations = $locations ?? collect();
+    @endphp
+
+    <x-flash-message class="mb-2" />
 
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6 items-start">
 
@@ -23,13 +30,13 @@
             <!-- Profil Singkat Card -->
             <div class="relative p-6 bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden flex flex-col items-center">
                 <div class="w-20 h-20 bg-blue-900 rounded-full flex items-center justify-center text-white text-3xl font-extrabold ring-4 ring-blue-50 shadow-md mb-3">
-                    F
+                    {{ $ownerInitial }}
                 </div>
-                <h2 class="text-base md:text-lg font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Farrel</h2>
+                <h2 class="text-base md:text-lg font-bold text-slate-900 font-['Plus_Jakarta_Sans']">{{ $ownerName }}</h2>
 
                 <div class="mt-2 px-3 py-1 bg-slate-50 rounded-full border border-slate-200 flex items-center gap-2">
                     <span class="material-symbols-outlined text-slate-400 text-sm">mail</span>
-                    <span id="ownerEmail" class="text-xs font-medium text-slate-700">owner1@gmail.com</span>
+                    <span id="ownerEmail" class="text-xs font-medium text-slate-700">{{ $ownerEmail }}</span>
                     <button type="button" id="copyEmail" aria-label="Salin email" class="p-0.5 rounded text-slate-400 hover:text-blue-900 transition-colors cursor-pointer" title="Salin Email">
                         <span class="material-symbols-outlined text-sm">content_copy</span>
                     </button>
@@ -45,48 +52,58 @@
 
             <!-- Pusat Operasional Lapak & Produksi Card -->
             <div class="p-5 bg-white rounded-2xl border border-slate-200/90 shadow-xs flex flex-col gap-3.5">
-                <div class="pb-2 border-b border-slate-100 flex items-center gap-2.5">
-                    <div class="w-8 h-8 bg-blue-50 text-blue-900 rounded-lg flex items-center justify-center shrink-0">
-                        <span class="material-symbols-outlined text-lg">store</span>
+                <div class="pb-2 border-b border-slate-100 flex items-center justify-between gap-2.5">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 bg-blue-50 text-blue-900 rounded-lg flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-lg">store</span>
+                        </div>
+                        <div>
+                            <h3 class="text-xs md:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Pusat Operasional &amp; Produksi</h3>
+                            <p class="text-[10px] text-slate-500">Status &amp; lokasi tersimpan Kota Mojokerto</p>
+                        </div>
                     </div>
-                    <div>
-                        <h3 class="text-xs md:text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Pusat Operasional &amp; Produksi</h3>
-                        <p class="text-[10px] text-slate-500">Daftar lokasi aktif cabang Mojokerto</p>
-                    </div>
+                    <a href="{{ route('owner.update-lokasi') }}" class="text-[11px] font-bold text-blue-900 hover:underline shrink-0">Atur Lapak</a>
                 </div>
 
-                <div class="px-3.5 py-2 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-2">
-                    <span class="relative flex w-2 h-2">
-                        <span class="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span>
-                        <span class="relative inline-flex w-2 h-2 rounded-full bg-emerald-600"></span>
-                    </span>
-                    <span class="text-xs font-bold text-emerald-800">Lapak Buka (15.00 - 18.00 WIB)</span>
-                </div>
+                @if($isLapakOpen)
+                    <div class="px-3.5 py-2 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-2">
+                        <span class="relative flex w-2 h-2">
+                            <span class="absolute inline-flex w-full h-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span>
+                            <span class="relative inline-flex w-2 h-2 rounded-full bg-emerald-600"></span>
+                        </span>
+                        <span class="text-xs font-bold text-emerald-800">Lapak Buka ({{ $jamBukaText }} - {{ $jamTutupText }} WIB)</span>
+                    </div>
+                @else
+                    <div class="px-3.5 py-2 bg-rose-50 rounded-xl border border-rose-200 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-rose-600"></span>
+                        <span class="text-xs font-bold text-rose-800">{{ $isOutsideHours ? 'Lapak Tutup (Di Luar Jam)' : 'Lapak Tutup' }} ({{ $jamBukaText }} - {{ $jamTutupText }} WIB)</span>
+                    </div>
+                @endif
 
                 <div class="flex flex-col gap-2.5">
-                    <!-- Lokasi 1: Dapur / Produksi -->
-                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-start gap-2.5">
-                        <div class="w-8 h-8 bg-blue-100 text-blue-900 rounded-lg flex items-center justify-center shrink-0">
-                            <span class="material-symbols-outlined text-base">coffee_maker</span>
+                    @forelse($savedLocations as $loc)
+                        @php
+                            $isCurrentActive = ($activeLocationId ?? 0) === (int) $loc->id || $loc->aktif;
+                        @endphp
+                        <div class="p-3 bg-slate-50 rounded-xl border {{ $isCurrentActive ? 'border-blue-200 bg-blue-50/40' : 'border-slate-200/80' }} flex items-start gap-2.5">
+                            <div class="w-8 h-8 {{ $isCurrentActive ? 'bg-blue-100 text-blue-900' : 'bg-amber-100 text-amber-800' }} rounded-lg flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-base">{{ $isCurrentActive ? 'storefront' : 'location_on' }}</span>
+                            </div>
+                            <div class="flex flex-col min-w-0">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-xs font-bold text-slate-800 font-['Plus_Jakarta_Sans']">{{ $loc->nama_lokasi }}</span>
+                                    @if($isCurrentActive)
+                                        <span class="px-1.5 py-0.5 bg-blue-900 text-white text-[9px] font-bold rounded">AKTIF</span>
+                                    @endif
+                                </div>
+                                <span class="text-[11px] text-slate-600 leading-snug">{{ $loc->alamat }}</span>
+                            </div>
                         </div>
-                        <div class="flex flex-col min-w-0">
-                            <span class="text-xs font-bold text-slate-800 font-['Plus_Jakarta_Sans']">Pusat Produksi &amp; Dapur</span>
-                            <span class="text-[11px] text-slate-600 leading-snug">Dsn. Daleman, Ds. Japan, Kec. Sooko, Mojokerto</span>
-                            <span class="text-[10px] text-blue-800 font-semibold mt-0.5">Pusat seduh &amp; batching delivery</span>
+                    @empty
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 text-xs text-slate-500">
+                            Belum ada lokasi lapak tersimpan. Atur lokasi melalui menu Pengaturan Lapak.
                         </div>
-                    </div>
-
-                    <!-- Lokasi 2: Lapak Benteng Pancasila -->
-                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex items-start gap-2.5">
-                        <div class="w-8 h-8 bg-amber-100 text-amber-800 rounded-lg flex items-center justify-center shrink-0">
-                            <span class="material-symbols-outlined text-base">storefront</span>
-                        </div>
-                        <div class="flex flex-col min-w-0">
-                            <span class="text-xs font-bold text-slate-800 font-['Plus_Jakarta_Sans']">Lapak Mangkal Street Coffee</span>
-                            <span class="text-[11px] text-slate-600 leading-snug">Jl. Benteng Pancasila (Depan Taman Sentanan)</span>
-                            <span class="text-[10px] text-amber-800 font-semibold mt-0.5">Titik temu pelanggan offline &amp; take-away</span>
-                        </div>
-                    </div>
+                    @endforelse
                 </div>
             </div>
 
@@ -104,7 +121,7 @@
                 </div>
             </div>
 
-            <form action="{{ url('/owner/profil') }}" method="POST" class="flex flex-col gap-4">
+            <form action="{{ route('owner.profil.update') }}" method="POST" class="flex flex-col gap-4">
                 @csrf
                 @method('PUT')
 
@@ -113,7 +130,7 @@
                     <label for="name" class="text-xs font-bold text-slate-700">Nama Lengkap Owner</label>
                     <div class="relative">
                         <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base">person</span>
-                        <input id="name" name="name" type="text" value="{{ old('name', 'Farrel') }}" required
+                        <input id="name" name="name" type="text" value="{{ old('name', $ownerName) }}" required
                                class="w-full py-2.5 pl-10 pr-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-blue-900 focus:bg-white transition-colors" />
                     </div>
                     @error('name') <p class="text-[11px] text-rose-600">{{ $message }}</p> @enderror
@@ -124,7 +141,7 @@
                     <label for="email" class="text-xs font-bold text-slate-700">Alamat Email Utama</label>
                     <div class="relative">
                         <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-base">mail</span>
-                        <input id="email" type="email" value="owner1@gmail.com" readonly
+                        <input id="email" type="email" value="{{ $ownerEmail }}" readonly
                                class="w-full py-2.5 pl-10 pr-3.5 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-600 cursor-not-allowed outline-none" />
                     </div>
                     <p class="text-[10px] text-slate-400">Alamat email terdaftar dikonfigurasi melalui sistem keamanan database.</p>

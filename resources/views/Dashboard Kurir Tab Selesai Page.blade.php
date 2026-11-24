@@ -61,9 +61,16 @@
                                 SELESAI
                             </span>
                         </div>
-                        <span class="text-[10px] text-slate-400 font-medium">
-                            {{ $order->updated_at ? $order->updated_at->format('d M Y, H:i') : '-' }} WIB
-                        </span>
+                        <div class="text-right leading-tight">
+                            <span class="text-[10px] text-emerald-700 font-semibold block">
+                                Selesai: {{ $order->updated_at ? $order->updated_at->format('d M Y, H:i') : '-' }} WIB
+                            </span>
+                            @if($order->created_at && $order->updated_at && ! $order->created_at->isSameDay($order->updated_at))
+                                <span class="text-[9px] text-slate-400 font-medium block mt-0.5">
+                                    Dipesan: {{ $order->created_at->format('d M Y, H:i') }} WIB
+                                </span>
+                            @endif
+                        </div>
                     </div>
 
                     <!-- Informasi Penerima & Alamat -->

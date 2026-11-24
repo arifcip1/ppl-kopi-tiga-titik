@@ -14,20 +14,6 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShippingController;
 use Illuminate\Support\Facades\Route;
 
-// Halaman login
-Route::get('/login', [AuthController::class, 'showLogin'])
-    ->name('login');
-
-// Proses login
-Route::post('/login', [AuthController::class, 'login'])
-    ->name('login.process');
-
-// Logout
-Route::post('/logout', [AuthController::class, 'logout'])
-    ->name('logout');
-
-
-
 Route::get('/', function () {
     if (\Illuminate\Support\Facades\Auth::check()) {
         $user = \Illuminate\Support\Facades\Auth::user();
@@ -186,8 +172,9 @@ Route::middleware(['role:admin'])->group(function () {
     Route::post('/owner/pos/transactions', [PosController::class, 'transaction'])->name('owner.pos.transaction');
     Route::post('/api/admin/pos/transactions', [PosController::class, 'transaction'])->name('api.admin.pos.transaction');
 
-    Route::get('/owner/profil', fn() => view('Profil Owner Page'));
-    Route::get('/profil-owner', fn() => view('Profil Owner Page'));
+    Route::get('/owner/profil', [OwnerDashboardController::class, 'showProfile'])->name('owner.profil');
+    Route::put('/owner/profil', [OwnerDashboardController::class, 'updateProfile'])->name('owner.profil.update');
+    Route::get('/profil-owner', [OwnerDashboardController::class, 'showProfile']);
 });
 
 // API Routes untuk Kelola Produk (Sesuai Kontrak Dokumen Tabel 7)

@@ -54,18 +54,28 @@
                 <div class="max-h-72 overflow-y-auto flex flex-col gap-2 divide-y divide-slate-100">
                     @if(isset($notifications) && count($notifications) > 0)
                         @foreach($notifications as $notif)
-                            <div class="pt-2 first:pt-0 flex items-start gap-2.5">
-                                <div class="w-7 h-7 rounded-lg {{ $notif['tipe'] === 'kurir' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700' }} flex items-center justify-center shrink-0 mt-0.5">
-                                    <span class="material-symbols-outlined text-base">
-                                        {{ $notif['tipe'] === 'kurir' ? 'local_shipping' : 'inventory' }}
-                                    </span>
+                            @php
+                                $notifBg = match($notif['tipe'] ?? '') {
+                                    'kurir'  => 'bg-amber-100 text-amber-700',
+                                    'pickup' => 'bg-purple-100 text-purple-700',
+                                    default  => 'bg-rose-100 text-rose-700',
+                                };
+                                $notifIcon = match($notif['tipe'] ?? '') {
+                                    'kurir'  => 'local_shipping',
+                                    'pickup' => 'storefront',
+                                    default  => 'inventory',
+                                };
+                            @endphp
+                            <a href="{{ $notif['link'] ?? '#' }}" class="pt-2 first:pt-0 flex items-start gap-2.5 hover:bg-slate-50 rounded-xl p-1 -mx-1 transition-colors">
+                                <div class="w-7 h-7 rounded-lg {{ $notifBg }} flex items-center justify-center shrink-0 mt-0.5">
+                                    <span class="material-symbols-outlined text-base">{{ $notifIcon }}</span>
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-xs font-bold text-slate-800 leading-tight">{{ $notif['judul'] }}</p>
                                     <p class="text-[11px] text-slate-500 mt-0.5">{{ $notif['pesan'] }}</p>
                                     <span class="text-[10px] text-slate-400 mt-1 block">{{ $notif['waktu'] }}</span>
                                 </div>
-                            </div>
+                            </a>
                         @endforeach
                     @else
                         <div class="py-6 text-center text-xs text-slate-400">
