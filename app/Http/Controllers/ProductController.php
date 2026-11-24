@@ -22,9 +22,9 @@ class ProductController extends Controller
         // Hitung metrik statistik inventaris
         $totalMenu = $products->count();
         $totalStok = $products->sum('stok');
-        // BR-10 & BR-19: Ambang peringatan restok dari tabel settings
+        // BR-10 & BR-19: Ambang peringatan restok dari tabel settings (hanya produk aktif agar konsisten dengan Dashboard & Notifikasi)
         $batasStokMinimum = (int) (\App\Models\Setting::where('key', 'batas_stok_minimum')->value('value') ?? 5);
-        $perluRestok = $products->where('stok', '<=', $batasStokMinimum)->count();
+        $perluRestok = $products->where('aktif', true)->where('stok', '<=', $batasStokMinimum)->count();
         $katalogAktif = $products->where('aktif', true)->count();
 
         return view('Kelola Produk Page', compact(
@@ -49,8 +49,8 @@ class ProductController extends Controller
             $validated['foto_path'] = $request->file('foto')->store('products', 'public');
         }
 
-        // Default aktif = true jika checkbox dicentang, atau jika tidak diset
-        $validated['aktif'] = $request->has('aktif') ? true : false;
+        // Hormati nilai boolean eksplisit pada JSON API sekaligus checkbox HTML form
+        $validated['aktif'] = $request->has('aktif') ? $request->boolean('aktif') : false;
 
         $product = Product::create($validated);
 
@@ -82,7 +82,7 @@ class ProductController extends Controller
             $validated['foto_path'] = $request->file('foto')->store('products', 'public');
         }
 
-        $validated['aktif'] = $request->has('aktif') ? true : false;
+        $validated['aktif'] = $request->has('aktif') ? $request->boolean('aktif') : false;
 
         $product->update($validated);
 

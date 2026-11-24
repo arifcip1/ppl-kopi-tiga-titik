@@ -52,7 +52,26 @@ class WebNotificationService
             ];
         }
 
-        // 2. Peringatan Stok Menipis (BR-10 & BR-19) — ambang batas dari tabel settings
+        // 2. Pesanan Ambil Sendiri (Pickup) yang sudah lunas dan siap diracik/diserahkan di lapak
+        $pickupOrders = Order::where('status', 'diproses')
+            ->where('metode_pemenuhan', 'ambil_sendiri')
+            ->latest()
+            ->take(5)
+            ->get();
+
+        if ($pickupOrders->isNotEmpty()) {
+            $count = $pickupOrders->count();
+            $notifications[] = [
+                'id'       => 'owner_pickup_ready',
+                'tipe'     => 'pickup',
+                'judul'    => "{$count} Pesanan Ambil Sendiri Siap Diserahkan",
+                'pesan'    => "Ada {$count} pesanan ambil sendiri berstatus diproses menunggu penyerahan di lapak.",
+                'waktu'    => $pickupOrders->first()->created_at?->diffForHumans() ?? 'Baru saja',
+                'link'     => route('owner.dashboard', ['status' => 'diproses']),
+            ];
+        }
+
+        // 3. Peringatan Stok Menipis (BR-10 & BR-19) — ambang batas dari tabel settings
         $batasStok = (int) (\App\Models\Setting::where('key', 'batas_stok_minimum')->value('value') ?? 5);
         $lowStockProducts = Product::where('aktif', true)
             ->where('stok', '<=', $batasStok)
@@ -115,8 +134,12 @@ class WebNotificationService
             ->get();
 
         foreach ($recentOrders as $order) {
+            $diprosesMessage = $order->metode_pemenuhan === 'ambil_sendiri'
+                ? 'Pembayaran terverifikasi, pesanan sedang disiapkan dan siap diambil di lapak (batas 24 jam).'
+                : 'Pembayaran terverifikasi, pesanan sedang disiapkan.';
+
             $statusLabels = [
-                'diproses' => 'Pembayaran terverifikasi, pesanan sedang disiapkan.',
+                'diproses' => $diprosesMessage,
                 'dikirim'  => 'Pesananmu sedang dalam perjalanan diantar oleh kurir!',
                 'selesai'  => 'Pesanan telah selesai diterima. Terima kasih sudah menikmati Kopi Tiga Titik!',
             ];

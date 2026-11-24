@@ -4,6 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>500 - Gangguan Server | Kopi Tiga Titik</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}?v=1">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('images/logo.png') }}?v=1">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

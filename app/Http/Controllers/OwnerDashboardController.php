@@ -8,6 +8,7 @@ use App\Models\ShippingLocation;
 use App\Models\User;
 use App\Services\CourierManagementService;
 use App\Services\ForecastService;
+use App\Services\LapakOperationalService;
 use App\Services\OrderStatusService;
 use App\Services\OrderStockService;
 use App\Services\SalesReportService;
@@ -16,6 +17,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -343,6 +345,14 @@ class OwnerDashboardController extends Controller
             return back()->with('error', $msg);
         }
 
+        if ($order->status !== 'diproses') {
+            $msg = 'Hanya pesanan ambil sendiri yang sudah lunas (status: diproses) yang dapat diserahkan.';
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $msg], 422);
+            }
+            return back()->with('error', $msg);
+        }
+
         try {
             $updatedOrder = $this->statusService->transition(
                 $order,
@@ -465,6 +475,54 @@ class OwnerDashboardController extends Controller
             }
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Menampilkan halaman profil Owner dengan data akun & status lapak dinamis (PPL 37).
+     * Endpoint: GET /owner/profil
+     */
+    public function showProfile(LapakOperationalService $operationalService): View
+    {
+        $owner = Auth::user();
+        $operational = $operationalService->getStatus();
+        $activeLocationId = (int) (\App\Models\Setting::where('key', 'lokasi_pengiriman_aktif_id')->value('value') ?? 0);
+        $locations = ShippingLocation::orderByDesc('aktif')->orderBy('id')->get();
+
+        return view('Profil Owner Page', compact(
+            'owner',
+            'operational',
+            'activeLocationId',
+            'locations'
+        ));
+    }
+
+    /**
+     * Memperbarui nama dan/atau kata sandi akun Owner (PPL 37).
+     * Endpoint: PUT /owner/profil
+     */
+    public function updateProfile(Request $request): RedirectResponse
+    {
+        /** @var \App\Models\User $owner */
+        $owner = Auth::user();
+
+        $validated = $request->validate([
+            'name'     => ['required', 'string', 'max:255'],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+        ], [
+            'name.required'      => 'Nama lengkap Owner wajib diisi.',
+            'password.min'       => 'Kata sandi baru minimal 8 karakter.',
+            'password.confirmed' => 'Konfirmasi kata sandi baru tidak cocok.',
+        ]);
+
+        $owner->name = trim($validated['name']);
+
+        if (!empty($validated['password'])) {
+            $owner->password = Hash::make($validated['password']);
+        }
+
+        $owner->save();
+
+        return back()->with('success', 'Data profil Owner berhasil diperbarui!');
     }
 
     /**
