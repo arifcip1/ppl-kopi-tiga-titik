@@ -14,8 +14,8 @@
     <!-- ============================================================== -->
     <!-- 1. TABS NAVIGASI UTAMA KURIR                                   -->
     <!-- ============================================================== -->
-    <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
-        <a href="{{ route('kurir.tugas-baru') }}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors">
+    <div class="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar">
+        <a href="{{ route('kurir.tugas-baru') }}" class="px-3.5 sm:px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors whitespace-nowrap shrink-0">
             <span class="material-symbols-outlined text-base text-slate-500">moped</span>
             <span>Tugas Baru</span>
             <span class="px-1.5 py-0.2 bg-slate-200 text-slate-700 rounded-full text-[10px]">
@@ -23,7 +23,7 @@
             </span>
         </a>
 
-        <a href="{{ route('kurir.selesai') }}" class="px-4 py-2 bg-blue-900 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-2">
+        <a href="{{ route('kurir.selesai') }}" class="px-3.5 sm:px-4 py-2 bg-blue-900 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-2 whitespace-nowrap shrink-0">
             <span class="material-symbols-outlined text-base">task_alt</span>
             <span>Riwayat Selesai</span>
             <span class="px-1.5 py-0.2 bg-white/20 text-white rounded-full text-[10px]">
@@ -35,12 +35,12 @@
     <!-- ============================================================== -->
     <!-- 2. DAFTAR RIWAYAT PENGANTARAN SELESAI                          -->
     <!-- ============================================================== -->
-    <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined text-emerald-700 text-lg">check_circle</span>
-            <h3 class="font-extrabold text-slate-900 text-sm md:text-base font-['Plus_Jakarta_Sans']">Daftar Pengantaran Selesai</h3>
+    <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+            <span class="material-symbols-outlined text-emerald-700 text-lg shrink-0">check_circle</span>
+            <h3 class="font-extrabold text-slate-900 text-sm md:text-base font-['Plus_Jakarta_Sans'] truncate">Daftar Pengantaran Selesai</h3>
         </div>
-        <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-xl">
+        <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-xl shrink-0">
             Total {{ $completedTasks->total() }} Pengantaran
         </span>
     </div>
@@ -54,8 +54,8 @@
             <div class="p-4 bg-white rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between gap-3">
                 <!-- Header Kartu Riwayat -->
                 <div>
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                        <div class="flex items-center gap-2">
+                    <div class="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 pb-2.5">
+                        <div class="flex items-center gap-2 flex-wrap">
                             <span class="font-extrabold text-slate-900 text-xs md:text-sm font-['Plus_Jakarta_Sans']">#{{ $order->kode }}</span>
                             <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-50 text-emerald-800 border border-emerald-200">
                                 SELESAI
@@ -105,7 +105,7 @@
                 </div>
 
                 <!-- Footer Kartu -->
-                <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+                <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2 text-xs">
                     <span class="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
                         <span class="material-symbols-outlined text-sm">verified</span>
                         Pesanan Diterima Pembeli

@@ -163,9 +163,67 @@
                 </div>
             </div>
 
-            <!-- Tombol Aksi Kanan Header (Slot Khusus Per Halaman) -->
+            <!-- Tombol Aksi Kanan Header & Lonceng Notifikasi Global Owner (FR-14 / PPL-39) -->
             <div class="flex items-center gap-2 shrink-0">
                 @yield('header_actions')
+
+                <!-- Dropdown Lonceng Notifikasi Web Owner -->
+                <div class="relative" id="webNotificationWrapper">
+                    <button type="button" onclick="toggleWebNotifications()" class="w-9 h-9 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-blue-900 flex items-center justify-center transition-all cursor-pointer relative shadow-2xs" title="Notifikasi Web">
+                        <span class="material-symbols-outlined text-xl">notifications</span>
+                        @php $ownerNotifCount = isset($notifications) ? count($notifications) : 0; @endphp
+                        @if($ownerNotifCount > 0)
+                            <span class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center shadow-xs animate-bounce">
+                                {{ $ownerNotifCount }}
+                            </span>
+                        @endif
+                    </button>
+
+                    <!-- Menu Dropdown Notifikasi -->
+                    <div id="webNotificationDropdown" class="hidden absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 md:w-96 max-w-sm bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 p-3 flex flex-col gap-2">
+                        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                            <span class="font-bold text-xs text-slate-900 font-['Plus_Jakarta_Sans'] flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-blue-900 text-base">notifications_active</span>
+                                Notifikasi Web Hari Ini
+                            </span>
+                            <span class="text-[10px] text-slate-500 font-semibold">{{ $ownerNotifCount }} Perhatian</span>
+                        </div>
+
+                        <div class="max-h-72 overflow-y-auto flex flex-col gap-2 divide-y divide-slate-100">
+                            @if($ownerNotifCount > 0)
+                                @foreach($notifications as $notif)
+                                    @php
+                                        $notifBg = match($notif['tipe'] ?? '') {
+                                            'kurir'  => 'bg-amber-100 text-amber-700',
+                                            'pickup' => 'bg-purple-100 text-purple-700',
+                                            default  => 'bg-rose-100 text-rose-700',
+                                        };
+                                        $notifIcon = match($notif['tipe'] ?? '') {
+                                            'kurir'  => 'local_shipping',
+                                            'pickup' => 'storefront',
+                                            default  => 'inventory',
+                                        };
+                                    @endphp
+                                    <a href="{{ $notif['link'] ?? '#' }}" class="pt-2 first:pt-0 flex items-start gap-2.5 hover:bg-slate-50 rounded-xl p-1.5 -mx-1 transition-colors">
+                                        <div class="w-7 h-7 rounded-lg {{ $notifBg }} flex items-center justify-center shrink-0 mt-0.5">
+                                            <span class="material-symbols-outlined text-base">{{ $notifIcon }}</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-xs font-bold text-slate-800 leading-tight">{{ $notif['judul'] }}</p>
+                                            <p class="text-[11px] text-slate-500 mt-0.5">{{ $notif['pesan'] }}</p>
+                                            <span class="text-[10px] text-slate-400 mt-1 block">{{ $notif['waktu'] }}</span>
+                                        </div>
+                                    </a>
+                                @endforeach
+                            @else
+                                <div class="py-6 text-center text-xs text-slate-400">
+                                    <span class="material-symbols-outlined text-2xl text-slate-300 block mb-1">notifications_off</span>
+                                    Tidak ada notifikasi mendesak saat ini.
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -255,6 +313,20 @@
                 }
             }
         }
+
+        // Toggle Lonceng Notifikasi Web Owner (FR-14)
+        function toggleWebNotifications() {
+            const dropdown = document.getElementById('webNotificationDropdown');
+            if (dropdown) dropdown.classList.toggle('hidden');
+        }
+
+        document.addEventListener('click', function(e) {
+            const wrapper = document.getElementById('webNotificationWrapper');
+            const dropdown = document.getElementById('webNotificationDropdown');
+            if (wrapper && dropdown && !wrapper.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
     </script>
 
     @stack('scripts')

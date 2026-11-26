@@ -14,8 +14,8 @@
     <!-- ============================================================== -->
     <!-- 1. TABS NAVIGASI UTAMA KURIR (TUGAS BARU VS SELESAI)           -->
     <!-- ============================================================== -->
-    <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
-        <a href="{{ route('kurir.tugas-baru') }}" class="px-4 py-2 bg-blue-900 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-2">
+    <div class="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar">
+        <a href="{{ route('kurir.tugas-baru') }}" class="px-3.5 sm:px-4 py-2 bg-blue-900 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-2 whitespace-nowrap shrink-0">
             <span class="material-symbols-outlined text-base">moped</span>
             <span>Tugas Baru</span>
             <span class="px-1.5 py-0.2 bg-white/20 text-white rounded-full text-[10px]">
@@ -23,7 +23,7 @@
             </span>
         </a>
 
-        <a href="{{ route('kurir.selesai') }}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors">
+        <a href="{{ route('kurir.selesai') }}" class="px-3.5 sm:px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center gap-2 transition-colors whitespace-nowrap shrink-0">
             <span class="material-symbols-outlined text-base text-slate-500">task_alt</span>
             <span>Riwayat Selesai</span>
             <span class="px-1.5 py-0.2 bg-slate-200 text-slate-700 rounded-full text-[10px]">
@@ -81,12 +81,12 @@
     <!-- ============================================================== -->
     <!-- 3. DAFTAR TUGAS PENGANTARAN (ISOLASI DATA KURIR FR-8.9)        -->
     <!-- ============================================================== -->
-    <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <span class="material-symbols-outlined text-blue-900 text-lg">delivery_dining</span>
-            <h3 class="font-extrabold text-slate-900 text-sm md:text-base font-['Plus_Jakarta_Sans']">Daftar Antaran Aktif Kamu</h3>
+    <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+            <span class="material-symbols-outlined text-blue-900 text-lg shrink-0">delivery_dining</span>
+            <h3 class="font-extrabold text-slate-900 text-sm md:text-base font-['Plus_Jakarta_Sans'] truncate">Daftar Antaran Aktif Kamu</h3>
         </div>
-        <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-xl">
+        <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-xl shrink-0">
             {{ count($tasks ?? []) }} Tugas Menunggu
         </span>
     </div>
@@ -100,8 +100,8 @@
             <div class="p-4 bg-white rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between gap-3 hover:border-blue-300 transition-colors">
                 <!-- Header Kartu Tugas -->
                 <div>
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                        <div class="flex items-center gap-2">
+                    <div class="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 pb-2.5">
+                        <div class="flex items-center gap-2 flex-wrap">
                             <span class="font-extrabold text-slate-900 text-xs md:text-sm font-['Plus_Jakarta_Sans']">#{{ $tugas->kode }}</span>
                             <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-indigo-50 text-indigo-800 border border-indigo-200">
                                 DIKIRIM
@@ -114,12 +114,12 @@
 
                     <!-- Informasi Penerima & Alamat Lengkap -->
                     <div class="mt-3 flex flex-col gap-1.5">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="material-symbols-outlined text-slate-400 text-base">person</span>
-                                <span class="text-xs font-bold text-slate-900">{{ $customerName }}</span>
+                        <div class="flex items-center justify-between flex-wrap gap-1.5">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="material-symbols-outlined text-slate-400 text-base shrink-0">person</span>
+                                <span class="text-xs font-bold text-slate-900 truncate">{{ $customerName }}</span>
                             </div>
-                            <span class="text-[11px] font-semibold text-slate-600">
+                            <span class="text-[11px] font-semibold text-slate-600 shrink-0">
                                 {{ $customerPhone }}
                             </span>
                         </div>
@@ -142,7 +142,7 @@
                         @endif
 
                         <!-- Tombol Cepat WhatsApp & Google Maps -->
-                        <div class="grid grid-cols-2 gap-2 mt-1">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
                             <a href="https://wa.me/{{ $tugas->whatsapp_number }}" target="_blank" rel="noopener" class="py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
                                 <span class="material-symbols-outlined text-sm text-emerald-600">chat</span>
                                 <span>Hubungi WhatsApp</span>

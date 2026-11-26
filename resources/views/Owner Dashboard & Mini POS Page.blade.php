@@ -29,62 +29,6 @@
                 {{ count($couriers) }}/2
             </span>
         </button>
-
-        <!-- Dropdown Lonceng Notifikasi Web (FR-14) -->
-        <div class="relative" id="webNotificationWrapper">
-            <button type="button" onclick="toggleWebNotifications()" class="w-9 h-9 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-blue-900 flex items-center justify-center transition-all cursor-pointer relative shadow-2xs" title="Notifikasi Web">
-                <span class="material-symbols-outlined text-xl">notifications</span>
-                @if(isset($notifications) && count($notifications) > 0)
-                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center shadow-xs animate-bounce">
-                        {{ count($notifications) }}
-                    </span>
-                @endif
-            </button>
-
-            <!-- Menu Dropdown Notifikasi -->
-            <div id="webNotificationDropdown" class="hidden absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 p-3 flex flex-col gap-2">
-                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <span class="font-bold text-xs text-slate-900 font-['Plus_Jakarta_Sans'] flex items-center gap-1.5">
-                        <span class="material-symbols-outlined text-blue-900 text-base">notifications_active</span>
-                        Notifikasi Web Hari Ini
-                    </span>
-                    <span class="text-[10px] text-slate-500 font-semibold">{{ isset($notifications) ? count($notifications) : 0 }} Perhatian</span>
-                </div>
-
-                <div class="max-h-72 overflow-y-auto flex flex-col gap-2 divide-y divide-slate-100">
-                    @if(isset($notifications) && count($notifications) > 0)
-                        @foreach($notifications as $notif)
-                            @php
-                                $notifBg = match($notif['tipe'] ?? '') {
-                                    'kurir'  => 'bg-amber-100 text-amber-700',
-                                    'pickup' => 'bg-purple-100 text-purple-700',
-                                    default  => 'bg-rose-100 text-rose-700',
-                                };
-                                $notifIcon = match($notif['tipe'] ?? '') {
-                                    'kurir'  => 'local_shipping',
-                                    'pickup' => 'storefront',
-                                    default  => 'inventory',
-                                };
-                            @endphp
-                            <a href="{{ $notif['link'] ?? '#' }}" class="pt-2 first:pt-0 flex items-start gap-2.5 hover:bg-slate-50 rounded-xl p-1 -mx-1 transition-colors">
-                                <div class="w-7 h-7 rounded-lg {{ $notifBg }} flex items-center justify-center shrink-0 mt-0.5">
-                                    <span class="material-symbols-outlined text-base">{{ $notifIcon }}</span>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-xs font-bold text-slate-800 leading-tight">{{ $notif['judul'] }}</p>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">{{ $notif['pesan'] }}</p>
-                                    <span class="text-[10px] text-slate-400 mt-1 block">{{ $notif['waktu'] }}</span>
-                                </div>
-                            </a>
-                        @endforeach
-                    @else
-                        <div class="py-6 text-center text-xs text-slate-400">
-                            Tidak ada notifikasi mendesak saat ini.
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
     </div>
 @endsection
 
@@ -96,12 +40,12 @@
     <!-- ============================================================== -->
     <!-- 1. RINGKASAN HARI INI (OPERATIONAL METRICS - FR-15 / BR-16)    -->
     <!-- ============================================================== -->
-    <div class="flex items-center justify-between">
-        <div>
+    <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="min-w-0">
             <h2 class="text-sm md:text-base font-extrabold text-slate-900 font-['Plus_Jakarta_Sans'] tracking-tight">RINGKASAN HARI INI</h2>
             <p class="text-[11px] text-slate-500">Pantau performa omset lapak dan kesiapan inventaris harian</p>
         </div>
-        <div class="text-[11px] font-semibold text-slate-500 bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs">
+        <div class="text-[11px] font-semibold text-slate-500 bg-white px-3 py-1.5 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
             {{ now()->translatedFormat('l, d F Y') }}
         </div>
     </div>
@@ -181,12 +125,12 @@
     <!-- 2. INFORMASI TITIK LAPAK HARI INI                              -->
     <!-- ============================================================== -->
     <div class="p-4 bg-white rounded-2xl shadow-xs border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div class="flex items-start gap-3">
+        <div class="flex items-start gap-3 min-w-0">
             <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined text-xl">location_on</span>
             </div>
-            <div>
-                <div class="flex items-center gap-2">
+            <div class="min-w-0">
+                <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                     <h3 class="font-bold text-slate-900 text-xs md:text-sm font-['Plus_Jakarta_Sans']">Titik Lapak Hari Ini</h3>
                     <span class="px-2 py-0.5 bg-blue-100 text-blue-900 text-[10px] font-extrabold rounded-md">
                         {{ $jamBuka ?? '15:00' }} - {{ $jamTutup ?? '18:00' }} WIB
@@ -324,8 +268,8 @@
             <div class="p-4 bg-white rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between gap-3 hover:border-blue-300 transition-colors">
                 <!-- Header Kartu -->
                 <div>
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                        <div class="flex items-center gap-2">
+                    <div class="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 pb-2.5">
+                        <div class="flex items-center gap-2 flex-wrap">
                             <span class="font-extrabold text-slate-900 text-xs md:text-sm font-['Plus_Jakarta_Sans']">#{{ $order->kode }}</span>
                             <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold border {{ $color['bg'] }} {{ $color['text'] }} {{ $color['border'] }}">
                                 {{ $color['label'] }}
@@ -412,7 +356,7 @@
                 </div>
 
                 <!-- Footer Kartu: Total & Tombol Aksi -->
-                <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
                     <div>
                         <span class="text-[10px] text-slate-400 block">
                             @if($order->sumber_transaksi === 'pos')
@@ -428,7 +372,7 @@
                         </span>
                     </div>
 
-                    <div class="flex items-center gap-1.5">
+                    <div class="flex items-center gap-1.5 flex-wrap">
                         <!-- Tombol Detail Pesanan -->
                         <button type="button" onclick="openOrderDetailModal({{ $order->id }})" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 shadow-2xs">
                             <span class="material-symbols-outlined text-sm">visibility</span>
@@ -509,7 +453,7 @@
     <!-- MODAL PENUGASAN KURIR                                          -->
     <!-- ============================================================== -->
     <div id="assign-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200">
-        <div class="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4">
+        <div class="bg-white w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl p-6 shadow-2xl border border-slate-100 flex flex-col gap-4">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div class="flex items-center gap-2">
                     <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center">
@@ -756,19 +700,6 @@
         modal.classList.add('opacity-0');
         setTimeout(() => modal.classList.add('hidden'), 200);
     }
-    // Toggle Web Notifications Dropdown
-    function toggleWebNotifications() {
-        const dropdown = document.getElementById('webNotificationDropdown');
-        dropdown.classList.toggle('hidden');
-    }
-
-    document.addEventListener('click', function(e) {
-        const wrapper = document.getElementById('webNotificationWrapper');
-        const dropdown = document.getElementById('webNotificationDropdown');
-        if (wrapper && !wrapper.contains(e.target)) {
-            dropdown.classList.add('hidden');
-        }
-    });
 
     // Assign Courier Modal Logic
     function openAssignModal(orderId, orderCode) {

@@ -8,6 +8,9 @@
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}?v=1">
     <link rel="shortcut icon" type="image/png" href="{{ asset('images/logo.png') }}?v=1">
     <link rel="apple-touch-icon" href="{{ asset('images/logo.png') }}?v=1">
+    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}?v=1">
+    <link rel="shortcut icon" type="image/png" href="{{ asset('images/logo.png') }}?v=1">
+    <link rel="apple-touch-icon" href="{{ asset('images/logo.png') }}?v=1">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -134,29 +137,83 @@
     <div id="contentWrapper" class="flex-1 w-full min-h-screen flex flex-col md:pl-64 transition-all duration-300 ease-in-out">
 
         <!-- Top Sticky Header -->
-        <header class="bg-white px-4 md:px-8 py-3.5 border-b border-slate-200/90 shadow-xs flex items-center justify-between sticky top-0 z-30">
-            <div class="flex items-center gap-3">
-                <button onclick="toggleSidebar()" class="w-9 h-9 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-blue-900 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95" title="Buka/Tutup Menu">
+        <header class="bg-white px-3 sm:px-4 md:px-8 py-3.5 border-b border-slate-200/90 shadow-xs flex items-center justify-between sticky top-0 z-30 gap-2">
+            <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                <button onclick="toggleSidebar()" class="w-9 h-9 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-blue-900 flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95 shrink-0" title="Buka/Tutup Menu">
                     <span class="material-symbols-outlined text-2xl font-bold">menu</span>
                 </button>
 
-                <div class="flex items-center gap-2">
-                    <img class="w-8 h-8 rounded-lg object-contain shadow-xs" src="{{ asset('images/logo.png') }}" alt="Logo" onerror="this.src='https://placehold.co/100x100/1e3a8a/ffffff?text=KTT'" />
-                    <div>
-                        <div class="flex items-center gap-1.5">
-                            <span class="font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] text-sm md:text-base tracking-tight">@yield('page_title', 'My Account')</span>
-                            <span class="px-1.5 py-0.2 {{ Auth::check() && in_array(Auth::user()->role, ['admin', 'owner']) ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900' }} font-bold text-[9px] rounded uppercase tracking-wider">
+                <div class="flex items-center gap-2 min-w-0">
+                    <img class="w-8 h-8 rounded-lg object-contain shadow-xs shrink-0" src="{{ asset('images/logo.png') }}" alt="Logo" onerror="this.src='https://placehold.co/100x100/1e3a8a/ffffff?text=KTT'" />
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5 flex-nowrap">
+                            <span class="font-extrabold text-blue-900 font-['Plus_Jakarta_Sans'] text-xs sm:text-sm md:text-base tracking-tight truncate">@yield('page_title', 'My Account')</span>
+                            <span class="px-1.5 py-0.2 {{ Auth::check() && in_array(Auth::user()->role, ['admin', 'owner']) ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900' }} font-bold text-[9px] rounded uppercase tracking-wider shrink-0">
                                 @yield('role_badge', strtoupper(Auth::check() && in_array(Auth::user()->role, ['admin', 'owner']) ? 'OWNER' : (Auth::user()->role ?? 'PELANGGAN')))
                             </span>
                         </div>
-                        <p class="text-[11px] text-slate-500 hidden md:block">@yield('page_subtitle', 'Kelola profil, alamat pengiriman, dan riwayat pesananmu')</p>
+                        <p class="text-[11px] text-slate-500 hidden md:block truncate">@yield('page_subtitle', 'Kelola profil, alamat pengiriman, dan riwayat pesananmu')</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Tombol Aksi Kanan Header -->
-            <div class="flex items-center gap-2.5">
+            <!-- Tombol Aksi Kanan Header & Lonceng Notifikasi Pelanggan (FR-14) -->
+            <div class="flex items-center gap-2 shrink-0">
                 @yield('header_actions')
+
+                @auth
+                    @if(Auth::user()->role === 'pelanggan')
+                        <div class="relative print:hidden" id="customerNotificationWrapper">
+                            <button type="button" onclick="toggleCustomerNotifications()" class="w-9 h-9 rounded-xl bg-slate-50 hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-blue-900 flex items-center justify-center transition-all cursor-pointer relative shadow-2xs" title="Notifikasi Pesanan">
+                                <span class="material-symbols-outlined text-xl">notifications</span>
+                                @php $customerNotifCount = isset($notifications) ? count($notifications) : 0; @endphp
+                                @if($customerNotifCount > 0)
+                                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center shadow-xs">
+                                        {{ $customerNotifCount }}
+                                    </span>
+                                @endif
+                            </button>
+
+                            <div id="customerNotificationDropdown" class="hidden absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 md:w-96 max-w-sm bg-white rounded-2xl shadow-xl border border-slate-200/90 z-50 p-3 flex flex-col gap-2">
+                                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                                    <span class="font-bold text-xs text-slate-900 font-['Plus_Jakarta_Sans'] flex items-center gap-1.5">
+                                        <span class="material-symbols-outlined text-blue-900 text-base">notifications_active</span>
+                                        Notifikasi Pesanan Saya
+                                    </span>
+                                    <span class="text-[10px] text-slate-500 font-semibold">{{ $customerNotifCount }} Info</span>
+                                </div>
+
+                                <div class="max-h-72 overflow-y-auto flex flex-col gap-2 divide-y divide-slate-100">
+                                    @if($customerNotifCount > 0)
+                                        @foreach($notifications as $notif)
+                                            <a href="{{ $notif['link'] ?? url('/riwayat-pesanan') }}" class="pt-2 first:pt-0 flex items-start gap-2.5 hover:bg-slate-50 rounded-xl p-1.5 -mx-1 transition-colors">
+                                                <div class="w-7 h-7 rounded-lg bg-blue-100 text-blue-900 flex items-center justify-center shrink-0 mt-0.5">
+                                                    <span class="material-symbols-outlined text-base">local_cafe</span>
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-xs font-bold text-slate-800 leading-tight">{{ $notif['judul'] }}</p>
+                                                    <p class="text-[11px] text-slate-500 mt-0.5">{{ $notif['pesan'] }}</p>
+                                                    <span class="text-[10px] text-slate-400 mt-1 block">{{ $notif['waktu'] }}</span>
+                                                </div>
+                                            </a>
+                                        @endforeach
+                                    @else
+                                        <div class="py-6 text-center text-xs text-slate-400">
+                                            <span class="material-symbols-outlined text-2xl text-slate-300 block mb-1">notifications_off</span>
+                                            Belum ada pembaruan status pesanan.
+                                        </div>
+                                    @endif
+                                </div>
+
+                                <div class="pt-2 border-t border-slate-100 text-center">
+                                    <a href="{{ url('/riwayat-pesanan') }}" class="text-xs font-bold text-blue-900 hover:underline">
+                                        Lihat Semua Pesanan
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                @endauth
             </div>
         </header>
 
@@ -333,6 +390,19 @@
                 }
             }, 4000);
         }
+
+        function toggleCustomerNotifications() {
+            const dropdown = document.getElementById('customerNotificationDropdown');
+            if (dropdown) dropdown.classList.toggle('hidden');
+        }
+
+        document.addEventListener('click', function(e) {
+            const wrapper = document.getElementById('customerNotificationWrapper');
+            const dropdown = document.getElementById('customerNotificationDropdown');
+            if (wrapper && dropdown && !wrapper.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
     </script>
 
     @stack('scripts')

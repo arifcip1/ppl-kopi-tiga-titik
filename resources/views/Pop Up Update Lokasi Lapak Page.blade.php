@@ -176,7 +176,7 @@
 
         <!-- 3. ALAMAT LENGKAP LAPAK -->
         <div>
-            <div class="flex items-center justify-between mb-1.5 gap-2">
+            <div class="flex items-center justify-between flex-wrap mb-1.5 gap-2">
                 <label for="alamat" class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                     <span class="material-symbols-outlined text-sm text-blue-900">home</span>
                     <span>Alamat Lengkap Lapak di Mojokerto</span>
@@ -202,7 +202,7 @@
 
         <!-- 4. PETA KOORDINAT LAPAK LEAFLET (DRAGGABLE PIN) -->
         <div>
-            <div class="flex items-center justify-between mb-1.5">
+            <div class="flex items-center justify-between flex-wrap gap-2 mb-1.5">
                 <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                     <span class="material-symbols-outlined text-sm text-blue-900">pin_drop</span>
                     <span>Tentukan Titik Koordinat Lapak di Peta</span>
