@@ -76,7 +76,7 @@
                             <span class="material-symbols-outlined text-blue-900 text-lg">inventory_2</span>
                         </div>
                         <div class="flex items-baseline gap-1.5">
-                            <span class="text-2xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">142</span>
+                            <span class="text-2xl font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">{{ $stats['total_completed'] ?? 0 }}</span>
                             <span class="text-xs font-semibold text-slate-600">Pesanan</span>
                         </div>
                         <div class="flex items-center gap-1 text-[10px] text-emerald-600 font-medium">

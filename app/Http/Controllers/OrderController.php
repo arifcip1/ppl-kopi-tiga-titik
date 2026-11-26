@@ -342,10 +342,8 @@ class OrderController extends Controller
     {
         $user = Auth::user();
 
-        // Cari pesanan berdasarkan kode atau ID
-        $order = Order::where(function ($q) use ($kode) {
-            $q->where('kode', $kode)->orWhere('id', $kode);
-        })->first();
+        // Cari pesanan berdasarkan kode atau ID numerik murni
+        $order = Order::byIdentifier($kode)->first();
 
         if (!$order) {
             if ($request->wantsJson() || $request->is('api/*')) {
@@ -507,9 +505,7 @@ class OrderController extends Controller
     {
         $user = Auth::user();
 
-        $order = Order::where(function ($q) use ($kode) {
-            $q->where('kode', $kode)->orWhere('id', $kode);
-        })->first();
+        $order = Order::byIdentifier($kode)->first();
 
         if (!$order) {
             if ($request->wantsJson() || $request->is('api/*')) {

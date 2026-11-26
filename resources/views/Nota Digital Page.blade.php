@@ -95,20 +95,45 @@
         </div>
 
         <!-- Badge Status Transaksi & Pembayaran -->
+        @php
+            $isCancelledNota = $order->status === 'dibatalkan'
+                || ($order->payment && in_array($order->payment->status, ['gagal', 'kedaluwarsa'], true));
+            $isPaidNota = !$isCancelledNota
+                && ($isPosOrder || ($order->payment && $order->payment->isSuccess()) || in_array($order->status, ['diproses', 'dikirim', 'selesai'], true));
+
+            if ($isCancelledNota) {
+                $notaStatusLabel = match ($order->payment?->status) {
+                    'kedaluwarsa' => 'KEDALUWARSA',
+                    'gagal' => 'GAGAL',
+                    default => 'DIBATALKAN',
+                };
+                $notaBoxClass = 'bg-rose-100 text-rose-700';
+                $notaBadgeClass = 'bg-rose-600 text-white';
+                $notaIcon = 'cancel';
+            } elseif ($isPaidNota) {
+                $notaStatusLabel = $isPosOrder
+                    ? (($order->payment?->metode_pembayaran ?? 'tunai') === 'tunai' ? 'LUNAS (TUNAI LAPAK)' : 'LUNAS (QRIS LAPAK)')
+                    : 'LUNAS (VERIFIKASI QRIS)';
+                $notaBoxClass = 'bg-emerald-100 text-emerald-800';
+                $notaBadgeClass = 'bg-emerald-600 text-white';
+                $notaIcon = 'verified';
+            } else {
+                $notaStatusLabel = 'MENUNGGU PEMBAYARAN';
+                $notaBoxClass = 'bg-amber-100 text-amber-700';
+                $notaBadgeClass = 'bg-amber-600 text-white';
+                $notaIcon = 'schedule';
+            }
+        @endphp
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
             <div class="flex items-center gap-2.5 min-w-0">
-                <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
-                    <span class="material-symbols-outlined text-lg">verified</span>
+                <span class="w-8 h-8 rounded-xl {{ $notaBoxClass }} flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-lg">{{ $notaIcon }}</span>
                 </span>
                 <div class="min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="text-xs font-bold text-slate-900">Status Pembayaran:</span>
-                        <span class="px-2 py-0.5 bg-emerald-600 text-white font-extrabold text-[10px] rounded-md tracking-wider">
-                            @if($isPosOrder)
-                                {{ ($order->payment?->metode_pembayaran ?? 'tunai') === 'tunai' ? 'LUNAS (TUNAI LAPAK)' : 'LUNAS (QRIS LAPAK)' }}
-                            @else
-                                {{ $order->payment && $order->payment->isSuccess() ? 'LUNAS (VERIFIKASI QRIS)' : 'TERVERIFIKASI' }}
-                            @endif
+                        <span class="px-2 py-0.5 {{ $notaBadgeClass }} font-extrabold text-[10px] rounded-md tracking-wider">
+                            {{ $notaStatusLabel }}
                         </span>
                     </div>
                     <p class="text-[11px] text-slate-500 truncate mt-0.5">
@@ -122,10 +147,22 @@
             </div>
 
             <div class="sm:text-right shrink-0">
-                <span class="text-[10px] text-slate-500 block">Waktu Verifikasi Lunas:</span>
-                <span class="text-[11px] font-bold text-slate-800 font-mono">
-                    {{ $order->payment?->waktu_verifikasi ? $order->payment->waktu_verifikasi->translatedFormat('d M Y, H:i') . ' WIB' : ($order->created_at ? $order->created_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Otomatis Server') }}
-                </span>
+                @if($isPaidNota)
+                    <span class="text-[10px] text-slate-500 block">Waktu Verifikasi Lunas:</span>
+                    <span class="text-[11px] font-bold text-slate-800 font-mono">
+                        {{ $order->payment?->waktu_verifikasi ? $order->payment->waktu_verifikasi->translatedFormat('d M Y, H:i') . ' WIB' : ($order->created_at ? $order->created_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Otomatis Server') }}
+                    </span>
+                @elseif($isCancelledNota)
+                    <span class="text-[10px] text-slate-500 block">Status Pembayaran:</span>
+                    <span class="text-[11px] font-bold text-rose-700 font-mono">
+                        Belum Dibayar / Dibatalkan
+                    </span>
+                @else
+                    <span class="text-[10px] text-slate-500 block">Batas Waktu Pembayaran:</span>
+                    <span class="text-[11px] font-bold text-amber-700 font-mono">
+                        {{ $order->expires_at ? $order->expires_at->translatedFormat('d M Y, H:i') . ' WIB' : 'Menunggu Verifikasi' }}
+                    </span>
+                @endif
             </div>
         </div>
 

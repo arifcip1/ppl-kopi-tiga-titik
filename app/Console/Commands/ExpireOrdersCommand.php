@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Order;
+use App\Services\OrderStatusService;
 use App\Services\OrderStockService;
 use Illuminate\Console\Command;
 
@@ -25,7 +26,7 @@ class ExpireOrdersCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle(OrderStockService $orderStockService): int
+    public function handle(OrderStockService $orderStockService, OrderStatusService $orderStatusService): int
     {
         $this->info('Memeriksa pesanan kedaluwarsa...');
 
@@ -66,15 +67,18 @@ class ExpireOrdersCommand extends Command
 
         $pickupCount = 0;
         foreach ($overduePickupOrders as $pickupOrder) {
-            $pickupOrder->update(['status' => 'selesai']);
-            \App\Models\OrderStatusHistory::create([
-                'order_id' => $pickupOrder->id,
-                'status_baru' => 'selesai',
-                'diubah_oleh' => null,
-                'waktu_perubahan' => $now,
-                'keterangan' => 'Batas waktu pengambilan 24 jam terlewati, pesanan diselesaikan otomatis oleh sistem.',
-            ]);
-            $pickupCount++;
+            try {
+                $orderStatusService->transition(
+                    $pickupOrder,
+                    'selesai',
+                    null,
+                    'Batas waktu pengambilan 24 jam terlewati, pesanan diselesaikan otomatis oleh sistem.'
+                );
+                $pickupCount++;
+            } catch (\Throwable $e) {
+                $this->error("Gagal menyelesaikan pesanan {$pickupOrder->kode}: {$e->getMessage()}");
+                report($e);
+            }
         }
 
         if ($pickupCount > 0) {

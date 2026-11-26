@@ -35,8 +35,8 @@ class PaymentController extends Controller
 
         if ($kode !== null) {
             $order = $query->where('kode', $kode)->first();
-        } elseif ($orderId !== null) {
-            $order = $query->where('id', $orderId)->first();
+        } elseif ($orderId !== null && ctype_digit((string) $orderId)) {
+            $order = $query->where('id', (int) $orderId)->first();
         } else {
             // Jika tidak ada parameter, ambil pesanan menunggu pembayaran terbaru milik user login
             $order = $query->where('user_id', Auth::id())
@@ -49,8 +49,9 @@ class PaymentController extends Controller
             return redirect()->route('orders')->with('error', 'Pesanan tidak ditemukan atau belum dipilih.');
         }
 
-        // Otorisasi: Hanya pemilik pesanan atau admin yang dapat mengakses
-        if (Auth::check() && Auth::user()->role !== 'admin' && $order->user_id !== Auth::id()) {
+        // Otorisasi: Hanya pemilik pesanan atau admin/owner yang dapat mengakses
+        $user = Auth::user();
+        if (!$user || (!in_array($user->role, ['admin', 'owner'], true) && (int) $order->user_id !== (int) $user->id)) {
             abort(403, 'Anda tidak memiliki hak untuk mengakses pembayaran pesanan ini.');
         }
 
@@ -112,8 +113,7 @@ class PaymentController extends Controller
     public function status(Request $request, string $identifier): JsonResponse
     {
         $order = Order::with('payment')
-            ->where('id', $identifier)
-            ->orWhere('kode', $identifier)
+            ->byIdentifier($identifier)
             ->first();
 
         if ($order === null) {
@@ -123,8 +123,9 @@ class PaymentController extends Controller
             ], 404);
         }
 
-        // Otorisasi kepemilikan pesanan
-        if (Auth::check() && !in_array(Auth::user()->role, ['admin', 'kurir']) && $order->user_id !== Auth::id()) {
+        // Otorisasi kepemilikan pesanan (hanya pemilik pesanan atau admin/owner)
+        $user = Auth::user();
+        if (!$user || (!in_array($user->role, ['admin', 'owner'], true) && (int) $order->user_id !== (int) $user->id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Akses ditolak.',
@@ -199,8 +200,7 @@ class PaymentController extends Controller
         }
 
         $order = Order::with('payment')
-            ->where('id', $identifier)
-            ->orWhere('kode', $identifier)
+            ->byIdentifier($identifier)
             ->first();
 
         if ($order === null) {

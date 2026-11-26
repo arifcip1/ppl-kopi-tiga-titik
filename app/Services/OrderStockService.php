@@ -226,6 +226,7 @@ class OrderStockService
                 $record = SalesHistory::where('product_id', $item->product_id)
                     ->whereDate('tanggal', $tanggal)
                     ->where('sumber', 'transaksi')
+                    ->lockForUpdate()
                     ->first();
 
                 if ($record) {

@@ -115,8 +115,9 @@ class CourierDashboardController extends Controller
     {
         $courier = Auth::user();
         $notifications = $this->notificationService->getNotificationsForUser($courier);
+        $stats = $this->getCourierStats($courier->id);
 
-        return view('Profil Kurir Page', compact('courier', 'notifications'));
+        return view('Profil Kurir Page', compact('courier', 'notifications', 'stats'));
     }
 
     /**
@@ -261,8 +262,8 @@ class CourierDashboardController extends Controller
 
         $order->total_botol = $order->orderItems ? $order->orderItems->sum('jumlah') : 0;
 
-        // Bersihkan nomor telepon untuk link WhatsApp
-        $rawPhone = preg_replace('/[^0-9]/', '', $order->telepon ?? '');
+        // Bersihkan nomor telepon untuk link WhatsApp (fallback ke nomor akun pelanggan)
+        $rawPhone = preg_replace('/[^0-9]/', '', $order->telepon ?? optional($order->user)->telepon ?? '');
         if (str_starts_with($rawPhone, '0')) {
             $order->whatsapp_number = '62' . substr($rawPhone, 1);
         } else {
