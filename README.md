@@ -1,11 +1,11 @@
 # Kopi Tiga Titik — Sistem Informasi Penjualan Kopi Botol (Online & POS Kasir Lapak)
 
-[![Laravel](https://img.shields.io/badge/Laravel-11.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
+[![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.x-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://mysql.com)
 [![Midtrans](https://img.shields.io/badge/Payment-Midtrans_QRIS_Sandbox-002B49?style=for-the-badge)](https://midtrans.com)
-[![Tests](https://img.shields.io/badge/Tests-292%20Passed-success?style=for-the-badge)](tests)
+[![Tests](https://img.shields.io/badge/Tests-297%20Passed-success?style=for-the-badge)](tests)
 
 Sistem Informasi Penjualan Kopi Tiga Titik adalah aplikasi terintegrasi berbasis web (*mobile-first* & desktop responsif) untuk UMKM **Kopi Tiga Titik** di Kota Mojokerto (Mata Kuliah Proyek Perangkat Lunak). Aplikasi ini mengintegrasikan pemesanan daring pelanggan (*online delivery* maupun *ambil sendiri di lapak*), pembayaran digital **QRIS Sandbox (Midtrans)**, perhitungan ongkos kirim rute jalan **OpenStreetMap / OpenRouteService (ORS)**, manajemen tugas **Kurir**, **POS Kasir Offline** di lapak fisik (Jl. Kuwung, Magersari, Kota Mojokerto), laporan & ekspor **Excel**, serta **Prediksi Kebutuhan Stok Moving Average**.
 
@@ -108,8 +108,8 @@ Sistem ini dibangun dengan arsitektur **Basis Data Terpadu (Single Source of Tru
    MIDTRANS_IS_3DS=true
 
    # OpenRouteService (Routing Jarak Riil)
-   # Jika ORS_API_KEY kosong, sistem otomatis beralih ke Fallback Mode Simulasi Haversine x 1.25
-   ORS_API_KEY=5b3ce3597851110001cf6248xxxxxxxxxxxxxxxxxxxxxxx
+   # Jika OPENROUTESERVICE_API_KEY kosong, sistem otomatis beralih ke Fallback Mode Simulasi Haversine x 1.25
+   OPENROUTESERVICE_API_KEY=
    OPENROUTESERVICE_SIMULATION=false
 
    # Kontak WhatsApp Resmi Lapak (Nota & Hubungi Penjual)
@@ -173,7 +173,7 @@ Untuk memverifikasi integritas seluruh modul dan regresi:
 ```bash
 php artisan test
 ```
-*Hasil yang diharapkan: **292 passed, 1393 assertions** (100% hijau).*
+*Hasil yang diharapkan: **297 passed, 1435 assertions** (100% hijau).*
 
 ---
 
