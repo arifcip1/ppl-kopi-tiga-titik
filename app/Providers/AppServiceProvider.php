@@ -83,5 +83,19 @@ class AppServiceProvider extends ServiceProvider
                 'lapakClosedMessage'      => $lapakClosedMessage,
             ]);
         });
+
+        // PPL-39: Suntikkan notifikasi web dinamis secara konsisten pada seluruh halaman layout Owner & Pelanggan
+        View::composer(['layouts.owner', 'layouts.pelanggan'], function ($view) {
+            if (array_key_exists('notifications', $view->getData())) {
+                return;
+            }
+
+            $notifications = [];
+            if (Auth::check() && Schema::hasTable('orders') && Schema::hasTable('products') && Schema::hasTable('settings')) {
+                $notifications = app(\App\Services\WebNotificationService::class)->getNotificationsForUser(Auth::user());
+            }
+
+            $view->with('notifications', $notifications);
+        });
     }
 }

@@ -7,9 +7,10 @@
 
 @section('header_actions')
     <!-- Tombol Ekspor Excel (PPL-30) -->
-    <a id="btn-export-excel" href="{{ route('owner.export.sales', ['periode' => $periode]) }}" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer">
+    <a id="btn-export-excel" href="{{ route('owner.export.sales', ['periode' => $periode]) }}" class="px-2.5 sm:px-3.5 py-1.5 sm:py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer shrink-0">
         <span class="material-symbols-outlined text-base">table_view</span>
-        <span>Ekspor ke Excel</span>
+        <span class="hidden sm:inline">Ekspor ke Excel</span>
+        <span class="sm:hidden">Excel</span>
     </a>
 @endsection
 
@@ -48,7 +49,7 @@
                 <div class="text-2xl font-extrabold text-slate-900 font-['Plus_Jakarta_Sans'] mt-1">
                     {{ number_format($summary['total_botol'] ?? 0) }} <span class="text-xs font-semibold text-slate-500">Botol</span>
                 </div>
-                <span class="text-[10px] text-slate-500 mt-0.5 block"></span>
+                <span class="text-[10px] text-slate-500 mt-0.5 block">Akumulasi Online &amp; POS Lapak</span>
             </div>
             <div class="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 text-blue-900 flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined text-2xl">local_cafe</span>
@@ -62,7 +63,7 @@
                 <div class="text-2xl font-extrabold text-emerald-700 font-['Plus_Jakarta_Sans'] mt-1">
                     Rp {{ number_format($summary['total_omzet'] ?? 0, 0, ',', '.') }}
                 </div>
-                <span class="text-[10px] text-emerald-600 font-medium mt-0.5 block"></span>
+                <span class="text-[10px] text-emerald-600 font-medium mt-0.5 block">Pendapatan bersih tanpa ongkir</span>
             </div>
             <div class="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined text-2xl">payments</span>
@@ -76,7 +77,7 @@
                 <div class="text-xl font-extrabold text-slate-900 font-['Plus_Jakarta_Sans'] mt-1">
                     {{ $summary['varian_terlaris'] ?? '-' }}
                 </div>
-                <span class="text-[10px] text-amber-600 font-semibold mt-0.5 block"></span>
+                <span class="text-[10px] text-amber-600 font-semibold mt-0.5 block">Penjualan tertinggi periode ini</span>
             </div>
             <div class="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined text-2xl">local_fire_department</span>
@@ -85,13 +86,13 @@
     </div>
 
     <!-- Grafik Visualisasi Tren Penjualan (Chart.js) -->
-    <div class="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col gap-3">
-        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+    <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col gap-3">
+        <div class="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-100">
             <div>
                 <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Grafik Tren Penjualan Kopi</h3>
-                <p class="text-xs text-slate-500 mt-0.5"></p>
+                <p class="text-xs text-slate-500 mt-0.5">Volume botol terjual berdasarkan periode terpilih</p>
             </div>
-            <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-lg uppercase">
+            <span class="px-2.5 py-1 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-lg uppercase shrink-0">
                 Mode Periode: {{ ucfirst($periode) }}
             </span>
         </div>
@@ -103,16 +104,16 @@
 
     <!-- Tabel Rincian Data Transaksi & Rekap -->
     <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden flex flex-col">
-        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div class="px-4 sm:px-5 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
             <div>
                 <h3 class="text-sm font-bold text-slate-900 font-['Plus_Jakarta_Sans']">Daftar Rekapitulasi Transaksi</h3>
-                <p class="text-xs text-slate-500 mt-0.5"></p>
+                <p class="text-xs text-slate-500 mt-0.5">Rekap harian per varian kopi dan kanal transaksi</p>
             </div>
             <span class="text-xs text-slate-400 font-medium">Menampilkan transaksi terbaru</span>
         </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
+            <table class="w-full min-w-[540px] text-left text-xs">
                 <thead class="bg-slate-50/80 text-slate-600 font-bold uppercase tracking-wider text-[10px] border-b border-slate-100">
                     <tr>
                         <th class="py-3 px-4">Tanggal / Waktu</th>

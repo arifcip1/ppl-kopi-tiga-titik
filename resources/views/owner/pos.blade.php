@@ -160,7 +160,7 @@
                         </div>
 
                         <!-- Harga & Tombol Tambah ke Keranjang Kasir -->
-                        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-1">
+                        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between flex-wrap gap-1.5">
                             <div>
                                 <span class="text-[10px] text-slate-400 block font-medium">Harga</span>
                                 <span class="text-xs font-extrabold text-blue-900 font-['Plus_Jakarta_Sans']">
@@ -207,7 +207,7 @@
         </div>
 
         <!-- ==================== KOLOM KANAN: PANEL KERANJANG KASIR ==================== -->
-        <div class="lg:col-span-5 xl:col-span-4 sticky top-20 flex flex-col gap-3">
+        <div id="posCartPanel" class="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-20 flex flex-col gap-3 scroll-mt-20">
             
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 flex flex-col gap-4">
                 
@@ -381,7 +381,7 @@
 <!-- 3. MODAL DIALOG NOTA SUKSES TRANSAKSI KASIR (PREVIEW PPL-31)   -->
 <!-- ============================================================== -->
 <div id="posSuccessModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden opacity-0 transition-opacity duration-200">
-    <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl border border-slate-100 flex flex-col gap-4">
+    <div class="bg-white w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-3xl p-5 shadow-2xl border border-slate-100 flex flex-col gap-4">
         
         <!-- Header Sukses -->
         <div class="text-center flex flex-col items-center">
@@ -491,8 +491,22 @@
     </div>
 </div>
 
+<!-- Floating Quick Jump Bar Keranjang POS di Mobile/Tablet (< 1024px) -->
+<div id="mobilePosCartBar" class="hidden lg:hidden fixed bottom-4 left-4 right-4 z-30">
+    <a href="#posCartPanel" class="w-full py-3 px-4 bg-blue-900 hover:bg-blue-800 text-white rounded-2xl shadow-xl border border-blue-800 flex items-center justify-between gap-3 transition-all">
+        <div class="flex items-center gap-2 min-w-0">
+            <span class="material-symbols-outlined text-lg shrink-0">shopping_basket</span>
+            <span id="mobilePosBarCount" class="text-xs font-bold truncate">0 Botol di Keranjang</span>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+            <span id="mobilePosBarTotal" class="text-xs font-extrabold font-['Plus_Jakarta_Sans']">Rp 0</span>
+            <span class="material-symbols-outlined text-base">arrow_downward</span>
+        </div>
+    </a>
+</div>
+
 <!-- Container Toast Notifikasi Dinamis Kasir POS (Standar Alert) -->
-<div id="pos-toast-container" class="fixed top-20 right-4 md:right-8 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"></div>
+<div id="pos-toast-container" class="fixed top-20 left-4 right-4 sm:left-auto md:right-8 z-50 flex flex-col gap-2.5 sm:max-w-sm sm:w-full pointer-events-none"></div>
 @endsection
 
 @push('scripts')
@@ -703,12 +717,17 @@
         const totalQtyText = document.getElementById('totalQtyText');
         const totalPriceText = document.getElementById('totalPriceText');
 
+        const mobileBar = document.getElementById('mobilePosCartBar');
+        const mobileBarCount = document.getElementById('mobilePosBarCount');
+        const mobileBarTotal = document.getElementById('mobilePosBarTotal');
+
         if (cart.length === 0) {
             container.innerHTML = '';
             emptyState.classList.remove('hidden');
             badgeCount.textContent = '0 item dipilih';
             totalQtyText.textContent = '0 Botol';
             totalPriceText.textContent = 'Rp 0';
+            if (mobileBar) mobileBar.classList.add('hidden');
             calculateChange();
             return;
         }
@@ -758,6 +777,11 @@
         badgeCount.textContent = `${totalQty} botol (${cart.length} varian)`;
         totalQtyText.textContent = `${totalQty} Botol`;
         totalPriceText.textContent = formatRupiah(totalPrice);
+        if (mobileBar) {
+            mobileBar.classList.remove('hidden');
+            if (mobileBarCount) mobileBarCount.textContent = `${totalQty} Botol di Keranjang`;
+            if (mobileBarTotal) mobileBarTotal.textContent = formatRupiah(totalPrice);
+        }
 
         calculateChange();
     }

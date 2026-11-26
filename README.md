@@ -1,13 +1,24 @@
-# Kopi Tiga Titik — Sistem Informasi Penjualan Kopi Botol (Online & POS Kasir Offline)
+# Kopi Tiga Titik — Sistem Informasi Penjualan Kopi Botol (Online & POS Kasir Lapak)
 
 [![Laravel](https://img.shields.io/badge/Laravel-11.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.x-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://mysql.com)
 [![Midtrans](https://img.shields.io/badge/Payment-Midtrans_QRIS_Sandbox-002B49?style=for-the-badge)](https://midtrans.com)
-[![Tests](https://img.shields.io/badge/Tests-287%20Passed-success?style=for-the-badge)](tests)
+[![Tests](https://img.shields.io/badge/Tests-292%20Passed-success?style=for-the-badge)](tests)
 
-Sistem Informasi Penjualan Kopi Tiga Titik adalah aplikasi terintegrasi berbasis web responsif (*mobile-first*) yang melayani pemesanan kopi botol siap minum secara daring (*online delivery* dan *self-pickup*) serta transaksi kasir luring (*POS kasir offline*) di lapak fisik (Jl. Kuwung, Magersari, Kota Mojokerto).
+Sistem Informasi Penjualan Kopi Tiga Titik adalah aplikasi terintegrasi berbasis web (*mobile-first* & desktop responsif) untuk UMKM **Kopi Tiga Titik** di Kota Mojokerto (Mata Kuliah Proyek Perangkat Lunak). Aplikasi ini mengintegrasikan pemesanan daring pelanggan (*online delivery* maupun *ambil sendiri di lapak*), pembayaran digital **QRIS Sandbox (Midtrans)**, perhitungan ongkos kirim rute jalan **OpenStreetMap / OpenRouteService (ORS)**, manajemen tugas **Kurir**, **POS Kasir Offline** di lapak fisik (Jl. Kuwung, Magersari, Kota Mojokerto), laporan & ekspor **Excel**, serta **Prediksi Kebutuhan Stok Moving Average**.
+
+---
+
+## Anggota Tim
+
+| Nama | NIM | Peran |
+|---|---|---|
+| Muhammad Farrel Fastha | 240411100114 | Product Owner / System Analyst / Frontend & Backend / Dokumentasi & Branding |
+| M. ARIF | 240411100084 | Scrum Master / QA Tester / Frontend & Backend / Dokumentasi & Branding |
+| Badruz Zaman Ash Sholih | 240411100140 | UI/UX Designer / Frontend & Backend / Dokumentasi & Branding |
+| Ahmad Dafi Zidni Alfarisi | 240411100027 | UI/UX Designer / Frontend & Backend / Dokumentasi & Branding |
 
 ---
 
@@ -31,18 +42,16 @@ Sistem ini dibangun dengan arsitektur **Basis Data Terpadu (Single Source of Tru
 13. **Peringatan Restok Rule-Based (F10):** Notifikasi otomatis saat stok varian menyentuh ambang batas minimum ($\le 5$ botol) beserta saran isi ulang cooler box.
 14. **Pengelolaan Lokasi & Jam Operasional:** Pengaturan koordinat lokasi lapak aktif, jam buka-tutup operasional, dan proteksi otomatis checkout saat lapak tutup.
 
-### Teknologi yang Digunakan:
-* **Backend:** Laravel 11.x, PHP 8.2+
-* **Database:** MySQL 8.x (MariaDB compatible), SQLite (Testing `:memory:`)
-* **Frontend:** Blade Templating, Tailwind CSS, Vite, JavaScript ES6
-* **Visualisasi & Peta:** Leaflet.js, OpenStreetMap, Chart.js
-* **Payment Gateway:** Midtrans Core API / Snap QRIS (Sandbox Environment)
-* **Ekspor Data:** Maatwebsite / PhpSpreadsheet (`.xlsx`)
-* **Pengujian:** PHPUnit / Pest Framework (287 automated tests)
+### Peran Pengguna (*Role-Based Access Control*):
+| Peran | Hak Akses Utama |
+|---|---|
+| **Pelanggan (`pelanggan`)** | Katalog publik, keranjang persisten, checkout antar kurir / ambil sendiri, pembayaran QRIS, lacak status *live*, notifikasi web, riwayat pesanan, nota digital (PDF/PNG/Print), dan hubungi penjual via WhatsApp. |
+| **Owner / Pengelola (`admin`)** | Dashboard operasional & omset bersih (tanpa ongkir), penugasan kurir, penyerahan pesanan ambil sendiri, POS Kasir lapak, kelola produk & restok ($\le 5$), riwayat penjualan & ekspor Excel, prediksi Moving Average 21 hari, serta pengaturan lokasi & jam lapak. |
+| **Kurir (`kurir`)** | Dashboard tugas baru (terisolasi per kurir), tombol rute Google Maps & WhatsApp pelanggan, konfirmasi pesanan selesai antar, dan riwayat tugas selesai. |
 
 ---
 
-## 2. Panduan Instalasi dari Nol (Setup from Scratch)
+## 2. Panduan Instalasi & Setup Lokal (Setup from Scratch)
 
 ### Prasyarat Sistem:
 * PHP $\ge$ 8.2 (ekstensi wajib: `pdo`, `pdo_mysql`, `curl`, `mbstring`, `openssl`, `gd`, `zip`, `fileinfo`)
@@ -73,6 +82,7 @@ Sistem ini dibangun dengan arsitektur **Basis Data Terpadu (Single Source of Tru
    Salin berkas contoh `.env.example` menjadi `.env`:
    ```bash
    cp .env.example .env
+   php artisan key:generate
    ```
    Buka berkas `.env` dan sesuaikan parameter utama berikut:
    ```env
@@ -81,6 +91,7 @@ Sistem ini dibangun dengan arsitektur **Basis Data Terpadu (Single Source of Tru
    APP_KEY=
    APP_DEBUG=true
    APP_URL=http://localhost:8000
+   APP_TIMEZONE=Asia/Jakarta
 
    DB_CONNECTION=mysql
    DB_HOST=127.0.0.1
@@ -100,21 +111,24 @@ Sistem ini dibangun dengan arsitektur **Basis Data Terpadu (Single Source of Tru
    # Jika ORS_API_KEY kosong, sistem otomatis beralih ke Fallback Mode Simulasi Haversine x 1.25
    ORS_API_KEY=5b3ce3597851110001cf6248xxxxxxxxxxxxxxxxxxxxxxx
    OPENROUTESERVICE_SIMULATION=false
+
+   # Kontak WhatsApp Resmi Lapak (Nota & Hubungi Penjual)
+   SELLER_WHATSAPP_NUMBER=6285710885120
+   SELLER_WHATSAPP_DISPLAY="0857-1088-5120"
+   SELLER_STORE_NAME="Kopi Tiga Titik Mojokerto"
+   SELLER_STORE_ADDRESS="Jl. Kuwung, Mergelo, Kec. Magersari, Kota Mojokerto"
    ```
 
-5. **Generate Kunci Aplikasi:**
-   ```bash
-   php artisan key:generate
-   ```
-
-6. **Migrasi Database & Seeding Data:**
+5. **Migrasi Database & Seeding Data Awal:**
    Pastikan database kosong bernama `ppl_kopi_tiga_titik` sudah dibuat di MySQL Anda, kemudian jalankan:
    ```bash
    php artisan migrate:fresh --seed
+   php artisan storage:link
+   php artisan optimize:clear
    ```
-   *Perintah ini akan menyiapkan 10 tabel domain, akun default, 4 varian produk kopi, pengaturan lokasi lapak aktif, konfigurasi jam operasional, dan data transaksi historis 2 bulan.*
+   *Perintah ini menyiapkan 10 tabel domain, akun default seluruh peran, katalog menu, lokasi lapak aktif, konfigurasi operasional, serta data transaksi historis 2 bulan.*
 
-7. **Jalankan Server Lokal:**
+6. **Jalankan Server Lokal:**
    ```bash
    php artisan serve
    ```
@@ -155,11 +169,11 @@ Agar Midtrans Sandbox dapat mengirimkan notifikasi HTTP POST ke server lokal And
 ---
 
 ### Menjalankan Automated Testing:
-Untuk memverifikasi integritas seluruh 14 modul, jalankan:
+Untuk memverifikasi integritas seluruh modul dan regresi:
 ```bash
 php artisan test
 ```
-*Hasil yang diharapkan: **287 passed, 1349 assertions** (100% hijau).*
+*Hasil yang diharapkan: **292 passed, 1393 assertions** (100% hijau).*
 
 ---
 
@@ -170,7 +184,7 @@ Data akun bawaan yang di-generate melalui `UserSeeder.php`:
 | Peran (Role) | Nama Pengguna | Alamat Email | Password | Hak Akses Utama |
 |---|---|---|---|---|
 | **Admin / Owner** | Farrel | `owner1@gmail.com` | `password123` | Akses penuh Dashboard Owner, POS Kasir, Kelola Produk, Alur Pesanan, Penugasan Kurir, Prediksi Moving Average, Laporan Penjualan & Ekspor Excel, Pengaturan Lokasi & Jam Lapak. |
-| **Kurir 1** | Ilham Ramadhan | `kurir1ilham@gmail.com` | `password123` | Dasbor Kurir, melihat daftar tugas antar pesanan yang ditugaskan, menandai pesanan selesai antar, ubah profil kurir. |
+| **Kurir 1** | Ilham Ramadhan | `kurir1ilham@gmail.com` | `password123` | Dasbor Kurir, melihat daftar tugas antar pesanan yang ditugaskan, navigasi Google Maps, menandai pesanan selesai antar. |
 | **Kurir 2** | Awaludin | `kurirawal@gmail.com` | `password123` | Akun kurir kedua (kuota sistem maks. 2 kurir aktif). |
 | **Pelanggan 1** | Nabil Pratama | `nabil@gmail.com` | `password123` | Belanja katalog, keranjang, checkout pengiriman & ambil sendiri, pelunasan QRIS, lacak pesanan, riwayat belanja. |
 | **Pelanggan 2** | Arif | `arif@gmail.com` | `password123` | Akun pelanggan alternatif untuk pengujian isolasi data antar-pembeli. |
@@ -217,8 +231,8 @@ $$\text{Saran Produksi} = \max\left(0, \lceil\text{Estimasi}\rceil - \text{Stok 
 ### 4.3 Perhitungan Tarif Ongkir & Geofence Kota Mojokerto (BR-14 & FR-7.3)
 Pengiriman dihitung dari titik lapak aktif (`ShippingLocation`) menuju titik koordinat pembeli:
 * **Validasi Geofence Wilayah:** Khusus wilayah Kota Mojokerto dengan *bounding box* koordinat:
-  * Latitude: $-7.5050000$ s.d. $-7.4450000$
-  * Longitude: $112.4100000$ s.d. $112.4650000$
+  * Latitude: $-7.530000$ s.d. $-7.420000$
+  * Longitude: $112.390000$ s.d. $112.480000$
   * *Jika di luar jangkauan:* Menolak pesanan dengan pesan `"Titik lokasi tujuan berada di luar jangkauan wilayah Kota Mojokerto."`
 * **Formula Tarif Bertingkat:**
   * Jarak rute riil $d \le 5{,}5\text{ km}$: **Gratis Ongkir (Rp 0 / Promo Lokal)**.
