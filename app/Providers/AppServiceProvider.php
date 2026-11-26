@@ -84,8 +84,8 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
 
-        // PPL-39: Suntikkan notifikasi web dinamis secara konsisten pada seluruh halaman layout Owner & Pelanggan
-        View::composer(['layouts.owner', 'layouts.pelanggan'], function ($view) {
+        // PPL-39 & PPL-41: Suntikkan notifikasi web dinamis secara konsisten pada seluruh halaman layout Owner, Kurir & Pelanggan
+        View::composer(['layouts.owner', 'layouts.kurir', 'layouts.pelanggan'], function ($view) {
             if (array_key_exists('notifications', $view->getData())) {
                 return;
             }

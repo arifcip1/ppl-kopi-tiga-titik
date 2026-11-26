@@ -262,7 +262,7 @@
                 ];
                 $color = $statusColors[$order->status] ?? ['bg' => 'bg-slate-50', 'text' => 'text-slate-800', 'border' => 'border-slate-200', 'label' => $order->status];
                 $customerName = $order->nama_penerima ?? $order->nama_pelanggan ?? optional($order->user)->name ?? 'Pelanggan';
-                $customerPhone = $order->telepon ?? optional($order->user)->no_telepon ?? '-';
+                $customerPhone = $order->telepon ?? optional($order->user)->telepon ?? '-';
             @endphp
 
             <div class="p-4 bg-white rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between gap-3 hover:border-blue-300 transition-colors">
@@ -815,7 +815,7 @@
 
                 const isPosOrder = d.sumber_transaksi === 'pos';
                 const customerName = (d.customer && d.customer.name) || d.nama_penerima || d.nama_pelanggan || (d.user && d.user.name) || (isPosOrder ? 'Pelanggan Lapak' : 'Pelanggan');
-                const customerPhone = (d.customer && d.customer.telepon) || d.telepon || (d.user && d.user.no_telepon) || '-';
+                const customerPhone = (d.customer && d.customer.telepon) || d.telepon || (d.user && d.user.telepon) || '-';
                 const deliveryAddress = d.alamat_pengiriman || d.alamat || d.alamat_lokasi_asal || '';
                 const hasDeliveryAddress = !isPosOrder && deliveryAddress && deliveryAddress !== '-';
                 const fulfillmentLabel = isPosOrder
@@ -825,7 +825,7 @@
                         : 'Pesan Antar ke Alamat (Delivery)');
 
                 const paymentStatus = (d.payment && d.payment.status) || 'menunggu_pembayaran';
-                const rawPayMethod = (d.payment && d.payment.metode) || d.metode_pembayaran || '';
+                const rawPayMethod = (d.payment && (d.payment.metode_pembayaran || d.payment.metode)) || d.metode_pembayaran || '';
                 const isPaid = ['berhasil', 'lunas'].includes(paymentStatus) || ['diproses', 'dikirim', 'selesai'].includes(d.status);
                 const paymentMethodLabel = isPosOrder
                     ? (rawPayMethod === 'tunai' ? 'Lunas (POS Tunai)' : (rawPayMethod === 'qris' ? 'Lunas (POS QRIS)' : 'Lunas (POS Lapak)'))
@@ -939,7 +939,7 @@
         const layanan = isPos
             ? 'POS Kasir Lapak'
             : (d.metode_pemenuhan === 'ambil_sendiri' ? 'Ambil di Lapak' : 'Pesan Antar');
-        const rawPayMethod = (d.payment && d.payment.metode) || d.metode_pembayaran || '';
+        const rawPayMethod = (d.payment && (d.payment.metode_pembayaran || d.payment.metode)) || d.metode_pembayaran || '';
         const paymentStatus = (d.payment && d.payment.status) || 'menunggu_pembayaran';
         const isPaid = ['berhasil', 'lunas'].includes(paymentStatus) || ['diproses', 'dikirim', 'selesai'].includes(d.status);
         const metodeBayar = isPos

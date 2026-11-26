@@ -384,18 +384,50 @@
                 </div>
 
                 <!-- Metode Pembayaran Badge -->
+                @php
+                    $isPosTrack = ($order->sumber_transaksi ?? 'online') === 'pos';
+                    $isCancelledTrack = $order->status === 'dibatalkan'
+                        || ($order->payment && in_array($order->payment->status, ['gagal', 'kedaluwarsa'], true));
+                    $isPaidTrack = !$isCancelledTrack
+                        && (($order->payment && $order->payment->isSuccess()) || $isPosTrack || in_array($order->status, ['diproses', 'dikirim', 'selesai'], true));
+
+                    if ($isPaidTrack) {
+                        $trackPayBadgeClass = 'bg-emerald-50 text-emerald-800 border-emerald-200';
+                        $trackPayBadgeText = 'Lunas Terverifikasi';
+                    } elseif ($isCancelledTrack) {
+                        $trackPayBadgeClass = 'bg-rose-50 text-rose-800 border-rose-200';
+                        $trackPayBadgeText = match ($order->payment?->status) {
+                            'kedaluwarsa' => 'Kedaluwarsa',
+                            'gagal' => 'Gagal',
+                            default => 'Dibatalkan',
+                        };
+                    } else {
+                        $trackPayBadgeClass = 'bg-amber-50 text-amber-800 border-amber-200';
+                        $trackPayBadgeText = 'Menunggu Pembayaran';
+                    }
+
+                    $trackPayMethodLabel = $isPosTrack
+                        ? (($order->payment?->metode_pembayaran ?? 'tunai') === 'tunai' ? 'Tunai (POS Lapak)' : 'QRIS (POS Lapak)')
+                        : 'QRIS (Midtrans)';
+                @endphp
                 <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200/60 flex items-center justify-between text-xs mt-1">
                     <div class="flex items-center gap-1.5">
                         <span class="material-symbols-outlined text-blue-900 text-base">qr_code_scanner</span>
-                        <span class="font-semibold text-slate-800">QRIS (Midtrans)</span>
+                        <span class="font-semibold text-slate-800">{{ $trackPayMethodLabel }}</span>
                     </div>
-                    <span class="px-2 py-0.5 bg-emerald-50 text-emerald-800 font-bold text-[10px] rounded-md border border-emerald-200">
-                        {{ $order->payment && $order->payment->isSuccess() ? 'Lunas Terverifikasi' : 'Terverifikasi' }}
+                    <span class="px-2 py-0.5 {{ $trackPayBadgeClass }} font-bold text-[10px] rounded-md border">
+                        {{ $trackPayBadgeText }}
                     </span>
                 </div>
 
                 <!-- Tombol Aksi Bawah & Nota Digital (FR-13 - PPL 24) -->
                 <div class="flex flex-col gap-2 pt-2">
+                    @if($order->isWaitingPayment())
+                        <a href="{{ route('payment', $order->kode) }}" class="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs">
+                            <span class="material-symbols-outlined text-sm">qr_code_2</span>
+                            <span>Bayar Sekarang via QRIS</span>
+                        </a>
+                    @endif
                     <a href="{{ route('orders.nota', $order->kode) }}" class="w-full py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shadow-xs">
                         <span class="material-symbols-outlined text-sm">receipt_long</span>
                         <span>Lihat & Unduh Nota Digital</span>

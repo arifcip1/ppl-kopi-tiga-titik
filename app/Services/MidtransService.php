@@ -473,6 +473,7 @@ class MidtransService
                     $salesRecord = SalesHistory::where('product_id', $item->product_id)
                         ->whereDate('tanggal', today())
                         ->where('sumber', 'transaksi')
+                        ->lockForUpdate()
                         ->first();
 
                     if ($salesRecord) {

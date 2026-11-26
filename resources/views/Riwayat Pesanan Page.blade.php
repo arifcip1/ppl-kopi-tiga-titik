@@ -17,11 +17,16 @@
 
     <!-- Banner Info / Status Lapak -->
     <div class="p-3.5 md:p-4 bg-white rounded-2xl shadow-xs border border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        @php
+            $riwayatOpen = $isLapakOpen ?? true;
+            $riwayatLokasi = $lokasiAktif?->nama_lokasi ?? $lokasiAktif?->alamat ?? 'Jl. Kuwung, Mergelo, Kota Mojokerto';
+            $riwayatJam = ($jamBuka ?? '15:00') . ' - ' . ($jamTutup ?? '18:00');
+        @endphp
         <div class="flex items-center gap-2.5">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span class="text-xs md:text-sm font-bold text-slate-800">Lapak Aktif: Jl. Kuwung, Mergelo, Kota Mojokerto</span>
+            <span class="w-2.5 h-2.5 rounded-full {{ $riwayatOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500' }}"></span>
+            <span class="text-xs md:text-sm font-bold text-slate-800">Lapak {{ $riwayatOpen ? 'Aktif' : 'Tutup' }}: {{ $riwayatLokasi }}</span>
             <span class="px-2 py-0.5 bg-slate-100 rounded-full border border-slate-200/60 text-[11px] font-medium text-slate-600 hidden sm:inline-block">
-                ⏰ 15.00 - 18.00 WIB
+                ⏰ {{ $riwayatJam }} WIB
             </span>
         </div>
         <div class="text-[11px] text-slate-500 flex items-center gap-1.5">

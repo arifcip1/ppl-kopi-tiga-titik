@@ -95,7 +95,7 @@
         @forelse($tasks as $tugas)
             @php
                 $customerName = $tugas->nama_penerima ?? $tugas->nama_pelanggan ?? optional($tugas->user)->name ?? 'Pelanggan';
-                $customerPhone = $tugas->telepon ?? optional($tugas->user)->no_telepon ?? '-';
+                $customerPhone = $tugas->telepon ?? optional($tugas->user)->telepon ?? '-';
             @endphp
             <div class="p-4 bg-white rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between gap-3 hover:border-blue-300 transition-colors">
                 <!-- Header Kartu Tugas -->
@@ -143,10 +143,17 @@
 
                         <!-- Tombol Cepat WhatsApp & Google Maps -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
-                            <a href="https://wa.me/{{ $tugas->whatsapp_number }}" target="_blank" rel="noopener" class="py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
-                                <span class="material-symbols-outlined text-sm text-emerald-600">chat</span>
-                                <span>Hubungi WhatsApp</span>
-                            </a>
+                            @if(!empty($tugas->whatsapp_number))
+                                <a href="https://wa.me/{{ $tugas->whatsapp_number }}" target="_blank" rel="noopener" class="py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+                                    <span class="material-symbols-outlined text-sm text-emerald-600">chat</span>
+                                    <span>Hubungi WhatsApp</span>
+                                </a>
+                            @else
+                                <span class="py-2 px-3 bg-slate-100 text-slate-400 border border-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed">
+                                    <span class="material-symbols-outlined text-sm">chat_bubble_outline</span>
+                                    <span>WhatsApp Tidak Tersedia</span>
+                                </span>
+                            @endif
                             <a href="{{ $tugas->map_url }}" target="_blank" rel="noopener" class="py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
                                 <span class="material-symbols-outlined text-sm text-blue-800">directions</span>
                                 <span>Buka Peta Rute</span>

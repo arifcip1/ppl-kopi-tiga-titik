@@ -276,10 +276,10 @@ class OwnerDashboardController extends Controller
 
         $orderData['customer'] = [
             'name'    => $order->nama_penerima ?? $order->nama_pelanggan ?? optional($order->user)->name ?? 'Pelanggan',
-            'telepon' => $order->telepon ?? optional($order->user)->no_telepon ?? '-',
+            'telepon' => $order->telepon ?? optional($order->user)->telepon ?? '-',
         ];
         $orderData['alamat_pengiriman'] = $order->alamat ?? $order->alamat_lokasi_asal ?? '-';
-        $orderData['telepon_penerima']  = $order->telepon ?? optional($order->user)->no_telepon ?? '-';
+        $orderData['telepon_penerima']  = $order->telepon ?? optional($order->user)->telepon ?? '-';
 
         return response()->json([
             'success' => true,

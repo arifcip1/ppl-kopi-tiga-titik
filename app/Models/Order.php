@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -205,5 +206,18 @@ class Order extends Model
     public function statusHistories(): HasMany
     {
         return $this->hasMany(OrderStatusHistory::class);
+    }
+
+    /**
+     * Query scope untuk mencari pesanan berdasarkan kode atau ID numerik murni (mencegah type coercion MySQL).
+     */
+    public function scopeByIdentifier(Builder $query, string $identifier): Builder
+    {
+        return $query->where(function (Builder $q) use ($identifier) {
+            $q->where('kode', $identifier);
+            if (ctype_digit($identifier)) {
+                $q->orWhere('id', (int) $identifier);
+            }
+        });
     }
 }

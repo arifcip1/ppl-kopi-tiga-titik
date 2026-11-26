@@ -49,7 +49,7 @@
         @forelse($completedTasks as $order)
             @php
                 $customerName = $order->nama_penerima ?? $order->nama_pelanggan ?? optional($order->user)->name ?? 'Pelanggan';
-                $customerPhone = $order->telepon ?? optional($order->user)->no_telepon ?? '-';
+                $customerPhone = $order->telepon ?? optional($order->user)->telepon ?? '-';
             @endphp
             <div class="p-4 bg-white rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between gap-3">
                 <!-- Header Kartu Riwayat -->

@@ -5,7 +5,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.x-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![MySQL](https://img.shields.io/badge/MySQL-8.x-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://mysql.com)
 [![Midtrans](https://img.shields.io/badge/Payment-Midtrans_QRIS_Sandbox-002B49?style=for-the-badge)](https://midtrans.com)
-[![Tests](https://img.shields.io/badge/Tests-297%20Passed-success?style=for-the-badge)](tests)
+[![Tests](https://img.shields.io/badge/Tests-306%20Passed-success?style=for-the-badge)](tests)
 
 Sistem Informasi Penjualan Kopi Tiga Titik adalah aplikasi terintegrasi berbasis web (*mobile-first* & desktop responsif) untuk UMKM **Kopi Tiga Titik** di Kota Mojokerto (Mata Kuliah Proyek Perangkat Lunak). Aplikasi ini mengintegrasikan pemesanan daring pelanggan (*online delivery* maupun *ambil sendiri di lapak*), pembayaran digital **QRIS Sandbox (Midtrans)**, perhitungan ongkos kirim rute jalan **OpenStreetMap / OpenRouteService (ORS)**, manajemen tugas **Kurir**, **POS Kasir Offline** di lapak fisik (Jl. Kuwung, Magersari, Kota Mojokerto), laporan & ekspor **Excel**, serta **Prediksi Kebutuhan Stok Moving Average**.
 
@@ -173,7 +173,7 @@ Untuk memverifikasi integritas seluruh modul dan regresi:
 ```bash
 php artisan test
 ```
-*Hasil yang diharapkan: **297 passed, 1435 assertions** (100% hijau).*
+*Hasil yang diharapkan: **306 passed, 1511 assertions** (100% hijau).*
 
 ---
 

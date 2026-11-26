@@ -242,6 +242,7 @@ class PosService
                 $salesRecord = SalesHistory::where('product_id', $itemData['product_id'])
                     ->whereDate('tanggal', $tanggal)
                     ->where('sumber', 'transaksi')
+                    ->lockForUpdate()
                     ->first();
 
                 if ($salesRecord) {
